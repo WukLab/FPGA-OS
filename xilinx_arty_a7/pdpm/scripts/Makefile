@@ -4,5 +4,8 @@ vivado='/opt/Xilinx/Vivado/2018.2/bin/vivado'
 all:
 	$(vivado) -mode tcl -source tri_mode_mac.tcl
 
+g:
+	$(vivado) ../generated/pdpm/PDPM.xpr
+
 clean:
 	rm -rf ../generated/pdpm
