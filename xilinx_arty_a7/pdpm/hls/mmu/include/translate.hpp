@@ -22,6 +22,10 @@
  */
 template <int ADDR_WIDTH, int NR_BYTES_ORDER>
 struct mmu_trans_data {
+	/*
+	 * This can be either virtual or physical.
+	 * Depends on the use case.
+	 */
 	ap_uint<ADDR_WIDTH>	address;
 	ap_uint<NR_BYTES_ORDER>	nr_bytes;
 	ap_uint<1>		type;
