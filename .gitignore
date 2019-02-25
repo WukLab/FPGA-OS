@@ -10,6 +10,7 @@
 # Generated HLS project folder
 # Listed in template file as well
 generated_hls_project/
+generated_vivado_project/
 
 # Generated IP repositories
 generated_ip/

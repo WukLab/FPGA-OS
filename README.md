@@ -13,12 +13,14 @@ Codebase Organization Principles:
 
 - `alloc/`: memory allocator
 - `mm/`: memory management
+- `net/`: network
 - `tools/`: various helpers
 - `scripts/`: template script files
 - `samples`: some sample projects
 - Generated
 	- `generated_ip/`: all generated IPs sleep here
 	- `generated_hls_project/`: Vivado HLS project
+	- `generated_vivado_project/`: Vivado project
 
 Coding Format:
 - General
