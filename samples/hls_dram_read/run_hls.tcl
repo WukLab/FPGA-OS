@@ -21,7 +21,7 @@ add_files	core.cpp
 add_files -tb	tb.cpp
 
 # Specify the top-level function for synthesis
-set_top		BoilerRuleAll
+set_top		dram_read
 
 ###########################
 # Solution settings
@@ -34,8 +34,8 @@ open_solution -reset solution1
 # VCU108:	xcvu095-2ffva2104e
 # ArtyA7:	xc7a100tcsg324-1
 #
-set_part {xcvu095-2ffva2104e}
-create_clock -period 10 -name default
+set_part {xc7a100tcsg324-1}
+create_clock -period 5 -name default
 set_clock_uncertainty 1.25
 
 # Simulate the C code 
@@ -45,7 +45,8 @@ csim_design
 csynth_design
 
 # Export IP block
-export_design -format ip_catalog -display_name "IP_NAME_HERE" -description "CHANGEME" -vendor "purdue.wuklab" -version "1.0"
+export_design -format ip_catalog -display_name "sample_dram_read" \
+	      -vendor "purdue.wuklab" -version "1.0"
 
 # Do not perform any other steps
 # - The basic project will be opened in the GUI 

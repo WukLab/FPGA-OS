@@ -7,6 +7,11 @@
 *.jou
 *.str
 
+# Generated HLS project folder
+# Listed in template file as well
+generated_hls_project/
+
+# Generated IP repositories
 generated_ip/
 
 !.gitignore

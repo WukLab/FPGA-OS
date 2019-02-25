@@ -14,7 +14,7 @@
 vivado_hls='/opt/Xilinx/Vivado/2018.2/bin/vivado_hls'
 
 # Customize
-HLS_IP_CORES=(dram_read_hls)
+HLS_IP_CORES=(hls_dram_read)
 GENERATED_IP_REPO="${HLS_DIR}/../generated_ip"
 
 # Hardcoded through projects

@@ -11,12 +11,14 @@ Codebase Organization Principles:
   internally to build large ones. Our goal is to be able to reuse IPs as much as
   possible, and be able to construct new IPs easily.
 
-- System
-	- `alloc/`: memory allocator
-	- `mm/`: memory management
+- `alloc/`: memory allocator
+- `mm/`: memory management
 - `tools/`: various helpers
 - `scripts/`: template script files
-- `generated_ip/`: all generated IPs sleep here
+- `samples`: some sample projects
+- Generated
+	- `generated_ip/`: all generated IPs sleep here
+	- `generated_hls_project/`: Vivado HLS project
 
 Coding Format:
 - General
