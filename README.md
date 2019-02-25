@@ -3,13 +3,20 @@
 Codebase Organization Principles:
 - Make each subfolder be an IP on its own. This means it should have its own
   scripts, rtl or hls code, and testbench.
-- Hierarchy IPs will have dependency. We need to obey the order explicitly
+- Hierarchy IPs will have dependency. We need to express the order explicitly
   in corresponding building scripts.
-- Final large project shuold be expressed in a diagram or static RTL code
+- Final large project should be expressed in a diagram or static RTL code
   that ultilizing small IP cores.
 - Overall, this project will consist many small IPs, and they will be used
-  internall to build large ones. Our goal is to be able to reuse IP as much as
+  internally to build large ones. Our goal is to be able to reuse IPs as much as
   possible, and be able to construct new IPs easily.
+
+- System
+	- `alloc/`: memory allocator
+	- `mm/`: memory management
+- `tools/`: various helpers
+- `scripts/`: template script files
+- `generated_ip/`: all generated IPs sleep here
 
 Coding Format:
 - General

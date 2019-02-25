@@ -7,4 +7,6 @@
 *.jou
 *.str
 
+generated_ip/
+
 !.gitignore
