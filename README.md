@@ -12,13 +12,15 @@ Codebase Organization Principles:
   possible, and be able to construct new IPs easily.
 
 Codebase Directories:
+- `app/`: FPGA applications
+- `board/`: low-level board-specific IPs
 - `alloc/`: memory allocator
 - `mm/`: memory management
-- `net/`: network
+- `net/`: network subsystem
+- `system/`: systems built with those small IPs
 - `tools/`: various helpers
 - `scripts/`: template script files
 - `samples`: some sample projects
-- `/sys`: some high-level combined large IPs within each subsystem.
 - Generated
 	- `generated_ip/`: all generated IPs sleep here
 	- `generated_hls_project/`: Vivado HLS project
