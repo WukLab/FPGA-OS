@@ -1,5 +1,8 @@
 # Memory Management
 
+Our Memory Managment (MM) IP is combination of the traditional CPU MM
+and OS Fault Handling. Please check the design document for design details.
+
 - AXI Wrapper
 - Paging
 	- MMU Agent
@@ -8,4 +11,4 @@
 	- MMU Agent
 	- Fault Handling Agent
 
-- `system/`: combined above three IPs.
+- `sys/`: the final big MM IP

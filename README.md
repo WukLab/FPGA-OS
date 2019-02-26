@@ -48,18 +48,27 @@ scripts can be used to rebuild the whole project AS IS.
 
 Those are my unformal steps to create and hack those scripts:
 
+Run:
 - Run the script:
 	- `vivado -mode tcl -source run_vivado.tcl`
 		- A new `generated_vivado_project/` will be created at the current folder
 		- A new IP will be packaged and exported into `generated_ip/` folder.
-	- If you don't want to type it everytime, use a simple Makefile.
-- Create the script:
+	- If you don't want to type it everytime, use a template Makefile.
+
+Creation:
+- Create the top-level script:
 	- Use Vivado GUI to create a new project, add existing sources/tb/xdc, set part.
 	- Use `write_project_tcl` to generate the script. You SHOULD let the new
 	  script know that the going-to-be-rebuilt project should be placed under
 	  under folder's `generated_vivado_project`. And you SHOULD name the script
-	  to `run_vivado.tcl`. For example: `write_project_tcl -no_copy_sources -force -target_proj_dir ./generated_vivado_project ./run_vivado.tcl`
-- Add IP paths:
+	  to `run_vivado.tcl`.
+	- If there is no block diagram (BD) design within project,
+	  use: `write_project_tcl -force -no_copy_sources -target_proj_dir ./generated_vivado_project ./run_vivado.tcl`
+	- If there are BD designs within project,
+	  use: `write_project_tcl -force -target_proj_dir ./generated_vivado_project ./run_vivado.tcl`
+
+Hack:
+- Add IP paths to top-level script:
 	- This SHOULD be added to every script.
 	- All our generated IPs are in `generated_ip/` folder. This makes IP tracking easier.
 	  You can add few lines to the script so that Vivado knows where to look for new IPs.
@@ -83,7 +92,13 @@ Those are my unformal steps to create and hack those scripts:
 	  and save the corresponding changes. Once you get familiar with Vivado commands, you
 	  should be able to do manually by changing script.
 
-For now, you can find an example script at the `mm/axi_wrapper/run_vivado_arty_a7.tcl`.
+Caveats:
+- Review the generated script
+	- Check if any source files within Vivado auto-generated folder is used in the script.
+	  This happens if the write_project_tcl is used not correctly. Having auto-generated
+	  files essentially equals a chicken-and-egg issue.
+
+For now, you can find example scripts at the `mm/axi_wrapper/run_vivado.tcl`, and `mm/sys/run_vivado.tcl`.
 
 ## HOWTO use the Vivado HLS script
 

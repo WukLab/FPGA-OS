@@ -3,10 +3,11 @@
 #
 
 GENERATED_IP = generated_ip/
-GENERATED_VIVADO_PROJECT = generated_vivado_project/
 
 all:
 	mkdir -p $(GENERATED_IP)
+	$(Q)make -C app
+	$(Q)make -C mm
 
 clean:
 	rm -rf $(GENERATED_IP)
