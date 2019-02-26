@@ -11,7 +11,7 @@
 # 2) Modify GENERATED_IP_REPO to reflect the path
 
 # Change the absolute path to your own one.
-vivado_hls='/opt/Xilinx/Vivado/2018.2/bin/vivado_hls'
+VIVADO_HLS='vivado_hls'
 
 # Hardcoded through projects
 GENERATED_HLS_PROJECT="generated_hls_project"
@@ -31,7 +31,7 @@ for ip in "${HLS_IP_CORES[@]}"; do
 	eval cd ${HLS_DIR}/${ip}
 
 	# Run the HLS script
-	eval ${vivado_hls} -f run_hls.tcl
+	eval ${VIVADO_HLS} -f run_hls.tcl
 
 	if [ ! -d "${GENERATED_IP_REPO}/${ip}" ]; then
 		mkdir "${GENERATED_IP_REPO}/${ip}"

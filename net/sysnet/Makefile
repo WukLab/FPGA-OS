@@ -1,4 +1,4 @@
+# sys must be the last one in the list.
 all:
-	$(Q)make -C rx
-	$(Q)make -C tx
+	./generate_hls.sh
 	$(Q)make -C sys

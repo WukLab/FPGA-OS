@@ -2,24 +2,17 @@
 #
 # Copyright (c) 2019, Wuklab, Purdue University
 #
-# This script automate the process of creating multiple HLS projects.
-# It should be a level higher than run_hls.tcl. This is used to run
-# multiple run_hls.tcl scripts.
-#
-# To customize
-# 1) Modify HLS_IP_CORES list
-# 2) Modify GENERATED_IP_REPO to reflect the path
 
 # Change the absolute path to your own one.
-VIVADO_HLS='vivado_hls'
+VIVADO_HLS="/opt/Xilinx/Vivado/2018.2/bin/vivado_hls"
 
 # Hardcoded through projects
 GENERATED_HLS_PROJECT="generated_hls_project"
 HLS_DIR="$PWD"
 
 # Customize
-HLS_IP_CORES=(dram_read_hls)
-GENERATED_IP_REPO="${HLS_DIR}/../generated_ip"
+HLS_IP_CORES=(rx tx)
+GENERATED_IP_REPO="${HLS_DIR}/../../generated_ip"
 
 # Check if the shared IP repo exists
 if [ ! -d "$GENERATED_IP_REPO" ]; then
@@ -33,8 +26,8 @@ for ip in "${HLS_IP_CORES[@]}"; do
 	# Run the HLS script
 	eval ${VIVADO_HLS} -f run_hls.tcl
 
-	if [ ! -d "${GENERATED_IP_REPO}/${ip}" ]; then
-		mkdir "${GENERATED_IP_REPO}/${ip}"
+	if [ ! -d "${GENERATED_IP_REPO}/net_sysnet_${ip}" ]; then
+		mkdir "${GENERATED_IP_REPO}/net_sysnet_${ip}"
 	fi
 	#eval cd "${GENERATED_IP_REPO}/${ip}"
 
@@ -46,6 +39,6 @@ for ip in "${HLS_IP_CORES[@]}"; do
 	zipdir=${zipname:0:${zipnamelen}-4}
 
 	# Copy the IP archive into shared IP repo
-	eval cp ${GENERATED_HLS_PROJECT}/solution1/impl/ip/${zipname} ${GENERATED_IP_REPO}/${ip}/
-	unzip -o ${GENERATED_IP_REPO}/${ip}/${zipname} -d ${GENERATED_IP_REPO}/${ip}/${zipdir}
+	eval cp ${GENERATED_HLS_PROJECT}/solution1/impl/ip/${zipname} ${GENERATED_IP_REPO}/net_sysnet_${ip}/
+	unzip -o ${GENERATED_IP_REPO}/net_sysnet_${ip}/${zipname} -d ${GENERATED_IP_REPO}/net_sysnet_${ip}/${zipdir}
 done
