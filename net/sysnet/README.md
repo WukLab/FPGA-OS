@@ -1,6 +1,13 @@
 # SysNet
 
-Code written in HLS.
+Code written in HLS, and top-level module exported by Vivado.
 
-- Step 1: build an unreliable sysnet.
-- Step 2: add reliable IPs to sysnet.
+- RX HLS
+	- Etherner/IP Decap
+	- Dispatcher to different LibNets
+- TX HLS
+	- Arbiter
+	- Ethernet/IP Encap
+- Sys Vivado
+	- Top-level SysNet
+	- Combined RX and TX

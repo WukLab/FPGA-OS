@@ -7,6 +7,7 @@ GENERATED_IP = generated_ip/
 all:
 	mkdir -p $(GENERATED_IP)
 	$(Q)make -C app
+	$(Q)make -C net 
 	$(Q)make -C mm
 
 clean:

@@ -24,14 +24,17 @@ Codebase Directories:
 	- `generated_hls_project/`: Vivado HLS project
 	- `generated_vivado_project/`: Vivado project
 
-Coding Format:
+Format:
 - General
 	- Make your readable for others.
 	- Remove ending spaces and tabs.
+	- Try to use Linux Kernel Coding Style.
 - Vivado HLS
 	- All Vivado HLS script use `run_hls.tcl` name.
-	- C++: try to use Linux kernel coding style.
 - Verilog
+- IP
+	- Name IP consistenly. Use subsystem name as prefix.
+	  E.g., `mm_axi_wrapper` is the AXI wrapper IP under MM subsystem.
 
 ## HOWTO use the Vivado script
 
