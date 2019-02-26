@@ -19,13 +19,13 @@ GENERATED_HLS_PROJECT="generated_hls_project"
 HLS_DIR="$PWD"
 
 # Customize: sub-folders
-HLS_IP_CORES=(f1 f2 f3)
+HLS_IP_CORES=(src)
 
 # Customize: relative path
-GENERATED_IP_FOLDER="${HLS_DIR}/../generated_ip"
+GENERATED_IP_FOLDER="${HLS_DIR}/../../generated_ip"
 
 # Customize: new IP folder prefix
-PREFIX=ChangeMe
+PREFIX=app_rdma
 
 # Check if the shared IP repo exists
 if [ ! -d "$GENERATED_IP_FOLDER" ]; then

@@ -10,7 +10,7 @@ g:
 	$(VIVADO_HLS) -p $(project_path)
 
 clean:
-	rm -rf generated_project/
+	rm -rf $(project_path)
 
 help:
 	@echo "Help"
