@@ -13,13 +13,13 @@
 # Change the absolute path to your own one.
 vivado_hls='/opt/Xilinx/Vivado/2018.2/bin/vivado_hls'
 
-# Customize
-HLS_IP_CORES=(hls_dram_read)
-GENERATED_IP_REPO="${HLS_DIR}/../generated_ip"
-
 # Hardcoded through projects
 GENERATED_HLS_PROJECT="generated_hls_project"
 HLS_DIR="$PWD"
+
+# Customize
+HLS_IP_CORES=(hls_dram_read)
+GENERATED_IP_REPO="${HLS_DIR}/../generated_ip"
 
 # Check if the shared IP repo exists
 if [ ! -d "$GENERATED_IP_REPO" ]; then
