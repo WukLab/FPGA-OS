@@ -18,7 +18,6 @@ Codebase Directories:
 - `net/`: network subsystem
 - `tools/`: various helpers
 - `scripts/`: template script files
-- `samples`: some sample projects
 - `system/`: Final big integrated systems
 - Generated
 	- `generated_ip/`: all generated IPs sleep here
@@ -121,7 +120,6 @@ The Vivado HLS script is relatively easier than Vivado script.
 You can find the template script in `scripts/template_run_hls.tcl`.
 You SHOULD customize the parts, files added, frequency, and so.
 If you want to automatically build multiple HLS under the same folder, use the `scripts/template_generate_hls.sh`
-Check out `samples/` for examples.
 
 ## References
 - [UG1118 Vivado Creating and Packaging Custom IP](https://www.xilinx.com/support/documentation/sw_manuals/xilinx2018_2/ug1118-vivado-creating-packaging-custom-ip.pdf)
