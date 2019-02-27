@@ -1,0 +1,38 @@
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Simple 2 deep flip flop based synchronizer 
+//////////////////////////////////////////////////////////////////////////////////
+module sync2d 
+#( parameter DW=1
+)
+(
+    input      clk,
+    input      [DW-1:0] d,
+    output reg [DW-1:0] q
+);
+
+reg [DW-1:0] q1;
+always @(posedge clk) begin
+    q1 <= d;
+    q  <= q1;
+end
+endmodule
+
+/*
+//////////////////////////////////////////////////////////////////////////////////
+// Simple 3 deep flip flop based synchronizer 
+//////////////////////////////////////////////////////////////////////////////////
+module sync3d (
+    input      clk,
+    input      d,
+    output reg q
+);
+
+reg q1, q2;
+always @(posedge clk) begin
+    q1 <= d;
+    q2 <= q1;
+    q  <= q2;
+end
+endmodule
+*/
