@@ -16,10 +16,10 @@ Codebase Directories:
 - `alloc/`: memory allocator
 - `mm/`: memory management
 - `net/`: network subsystem
-- `system/`: systems built with those small IPs
 - `tools/`: various helpers
 - `scripts/`: template script files
 - `samples`: some sample projects
+- `system/`: Final big integrated systems
 - Generated
 	- `generated_ip/`: all generated IPs sleep here
 	- `generated_hls_project/`: Vivado HLS project
@@ -36,6 +36,17 @@ Format:
 - IP
 	- Name IP consistenly. Use subsystem name as prefix.
 	  E.g., `mm_axi_wrapper` is the AXI wrapper IP under MM subsystem.
+
+## HOWTO Build
+
+- Type `make` at top-level will compile the whole project.
+	- Kernel IPs will be compiled first
+	- Large system reside in `system/` folder
+- Type `make` at each subfolder will compile that folder only.
+
+Workflow: you should compile the project when you first download the source code.
+All small, medium IPs, and big projects will be ready to use. After this, you
+can focus on the IPs you are building. Changes will be reflected automatically within Vivado.
 
 ## HOWTO use the Vivado script
 
