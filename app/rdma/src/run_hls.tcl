@@ -20,10 +20,10 @@ open_solution -reset solution1
 
 # Specify a Xilinx device and clock period
 #
-# VCU108:	xcvu095-2ffva2104e
+# VCU108:	xcvu095-ffva2104-2-e
 # ArtyA7:	xc7a100tcsg324-1
 #
-set_part {xc7a100tcsg324-1}
+set_part {xcvu095-ffva2104-2-e}
 create_clock -period 10 -name default
 set_clock_uncertainty 1.25
 

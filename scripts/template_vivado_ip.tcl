@@ -9,14 +9,18 @@
 
 #
 # Script to save current project into a script file
-# This generated script file can be used rebuild the project AS IS.
-# Note that Board Design needs to be generated seperately.
+# Used when there is NO block diagram design
 #
 write_project_tcl -no_copy_sources -force -target_proj_dir ./generated_vivado_project ./run_vivado.tcl
 
 #
+# Script to save current project into a script file
+# Used when there is block diagram design
+#
+write_project_tcl -force -target_proj_dir ./generated_vivado_project ./run_vivado.tcl
+
+#
 # Script to save a block diagram as a script file
-# Please name the script name accordingly
 #
 write_bd_tcl -bd_folder ./generated_vivado_project/bd ./create_bd_design_X.tcl
 
