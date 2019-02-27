@@ -13,7 +13,6 @@ Codebase Organization Principles:
 
 Codebase Directories:
 - `app/`: FPGA applications
-- `board/`: low-level board-specific IPs
 - `alloc/`: memory allocator
 - `mm/`: memory management
 - `net/`: network subsystem

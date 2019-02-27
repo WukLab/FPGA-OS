@@ -10,7 +10,6 @@ GENERATED_IP = generated_ip/
 #
 all:
 	mkdir -p $(GENERATED_IP)
-	$(Q)make -C board
 	$(Q)make -C alloc
 	$(Q)make -C net
 	$(Q)make -C mm

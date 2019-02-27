@@ -1,0 +1,4 @@
+*.*
+!board.prj
+!tri_mode_ethernet_mac_0.xci
+!.gitignore
