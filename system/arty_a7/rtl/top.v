@@ -126,7 +126,7 @@ module pDPM_top(
 	/* Output clock to PHY */
 	assign		mii_ref_clk_out = net_25MHZ;
 
-	tri_mode_ethernet_mac_0_example_design pdpm_network
+	tri_mode_ethernet_mac_0_example_design network
 	(
 		.glbl_rst		(glbl_rst),
 		.clk_100MHZ		(sys_clk_100M),
@@ -181,7 +181,7 @@ module pDPM_top(
 		.tx_axis_fifo_tlast	(tx_axis_fifo_tlast)
 	);
 
-	pdpm_system_2	pdpm_memory (
+	LegoFPGA_1	app_and_memory (
 		.mig_166MHZ		(mig_166MHZ),
 		.mig_ref_200MHZ		(mig_ref_200MHZ),
 		.mig_sys_rst_n		(mig_sys_rst_n),
