@@ -5,5 +5,17 @@ all:
 	$(Q)make -C legacy_hls
 	$(VIVADO) -mode tcl -source run_vivado.tcl
 
+clean:
+	find ./ -name "generated_ip" | xargs rm -rf
+	find ./ -name "generated_hls_project" | xargs rm -rf
+	find ./ -name "generated_vivado_project" | xargs rm -rf
+	find ./ -name "ipshared" | xargs rm -rf
+	find ./ -name "*.log" | xargs rm -rf
+	find ./ -name "*.jou" | xargs rm -rf
+	find ./ -name "*.str" | xargs rm -rf
+	find ./ -name ".Xil" | xargs rm -rf
+	find ./ -name "generated" | xargs rm -rf
+	find ./ -name "generated_project" | xargs rm -rf
+
 g:
 	$(VIVADO) $(VIVADO_PRJ)
