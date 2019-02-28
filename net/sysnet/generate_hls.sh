@@ -3,6 +3,8 @@
 # Copyright (c) 2019, Wuklab, Purdue University
 #
 
+TARGET_BOARD=$1
+
 # Change the absolute path to your own one.
 VIVADO_HLS='vivado_hls'
 
@@ -26,11 +28,11 @@ fi
 
 # Rolling for each HLS IP in this directory
 for ip in "${HLS_IP_CORES[@]}"; do
-	NEW_IP_REPO="${GENERATED_IP_FOLDER}/${PREFIX}_${ip}"
+	NEW_IP_REPO="${GENERATED_IP_FOLDER}/${PREFIX}_${ip}_${TARGET_BOARD}"
 	eval cd ${HLS_DIR}/${ip}
 
 	# Run the HLS script
-	eval ${VIVADO_HLS} -f run_hls.tcl
+	eval ${VIVADO_HLS} -f run_hls_${TARGET_BOARD}.tcl
 
 	if [ ! -d ${NEW_IP_REPO} ]; then
 		mkdir ${NEW_IP_REPO}

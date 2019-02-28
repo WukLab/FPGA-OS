@@ -435,7 +435,7 @@ set_property -name "steps.write_bitstream.args.verbose" -value "0" -objects $obj
 # set the current impl run
 current_run -implementation [get_runs impl_1]
 
-ipx::package_project -root_dir ../../generated_ip/mm_axi_wrapper -vendor wuklab -library user -taxonomy UserIP -import_files -set_current false -force
+ipx::package_project -root_dir ../../generated_ip/mm_axi_wrapper_arty_a7 -vendor wuklab -library user -taxonomy UserIP -import_files -set_current false -force
 update_ip_catalog -rebuild
 
 puts "INFO: Project created:${_xil_proj_name_}"
