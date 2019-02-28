@@ -38,7 +38,8 @@ Format:
 
 ## HOWTO Build
 
-- Type `make` at top-level will compile the whole project.
+- Type `make help` to see detailed explanation.
+- Type `make` at top-level will compile the whole project using default board.
 	- Kernel IPs will be compiled first
 	- Large system reside in `system/` folder
 - Type `make` at each subfolder will compile that folder only.
@@ -46,6 +47,8 @@ Format:
 Workflow: you should compile the project when you first download the source code.
 All small, medium IPs, and big projects will be ready to use. After this, you
 can focus on the IPs you are building. Changes will be reflected automatically within Vivado.
+
+Also, pay attention to which board you are targeting.
 
 ## HOWTO use the Vivado script
 
@@ -99,6 +102,14 @@ Hack:
 	  search `top.v`, `add_files` etc.
 	- Second solution, add files via Vivado GUI, and then use `write_project_tcl` again
 	  to generate another script. Then check out the differences.
+- Autogenerate BD wrapper
+	- This MUST be added if the top-level design is a BD
+	- The reason is: if the BD has AXI interface, this AXI will need have predefined
+	  frequency property (Does not mean it must run on this, just a property.).
+	  By default, it is 100 MHz. If an IP is generated from this BD, and
+	  used by a larger IP, this frequency cannot be changed, which is VERY unconvenient.
+	  However, if we create a wrapper for the BD, and package the whole project as an IP,
+	  then the frequency property can be automatically updated during IP integration.
 - Other settings:
 	- IMPORTANT!
 	- Whatever changes you made via Vivado GUI (e.g., compiling order, xdc order, simulation top file),

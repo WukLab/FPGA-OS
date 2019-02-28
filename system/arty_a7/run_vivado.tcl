@@ -122,7 +122,8 @@ if { $::argc > 0 } {
 set orig_proj_dir "[file normalize "$origin_dir/generated_vivado_project"]"
 
 # Create project
-create_project -f ${_xil_proj_name_} "./generated_vivado_project" -part xc7a100tcsg324-1
+# Synthesis and Implementation take time.. Use with caution.
+create_project ${_xil_proj_name_} "./generated_vivado_project" -part xc7a100tcsg324-1
 
 # Set the directory path for the new project
 set proj_dir [get_property directory [current_project]]
@@ -869,3 +870,5 @@ set_property -name "steps.write_bitstream.args.verbose" -value "0" -objects $obj
 current_run -implementation [get_runs impl_1]
 
 puts "INFO: Project created:${_xil_proj_name_}"
+
+exit

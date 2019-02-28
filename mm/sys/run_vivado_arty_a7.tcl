@@ -272,15 +272,15 @@ proc cr_bd_sys_mm { parentCell } {
 
 
   # Create interface ports
-  set m_axi_0 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 m_axi_0 ]
+  set m_axi [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 m_axi ]
   set_property -dict [ list \
    CONFIG.ADDR_WIDTH {32} \
    CONFIG.DATA_WIDTH {32} \
    CONFIG.NUM_READ_OUTSTANDING {2} \
    CONFIG.NUM_WRITE_OUTSTANDING {2} \
    CONFIG.PROTOCOL {AXI4} \
-   ] $m_axi_0
-  set s_axi_0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 s_axi_0 ]
+   ] $m_axi
+  set s_axi [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 s_axi ]
   set_property -dict [ list \
    CONFIG.ADDR_WIDTH {32} \
    CONFIG.ARUSER_WIDTH {1} \
@@ -309,22 +309,28 @@ proc cr_bd_sys_mm { parentCell } {
    CONFIG.SUPPORTS_NARROW_BURST {1} \
    CONFIG.WUSER_BITS_PER_BYTE {0} \
    CONFIG.WUSER_WIDTH {1} \
-   ] $s_axi_0
+   ] $s_axi
 
   # Create ports
-  set m_axi_clk_0 [ create_bd_port -dir I -type clk m_axi_clk_0 ]
-  set s_axi_clk_0 [ create_bd_port -dir I -type clk s_axi_clk_0 ]
+  set m_axi_clk [ create_bd_port -dir I -type clk m_axi_clk ]
+  set_property -dict [ list \
+   CONFIG.ASSOCIATED_BUSIF {m_axi} \
+ ] $m_axi_clk
+  set s_axi_clk [ create_bd_port -dir I -type clk s_axi_clk ]
+  set_property -dict [ list \
+   CONFIG.ASSOCIATED_BUSIF {s_axi} \
+ ] $s_axi_clk
 
   # Create instance: axi_wrapper_0, and set properties
   set axi_wrapper_0 [ create_bd_cell -type ip -vlnv wuklab:user:axi_wrapper:1.0 axi_wrapper_0 ]
 
   # Create interface connections
-  connect_bd_intf_net -intf_net axi_wrapper_0_m_axi [get_bd_intf_ports m_axi_0] [get_bd_intf_pins axi_wrapper_0/m_axi]
-  connect_bd_intf_net -intf_net s_axi_0_1 [get_bd_intf_ports s_axi_0] [get_bd_intf_pins axi_wrapper_0/s_axi]
+  connect_bd_intf_net -intf_net axi_wrapper_0_m_axi [get_bd_intf_ports m_axi] [get_bd_intf_pins axi_wrapper_0/m_axi]
+  connect_bd_intf_net -intf_net s_axi_0_1 [get_bd_intf_ports s_axi] [get_bd_intf_pins axi_wrapper_0/s_axi]
 
   # Create port connections
-  connect_bd_net -net m_axi_clk_0_1 [get_bd_ports m_axi_clk_0] [get_bd_pins axi_wrapper_0/m_axi_clk]
-  connect_bd_net -net s_axi_clk_0_1 [get_bd_ports s_axi_clk_0] [get_bd_pins axi_wrapper_0/s_axi_clk]
+  connect_bd_net -net m_axi_clk_0_1 [get_bd_ports m_axi_clk] [get_bd_pins axi_wrapper_0/m_axi_clk]
+  connect_bd_net -net s_axi_clk_0_1 [get_bd_ports s_axi_clk] [get_bd_pins axi_wrapper_0/s_axi_clk]
 
   # Create address segments
 
@@ -333,6 +339,8 @@ proc cr_bd_sys_mm { parentCell } {
   current_bd_instance $oldCurInst
 
   save_bd_design
+common::send_msg_id "BD_TCL-1000" "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
+
   close_bd_design $design_name 
 }
 # End of cr_bd_sys_mm()
@@ -340,6 +348,12 @@ cr_bd_sys_mm ""
 set_property IS_MANAGED "0" [get_files sys_mm.bd ] 
 set_property REGISTERED_WITH_MANAGER "1" [get_files sys_mm.bd ] 
 set_property SYNTH_CHECKPOINT_MODE "Hierarchical" [get_files sys_mm.bd ] 
+
+# Yizhou
+# We have to manually create the wrapper if we want to use th IP.
+# Due to the conflict AXI FREQ_HZ thing.
+make_wrapper -files [get_files ${origin_dir}/generated_vivado_project/mm_sys_mm.srcs/sources_1/bd/sys_mm/sys_mm.bd] -top
+add_files -norecurse ${origin_dir}/generated_vivado_project/mm_sys_mm.srcs/sources_1/bd/sys_mm/hdl/sys_mm_wrapper.v
 
 # Create 'synth_1' run (if not found)
 if {[string equal [get_runs -quiet synth_1] ""]} {
@@ -571,7 +585,9 @@ set_property -name "steps.write_bitstream.args.verbose" -value "0" -objects $obj
 # set the current impl run
 current_run -implementation [get_runs impl_1]
 
-ipx::package_project -root_dir ../../generated_ip/mm_sys_arty_a7 -vendor wuklab -library user -taxonomy UserIP -module sys_mm -import_files
+# Export the project, not just the block diagram
+ipx::package_project -root_dir ../../generated_ip/mm_sys_arty_a7 -vendor wuklab -library user -taxonomy UserIP -import_files -set_current false -force
+
 update_ip_catalog -rebuild
 
 puts "INFO: Project created:${_xil_proj_name_}"

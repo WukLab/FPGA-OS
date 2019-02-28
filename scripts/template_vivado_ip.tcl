@@ -39,6 +39,14 @@ set_property "ip_repo_paths" "[file normalize "$origin_dir/../../generated_ip"]"
 update_ip_catalog -rebuild
 
 #
+# Script to create wrapper for BD
+# and add the source
+# Adjust path accordingly
+#
+make_wrapper -files [get_files ${origin_dir}/generated_vivado_project/mm_sys_mm.srcs/sources_1/bd/sys_mm/sys_mm.bd] -top
+add_files -norecurse ${origin_dir}/generated_vivado_project/mm_sys_mm.srcs/sources_1/bd/sys_mm/hdl/sys_mm_wrapper.v
+
+#
 # Script to export current project as an IP into generated_ip/
 #
 ipx::package_project -root_dir ../../generated_ip/mm_axi_wrapper -vendor wuklab -library user -taxonomy UserIP -import_files -set_current false -force

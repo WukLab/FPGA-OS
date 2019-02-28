@@ -1,5 +1,5 @@
 VIVADO = vivado
-VIVADO_PRJ = generated_vivado_project/generated_vivado_project.xpr
+VIVADO_PRJ = generated_vivado_project/mm_sys_mm.xpr
 
 ifeq ($(TARGET_BOARD), )
   TARGET_BOARD = arty_a7
