@@ -12,17 +12,24 @@ Codebase Organization Principles:
   possible, and be able to construct new IPs easily.
 
 Codebase Directories:
-- `app/`: FPGA applications
-- `alloc/`: memory allocator
-- `mm/`: memory management
-- `net/`: network subsystem
-- `tools/`: various helpers
-- `scripts/`: template script files
-- `system/`: Final big integrated systems
+- Host Side:
+	- `host/`: Host side network stack
+- FPGA Side:
+	- `alloc/`: memory allocator
+	- `mm/`: memory management
+	- `net/`: network subsystem
+	- `system/`: Final big integrated systems
+- Both world:
+	- `app/`: Application can have both FPGA and Host code.
+	- `include/`: header files used by both FPGA and host code. E.g., network headers.
+- Helpers
+	- `tools/`: various helpers
+	- `scripts/`: template script files
 - Generated
 	- `generated_ip/`: all generated IPs sleep here
 	- `generated_hls_project/`: Vivado HLS project
 	- `generated_vivado_project/`: Vivado project
+
 
 Format:
 - General
