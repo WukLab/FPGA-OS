@@ -18,6 +18,7 @@ enum parser_state {
 	PARSER_UDP,
 	PARSER_LEGO,
 	PARSER_SM_STREAM,
+	PARSER_SM_RESIDUE,
 };
 
 void sysnet_rx_64(hls::stream<struct net_axis_64> *input,
@@ -34,7 +35,7 @@ void sysnet_rx_64(hls::stream<struct net_axis_64> *input,
 #pragma HLS INTERFACE ap_ctrl_none port=return
 
 	static enum parser_state state = PARSER_ETH0;
-	struct net_axis_64 current;
+	struct net_axis_64 current, prev;
 
 	eth_header_t eth_header;
 	ip_header_t ip_header;
@@ -46,6 +47,7 @@ void sysnet_rx_64(hls::stream<struct net_axis_64> *input,
 			if (input->empty())
 				break;
 			current = input->read();
+			prev = current;
 
 			eth_header.mac_dest = current.data(47,0);
 			eth_header.mac_src(15,0) = current.data(63,48);
@@ -56,6 +58,8 @@ void sysnet_rx_64(hls::stream<struct net_axis_64> *input,
 			if (input->empty())
 				break;
 			current = input->read();
+			output0->write(prev);
+			prev = current;
 
 			eth_header.mac_src(47,16) = current.data(31,0);
 			eth_header.mac_type = current.data(47,32);
@@ -67,6 +71,8 @@ void sysnet_rx_64(hls::stream<struct net_axis_64> *input,
 			if (input->empty())
 				break;
 			current = input->read();
+			output0->write(prev);
+			prev = current;
 
 			ip_header.word0(31,16) = current.data(15,0);
 			ip_header.word1 = current.data(47,16);
@@ -78,6 +84,8 @@ void sysnet_rx_64(hls::stream<struct net_axis_64> *input,
 			if (input->empty())
 				break;
 			current = input->read();
+			output0->write(prev);
+			prev = current;
 
 			ip_header.word2(31,16) = current.data (15,0);
 			ip_header.word3 = current.data(47,16);
@@ -89,6 +97,8 @@ void sysnet_rx_64(hls::stream<struct net_axis_64> *input,
 			if (input->empty())
 				break;
 			current = input->read();
+			output0->write(prev);
+			prev = current;
 
 			ip_header.word4(31,16) = current.data(15,0);
 			udp_header(47,0) = current.data(63,16);
@@ -119,7 +129,8 @@ void sysnet_rx_64(hls::stream<struct net_axis_64> *input,
 			if ((unsigned char) lego_header.appid == 0)
 				output0->write(current);
 			else
-				output1->write(current);
+				output0->write(current);
+			prev = current;
 
 			/* In case this is the last eight bytes */
 			if (current.last)
@@ -136,10 +147,15 @@ void sysnet_rx_64(hls::stream<struct net_axis_64> *input,
 			if ((unsigned char) lego_header.appid ==  0)
 				output0->write(current);
 			else
-				output1->write(current);
+				output0->write(current);
+			prev = current;
 
 			if (current.last)
-				state = PARSER_ETH0;
+				state = PARSER_SM_RESIDUE;
+			break;
+	case PARSER_SM_RESIDUE:
+			output0->write(current);
+			state = PARSER_ETH0;
 			break;
 	}
 }
