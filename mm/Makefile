@@ -7,6 +7,6 @@
 #
 all:
 	$(Q)make -C axi_wrapper
-	$(Q)make -C segment
+	$(Q)make -C sysmmu
 	$(Q)make -C paging
 	$(Q)make -C sys
