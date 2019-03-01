@@ -37,9 +37,8 @@ typedef struct lego_header_t {
 } lego_header_t;
 
 
-void top_func(hls::stream<struct my_axis<FIFO_WIDTH> > *input,
+void sysnet_rx_64(hls::stream<struct my_axis<FIFO_WIDTH> > *input,
 	      hls::stream<struct my_axis<FIFO_WIDTH> > *output0,
 	      hls::stream<struct my_axis<FIFO_WIDTH> > *output1);
-
 
 #endif /* _SYSNETRX64_H_ */

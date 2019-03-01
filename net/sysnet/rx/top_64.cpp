@@ -1,11 +1,14 @@
+/*
+ * Copyright (c) 2019，Wuklab, Purdue University.
+ */
+
 #include <ap_axi_sdata.h>
 #include <ap_int.h>
 #include <hls_stream.h>
 #include <assert.h>
-#include "sysnetRx64.hpp"
+#include "top_64.hpp"
 
 using namespace hls;
-
 
 enum parser_state {
 	PARSER_ETH0 = 0,
@@ -17,25 +20,28 @@ enum parser_state {
 	PARSER_SM_STREAM,
 };
 
-void top_func(hls::stream<struct my_axis<FIFO_WIDTH> > *input,
-	      hls::stream<struct my_axis<FIFO_WIDTH> > *output0,
-		  hls::stream<struct my_axis<FIFO_WIDTH> > *output1) {
+void sysnet_rx_64(stream<struct my_axis<FIFO_WIDTH> > *input,
+		  stream<struct my_axis<FIFO_WIDTH> > *output0,
+		  stream<struct my_axis<FIFO_WIDTH> > *output1)
+{
+/* Port-level */
+#pragma HLS INTERFACE axis both port=input
+#pragma HLS INTERFACE axis both port=output0
+#pragma HLS INTERFACE axis both port=output1
 
-	#pragma HLS INTERFACE axis both port=input
-	#pragma HLS INTERFACE axis both port=output0
-	#pragma HLS INTERFACE axis both port=output1
-	#pragma HLS INTERFACE ap_ctrl_none port=return
-
-	#pragma HLS PIPELINE II=1 enable_flush
+/* Block-level */
+#pragma HLS PIPELINE II=1 enable_flush
+#pragma HLS INTERFACE ap_ctrl_none port=return
 
 	static int state = PARSER_ETH0;
 	my_axis<FIFO_WIDTH> current;
+
 	eth_header_t eth_header;
 	ip_header_t ip_header;
 	ap_uint<64> udp_header;
 	lego_header_t lego_header;
 
-	switch(state){
+	switch(state) {
 
 	case(PARSER_ETH0):
 			current = input->read();

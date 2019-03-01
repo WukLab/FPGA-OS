@@ -1,8 +1,12 @@
-#include "ap_axi_sdata.h"
-#include "ap_int.h"
-#include "hls_stream.h"
-#include "sysnetRx64.hpp"
+/*
+ * Copyright (c) 2019，Wuklab, Purdue University.
+ */
+
+#include <ap_axi_sdata.h>
+#include <ap_int.h>
+#include <hls_stream.h>
 #include <stdio.h>
+#include "top_64.hpp"
 
 using namespace hls;
 
@@ -55,14 +59,14 @@ int main(void)
 	/* Let it process */
 
 	for (i = 0; i < (N - NR_DATABEATS - 1)*NR_PACKETS; i++) {
-		top_func(&input, &output0, &output1);
+		sysnet_rx_64(&input, &output0, &output1);
 	}
 	printf("Processing done...\n");
 
 	/* Get output0 data */
 
 	for (i = 0; i < NR_DATABEATS + 1; i++) {
-		top_func(&input,&output0,&output1);
+		sysnet_rx_64(&input,&output0,&output1);
 		output0.read(tmp);
 		printf ("output0 %llx\n",(unsigned long long) tmp.data);
 	}
@@ -70,7 +74,7 @@ int main(void)
 	/* Get output1 data */
 
 	for (i = 0; i < NR_DATABEATS + 1; i++) {
-		top_func(&input,&output0,&output1);
+		sysnet_rx_64(&input,&output0,&output1);
 		output1.read(tmp);
 		printf ("output1 %llx\n",(unsigned long long) tmp.data);
 	}
