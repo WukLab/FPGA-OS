@@ -6,8 +6,8 @@
 open_project	-reset generated_hls_project 
 
 # The source file and test bench
-add_files	top.cpp
-add_files -tb	tb.cpp
+add_files	top.cpp -cflags -I../../../include/
+add_files -tb	tb.cpp  -cflags -I../../../include/
 
 # Specify the top-level function for synthesis
 set_top		app_rdma

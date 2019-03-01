@@ -9,10 +9,10 @@
 #include <ap_int.h>
 #include <hls_stream.h>
 
-#include "../../../net/include/net.hpp"
+#include <fpga/axis_net.h>
+#include <uapi/net_header.h>
 
-void app_rdma(hls::stream<struct net_axis<NET_DATA_WIDTH> > *from_mac,
-	      hls::stream<struct net_axis<NET_DATA_WIDTH> > *to_mac,
-	      char *dram);
+void app_rdma(hls::stream<struct net_axis_512> *from_net,
+	      hls::stream<struct net_axis_512> *to_net, char *dram);
 
 #endif /* _APP_RDMA_TOP_HPP_ */

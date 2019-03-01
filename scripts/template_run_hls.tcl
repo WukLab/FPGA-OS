@@ -17,8 +17,9 @@
 open_project	-reset generated_hls_project 
 
 # The source file and test bench
-add_files	core.cpp
-add_files -tb	tb.cpp
+# Customize the -I path
+add_files	core.cpp -cflags -I./include
+add_files -tb	tb.cpp	 -cflags -I./include
 
 # Specify the top-level function for synthesis
 set_top		BoilerRuleAll

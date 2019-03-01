@@ -3,8 +3,12 @@ project_path=generated_hls_project
 
 VIVADO_HLS = vivado_hls
 
+ifeq ($(TARGET_BOARD), )
+  TARGET_BOARD = arty_a7
+endif
+
 all:
-	$(VIVADO_HLS) -f run_hls.tcl
+	$(VIVADO_HLS) -f run_hls_$(TARGET_BOARD).tcl
 
 g:
 	$(VIVADO_HLS) -p $(project_path)
