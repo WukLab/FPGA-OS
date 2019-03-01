@@ -39,8 +39,9 @@ int main(void)
 	frame[1][8] = 0x7777777777777777;
 	frame[1][9] = 0x8888888888888888;
 
-	stream<struct my_axis<FIFO_WIDTH> > input("tb_input"), output0("tb_output0"), output1("tb_output1");
-	struct my_axis<FIFO_WIDTH> tmp;
+	stream<struct net_axis_64> input("tb_input");
+	stream<struct net_axis_64> output0("tb_output0"), output1("tb_output1");
+	struct net_axis_64 tmp;
 	int i, packetnum;
 
 	/* Write input data to input stream */

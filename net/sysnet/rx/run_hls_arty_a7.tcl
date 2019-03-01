@@ -5,9 +5,10 @@
 # Create a project
 open_project	-reset generated_hls_project 
 
-# The source file and test bench
-add_files	top_64.cpp
-add_files -tb	tb_64.cpp
+# The source file and test bench.
+# The way of adding -I is just weird.
+add_files	top_64.cpp	-cflags -I../../../include
+add_files -tb	tb_64.cpp	-cflags -I../../../include
 
 # Specify the top-level function for synthesis
 set_top		sysnet_rx_64

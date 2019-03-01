@@ -1,21 +1,11 @@
 #ifndef _SYSNETRX64_H_
 #define _SYSNETRX64_H_
 
-#include "ap_axi_sdata.h"
-#include "ap_int.h"
-#include "hls_stream.h"
+#include <ap_axi_sdata.h>
+#include <ap_int.h>
+#include <hls_stream.h>
 
-
-#define FIFO_WIDTH	64
-
-
-template <int N >
-struct my_axis {
-	ap_uint<N>				data;
-	ap_uint<1>				last;
-	ap_uint<1>				tuser;
-	ap_uint<FIFO_WIDTH/8> 	tkeep;
-};
+#include <fpga/axis_net.h>
 
 typedef struct eth_header_t {
 	ap_uint<48> 			mac_dest;
@@ -36,9 +26,8 @@ typedef struct lego_header_t {
 	ap_uint<48>				seqnum;
 } lego_header_t;
 
-
-void sysnet_rx_64(hls::stream<struct my_axis<FIFO_WIDTH> > *input,
-	      hls::stream<struct my_axis<FIFO_WIDTH> > *output0,
-	      hls::stream<struct my_axis<FIFO_WIDTH> > *output1);
+void sysnet_rx_64(hls::stream<struct net_axis_64> *input,
+		  hls::stream<struct net_axis_64> *output0,
+		  hls::stream<struct net_axis_64> *output1);
 
 #endif /* _SYSNETRX64_H_ */
