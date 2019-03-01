@@ -1,9 +1,13 @@
+/*
+ * Copyright (c) 2019，Wuklab, Purdue University.
+ */
+
 #include <ap_axi_sdata.h>
 #include <ap_int.h>
 #include <hls_stream.h>
 #include <assert.h>
-#include "sysnetTx64.hpp"
 #include <stdio.h>
+#include "top_64.hpp"
 
 using namespace hls;
 
@@ -12,9 +16,9 @@ using namespace hls;
 
 int main(void)
 {
-	ap_uint<FIFO_WIDTH> frame[NR_PACKETS][N];
-	stream<struct my_axis<FIFO_WIDTH> > input0("tb_input0"), input1("tb_input1"), output("tb_output");
-	struct my_axis<FIFO_WIDTH> tmp;
+	ap_uint<64> frame[NR_PACKETS][N];
+	stream<struct net_axis_64 > input0("tb_input0"), input1("tb_input1"), output("tb_output");
+	struct net_axis_64 tmp;
 	int i, packetnum;
 
 	/* Fill frames with data */
@@ -23,6 +27,7 @@ int main(void)
 			frame[packetnum][i] = (i*2) << packetnum;
 		}
 	}
+
 	/* Write input data to input stream */
 	for (packetnum = 0; packetnum < NR_PACKETS; packetnum++) {
 		for (i = 0; i < N; i++) {
@@ -46,7 +51,7 @@ int main(void)
 	for (packetnum = 0; packetnum < NR_PACKETS; packetnum++) {
 		printf("PACKET %d:\n",packetnum);
 		for (i = 0; i < N; i++) {
-			tx_func(&input0, &input1, &output);
+			sysnet_tx_64(&input0, &input1, &output);
 			tmp = output.read();
 			printf("%llx\n",(unsigned long long) tmp.data);
 		}

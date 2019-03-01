@@ -1,11 +1,14 @@
+/*
+ * Copyright (c) 2019，Wuklab, Purdue University.
+ */
+
 #include <ap_axi_sdata.h>
 #include <ap_int.h>
 #include <hls_stream.h>
 #include <assert.h>
-#include "sysnetTx64.hpp"
+#include "top_64.hpp"
 
 using namespace hls;
-
 
 enum parser_state {
 	PARSER_ETH0 = 0,
@@ -17,24 +20,24 @@ enum parser_state {
 	PARSER_SM_STREAM,
 };
 
-void tx_func(hls::stream<struct my_axis<FIFO_WIDTH> > *input0,
-	      hls::stream<struct my_axis<FIFO_WIDTH> > *input1,
-		  hls::stream<struct my_axis<FIFO_WIDTH> > *output) {
+void sysnet_tx_64(hls::stream<struct net_axis_64> *input0,
+		  hls::stream<struct net_axis_64> *input1,
+		  hls::stream<struct net_axis_64> *output)
+{
+#pragma HLS PIPELINE II=1 enable_flush
+#pragma HLS INTERFACE ap_ctrl_none port=return
 
-
-	#pragma HLS INTERFACE axis both port=input0
-	#pragma HLS INTERFACE axis both port=input1
-	#pragma HLS INTERFACE axis both port=output
-	#pragma HLS INTERFACE ap_ctrl_none port=return
+#pragma HLS INTERFACE axis both port=input0
+#pragma HLS INTERFACE axis both port=input1
+#pragma HLS INTERFACE axis both port=output
 
 	enum arbiter_state {
 		APP0 = 0,
 		APP1,
 	};
 
-	#pragma HLS PIPELINE II=1 enable_flush
 	static unsigned long count = 0;
-	my_axis<FIFO_WIDTH> current;
+	struct net_axis_64 current;
 
 	switch (count) {
 	case APP0:
