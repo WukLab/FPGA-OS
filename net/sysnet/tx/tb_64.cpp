@@ -32,7 +32,7 @@ int main(void)
 	for (packetnum = 0; packetnum < NR_PACKETS; packetnum++) {
 		for (i = 0; i < N; i++) {
 			tmp.data = frame[packetnum][i];
-			tmp.tkeep = 0xFFFF;
+			//tmp.tkeep = 0xFFFF;
 			if (i == (N-1))
 				tmp.last = 1;
 			else

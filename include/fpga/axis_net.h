@@ -16,8 +16,6 @@
 struct net_axis_64 {
 	ap_uint<64>		data;
 	ap_uint<1>		last;
-	ap_uint<1>		tuser;
-	ap_uint<8> 		tkeep;
 };
 
 struct net_axis_512 {

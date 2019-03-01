@@ -295,7 +295,6 @@ set_property -name "top_lib" -value "xil_defaultlib" -objects $obj
 
 # Adding sources referenced in BDs, if not already added
 
-
 # Proc to create BD LegoFPGA_1
 proc cr_bd_LegoFPGA_1 { parentCell } {
 
@@ -317,6 +316,7 @@ proc cr_bd_LegoFPGA_1 { parentCell } {
   xilinx.com:ip:axis_data_fifo:1.1\
   xilinx.com:ip:ila:6.2\
   xilinx.com:ip:mig_7series:4.1\
+  wuklab:hls:sysnet_rx_64:1.0\
   xilinx.com:ip:vio:3.0\
   xilinx.com:ip:xlconstant:1.1\
   "
@@ -443,6 +443,9 @@ proc cr_bd_LegoFPGA_1 { parentCell } {
    CONFIG.BOARD_MIG_PARAM {ddr3_sdram} \
  ] $mig_7series_0
 
+  # Create instance: sysnet_rx_64_0, and set properties
+  set sysnet_rx_64_0 [ create_bd_cell -type ip -vlnv wuklab:hls:sysnet_rx_64:1.0 sysnet_rx_64_0 ]
+
   # Create instance: vio_0, and set properties
   set vio_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:vio:3.0 vio_0 ]
   set_property -dict [ list \
@@ -463,9 +466,10 @@ proc cr_bd_LegoFPGA_1 { parentCell } {
   connect_bd_intf_net -intf_net app_rdma_0_m_axi_gmem [get_bd_intf_pins app_rdma_0/m_axi_gmem] [get_bd_intf_pins axi_interconnect_0/S00_AXI]
   connect_bd_intf_net -intf_net app_rdma_0_to_mac [get_bd_intf_pins app_rdma_0/to_mac] [get_bd_intf_pins axis_data_fifo_1/S_AXIS]
   connect_bd_intf_net -intf_net axi_interconnect_0_M00_AXI [get_bd_intf_pins axi_interconnect_0/M00_AXI] [get_bd_intf_pins mig_7series_0/S_AXI]
-  connect_bd_intf_net -intf_net axis_data_fifo_0_M_AXIS [get_bd_intf_pins app_rdma_0/from_mac] [get_bd_intf_pins axis_data_fifo_0/M_AXIS]
+  connect_bd_intf_net -intf_net axis_data_fifo_0_M_AXIS [get_bd_intf_pins axis_data_fifo_0/M_AXIS] [get_bd_intf_pins sysnet_rx_64_0/input_r]
   connect_bd_intf_net -intf_net axis_data_fifo_1_M_AXIS [get_bd_intf_ports M_AXIS_0] [get_bd_intf_pins axis_data_fifo_1/M_AXIS]
   connect_bd_intf_net -intf_net mig_7series_0_DDR3 [get_bd_intf_ports ddr3_sdram] [get_bd_intf_pins mig_7series_0/DDR3]
+  connect_bd_intf_net -intf_net sysnet_rx_64_0_output0 [get_bd_intf_pins app_rdma_0/from_mac] [get_bd_intf_pins sysnet_rx_64_0/output0]
 
   # Create port connections
   connect_bd_net -net axis_data_fifo_0_axis_data_count [get_bd_pins axis_data_fifo_0/axis_data_count] [get_bd_pins ila_0/probe3]
@@ -478,11 +482,11 @@ proc cr_bd_LegoFPGA_1 { parentCell } {
   connect_bd_net -net m_axis_aclk_0_1 [get_bd_ports m_axis_aclk_0] [get_bd_pins axis_data_fifo_1/m_axis_aclk]
   connect_bd_net -net m_axis_aresetn_0_1 [get_bd_ports m_axis_aresetn_0] [get_bd_pins axis_data_fifo_1/m_axis_aresetn]
   connect_bd_net -net mig_166MHZ_1 [get_bd_ports mig_166MHZ] [get_bd_pins mig_7series_0/sys_clk_i]
-  connect_bd_net -net mig_7series_0_ui_clk [get_bd_pins app_rdma_0/ap_clk] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axis_data_fifo_0/m_axis_aclk] [get_bd_pins axis_data_fifo_1/s_axis_aclk] [get_bd_pins ila_0/clk] [get_bd_pins mig_7series_0/ui_clk] [get_bd_pins vio_0/clk]
+  connect_bd_net -net mig_7series_0_ui_clk [get_bd_pins app_rdma_0/ap_clk] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axis_data_fifo_0/m_axis_aclk] [get_bd_pins axis_data_fifo_1/s_axis_aclk] [get_bd_pins ila_0/clk] [get_bd_pins mig_7series_0/ui_clk] [get_bd_pins sysnet_rx_64_0/ap_clk] [get_bd_pins vio_0/clk]
   connect_bd_net -net mig_ref_200MHZ_1 [get_bd_ports mig_ref_200MHZ] [get_bd_pins mig_7series_0/clk_ref_i]
   connect_bd_net -net s_axis_aclk_0_1 [get_bd_ports s_axis_aclk_0] [get_bd_pins axis_data_fifo_0/s_axis_aclk]
   connect_bd_net -net s_axis_aresetn_0_1 [get_bd_ports s_axis_aresetn_0] [get_bd_pins axis_data_fifo_0/s_axis_aresetn]
-  connect_bd_net -net vio_0_probe_out0 [get_bd_pins app_rdma_0/ap_start] [get_bd_pins vio_0/probe_out0]
+  connect_bd_net -net vio_0_probe_out0 [get_bd_pins sysnet_rx_64_0/ap_rst_n] [get_bd_pins vio_0/probe_out0]
   connect_bd_net -net vio_0_probe_out1 [get_bd_pins app_rdma_0/ap_rst_n] [get_bd_pins vio_0/probe_out1]
   connect_bd_net -net xlconstant_0_dout [get_bd_pins app_rdma_0/dram] [get_bd_pins xlconstant_0/dout]
 

@@ -102,8 +102,9 @@ int main(int argc, char *argv[])
 	/* Send packet */
 	tmp = 0x0;
 	while (tx_len <= 130) {
-		sendbuf[tx_len++] = tmp++;
+		sendbuf[tx_len++] = 0;
 	}
+	sendbuf[42] = 0;
 	printf("TX_LEN: %d\n", tx_len);
 	if (sendto(sockfd, sendbuf, tx_len, 0, (struct sockaddr*)&socket_address, sizeof(struct sockaddr_ll)) < 0)
 	    printf("Send failed\n");

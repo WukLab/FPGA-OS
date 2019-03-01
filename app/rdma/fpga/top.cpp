@@ -9,6 +9,7 @@ using namespace hls;
 void app_rdma(stream<struct net_axis<NET_DATA_WIDTH> > *from_mac,
 	      stream<struct net_axis<NET_DATA_WIDTH> > *to_mac, char *dram)
 {
+#pragma HLS INTERFACE ap_ctrl_none port=return
 #pragma HLS PIPELINE
 
 #pragma HLS INTERFACE axis both port=from_mac
