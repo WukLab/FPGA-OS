@@ -12,6 +12,9 @@
 #ifndef _LEGOFPGA_COMPILER_H_
 #define _LEGOFPGA_COMPILER_H_
 
+#define NR_BITS_PER_BYTE	(8)
+#define NR_BITS_PER_LONG	(64)
+
 #define __unused		__attribute__((__unused__))
 #define __maybe_unused		__attribute__((__unused__))
 #define __noreturn		__attribute__((__noreturn__))

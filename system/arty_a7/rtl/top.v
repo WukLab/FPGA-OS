@@ -5,7 +5,7 @@
  * The design is sub-optimal, this really just serves as a PoC.
  */
 
-module pDPM_top(
+module pDPM_top (
 	input	glbl_rst,
 	input	sys_clk_100M,
 

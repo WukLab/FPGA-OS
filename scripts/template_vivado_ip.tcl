@@ -56,3 +56,9 @@ update_ip_catalog -rebuild
 # Script to export a board design as an IP into generated_ip/
 #
 ipx::package_project -root_dir ../generated_ip/foo -vendor wuklab -library user -taxonomy UserIP -module design_1 -import_files
+
+#
+# 2018.2 If simulation complains [VRFC 10-2063]
+# Run this in project
+#
+set_property sim.use_ip_compiled_libs 0 [current_project]

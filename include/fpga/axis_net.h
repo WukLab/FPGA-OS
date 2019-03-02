@@ -13,6 +13,9 @@
 #include <ap_axi_sdata.h>
 #include <hls_stream.h>
 
+#define NR_BYTES_AXIS_64	(8)
+#define NR_BYTES_AXIS_512	(64)
+
 struct net_axis_64 {
 	ap_uint<64>		data;
 	ap_uint<1>		last;

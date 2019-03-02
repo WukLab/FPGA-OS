@@ -521,6 +521,23 @@ module pdpm_net_tb;
 	wire tx_fifo_clock_ref;
 	wire tx_fifo_resetn_ref;
 
+	/* DDR3 */
+	wire [13:0]	ddr3_sdram_addr;
+	wire [2:0]	ddr3_sdram_ba;
+	wire ddr3_sdram_cas_n;
+	wire [0:0]	ddr3_sdram_ck_n;
+	wire [0:0]	ddr3_sdram_ck_p;
+	wire [0:0]	ddr3_sdram_cke;
+	wire [0:0]	ddr3_sdram_cs_n;
+	wire [1:0]	ddr3_sdram_dm;
+	wire [15:0]	ddr3_sdram_dq;
+	wire [1:0]	ddr3_sdram_dqs_n;
+	wire [1:0]	ddr3_sdram_dqs_p;
+	wire [0:0]	ddr3_sdram_odt;
+	wire ddr3_sdram_ras_n;
+	wire ddr3_sdram_reset_n;
+	wire ddr3_sdram_we_n;
+
 	initial begin
 		clk_100MHZ <= 1'b0;
 		#80000;
@@ -560,6 +577,7 @@ module pdpm_net_tb;
   // Wire up Device Under Test
   //----------------------------------------------------------------------------
 
+/*
   tri_mode_ethernet_mac_0_example_design dut
     (
       // asynchronous reset
@@ -604,7 +622,7 @@ module pdpm_net_tb;
       .activity_flash             (),
       .activity_flash_gen            (),
 
-	/* AXI-S to Memory */
+	// AXI-S to Memory
 	.rx_fifo_clock_ref	(rx_fifo_clock_ref),
 	.rx_fifo_resetn_ref	(rx_fifo_resetn_ref),
 	.rx_axis_fifo_tdata	(rx_axis_fifo_tdata),
@@ -612,7 +630,7 @@ module pdpm_net_tb;
 	.rx_axis_fifo_tready	(rx_axis_fifo_tready),
 	.rx_axis_fifo_tlast	(rx_axis_fifo_tlast),
 
-	/* AXI-S from Memory */
+	// AXI-S from Memory
 	.tx_fifo_clock_ref	(tx_fifo_clock_ref),
 	.tx_fifo_resetn_ref	(tx_fifo_resetn_ref),
 	.tx_axis_fifo_tdata	(tx_axis_fifo_tdata),
@@ -621,6 +639,63 @@ module pdpm_net_tb;
 	.tx_axis_fifo_tlast	(tx_axis_fifo_tlast)
 
     );
+*/
+
+	pDPM_top  dut_2 (
+		.glbl_rst                   (reset),
+		.sys_clk_100M		(clk_100MHZ),
+		.mii_ref_clk_out		(),
+		.phy_resetn		(),
+
+		// MII Interface
+		//---------------
+		.mii_txd                    (mii_txd),
+		.mii_tx_en                  (mii_tx_en),
+		.mii_rxd                    (mii_rxd_dut),
+		.mii_rx_dv                  (mii_rx_dv_dut),
+		.mii_rx_er                  (mii_rx_er_dut),
+		.mii_rx_clk                 (mii_rx_clk),
+		.mii_tx_clk                 (mii_tx_clk),
+		.mdio                       (mdio),
+		.mdc                        (mdc),
+		.tx_statistics_s            (),
+		.rx_statistics_s            (),
+
+		// Serialised Pause interface controls
+		//------------------------------------
+		.pause_req_s                (1'b0),
+
+		// Main example design controls
+		//-----------------------------
+		.mac_speed                  (mac_speed),
+		.update_speed               (update_speed),
+		.config_board               (config_bist),
+		.serial_response            (serial_response),
+		.gen_tx_data                (gen_tx_data),
+		.chk_tx_data                (check_tx_data),
+		.reset_error                (1'b0),
+		.frame_error                (frame_error),
+		.user_LED				(),
+		.activity_flash			(),
+		.activity_flash_gen		(),
+
+		/* DDR3 */
+		.ddr3_sdram_addr	(ddr3_sdram_addr),
+		.ddr3_sdram_ba		(ddr3_sdram_ba),
+		.ddr3_sdram_cas_n	(ddr3_sdram_cas_n),
+		.ddr3_sdram_ck_n	(ddr3_sdram_ck_n),
+		.ddr3_sdram_ck_p	(ddr3_sdram_ck_p),
+		.ddr3_sdram_cke		(ddr3_sdram_cke),
+		.ddr3_sdram_cs_n	(ddr3_sdram_cs_n),
+		.ddr3_sdram_dm		(ddr3_sdram_dm),
+		.ddr3_sdram_dq		(ddr3_sdram_dq),
+		.ddr3_sdram_dqs_n	(ddr3_sdram_dqs_n),
+		.ddr3_sdram_dqs_p	(ddr3_sdram_dqs_p),
+		.ddr3_sdram_odt		(ddr3_sdram_odt),
+		.ddr3_sdram_ras_n	(ddr3_sdram_ras_n),
+		.ddr3_sdram_reset_n	(ddr3_sdram_reset_n),
+		.ddr3_sdram_we_n	(ddr3_sdram_we_n)
+	);
 
   //---------------------------------------------------------------------------
   //-- If the simulation is still going then
@@ -1020,12 +1095,12 @@ module pdpm_net_tb;
     // 100 Mb/s speed
     //-----------------------------------------------------
     while (management_config_finished !== 1) @(posedge management_config_finished);
-    $display("Rx Stimulus: sending 4 frames at 100M ... ");
 
+    $display("Rx Stimulus: sending 4 frames at 100M ... ");
     send_frame_10_100m(frame0.tobits(0));
-    //send_frame_10_100m(frame1.tobits(1));
-    //send_frame_10_100m(frame2.tobits(2));
-    //send_frame_10_100m(frame3.tobits(3));
+    send_frame_10_100m(frame1.tobits(1));
+    send_frame_10_100m(frame2.tobits(2));
+    send_frame_10_100m(frame3.tobits(3));
     $display(" .. finished sending, waiting");
 
     wait (tx_monitor_finished_100M == 1);
@@ -1040,7 +1115,6 @@ module pdpm_net_tb;
     send_frame_10_100m(frame1.tobits(1));
     send_frame_10_100m(frame2.tobits(2));
     send_frame_10_100m(frame3.tobits(3));
-
 
   end // p_rx_stimulus
 
@@ -1263,7 +1337,7 @@ module pdpm_net_tb;
        //-----------------------------------------------------
 
        // Check the frames
-       $display("Checking?");
+       $display("Checking 10_100m packets.. wait..");
        check_frame_10_100m(frame0.tobits(0));
        //check_frame_10_100m(frame1.tobits(0));
        //check_frame_10_100m(frame2.tobits(0));
@@ -1271,6 +1345,7 @@ module pdpm_net_tb;
 
        #200000
        tx_monitor_finished_100M  <= 1;
+       $display("Finish Checking 10_100m packets");
 
        // 10 Mb/s speed
        //-----------------------------------------------------

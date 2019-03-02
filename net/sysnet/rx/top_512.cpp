@@ -27,7 +27,7 @@ enum SYSNET_RX_STATE {
 			output_0->write(current);	\
 			break;				\
 		case 1:					\
-			output_1->write(current);	\
+			output_0->write(current);	\
 			break;				\
 		default:				\
 			output_0->write(current);	\

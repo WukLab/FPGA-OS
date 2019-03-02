@@ -45,6 +45,8 @@ struct lego_header {
 #define LEGO_HEADER_OFFSET \
 	(ETHERNET_HEADER_SIZE + IP_HEADER_SIZE + UDP_HEADER_SIZE)
 
+#define APP_HEADER_OFFSET	(64)
+
 /*
  * Assume we have 14+20+8=42 bytes ahead
  * So the start bit is 42*8 = 336.
