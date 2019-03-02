@@ -22,6 +22,8 @@ Codebase Directories:
 - Both world:
 	- `app/`: Application can have both FPGA and Host code.
 	- `include/`: header files used by both FPGA and host code. E.g., network headers.
+		- `include/fpga`: headers used by HLS only
+		- `include/uapi`: headers used by both HLS and host code
 - Helpers
 	- `tools/`: various helpers
 	- `scripts/`: template script files
