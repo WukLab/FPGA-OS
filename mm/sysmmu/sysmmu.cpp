@@ -47,7 +47,7 @@ void Sysmmu::sysmmu_ctrl_hanlder(axis_sysmmu_ctrl& ctrlpath, RET_STATUS* stat)
 RET_STATUS Sysmmu::insert(sysmmu_ctrl_if& ctrl)
 {
 #pragma HLS PIPELINE
-	ap_uint<TABLE_SHIFT> idx = BLOCK_IDX(ctrl.addr);
+	ap_uint<TABLE_SHIFT> idx = ctrl.idx;
 	if (sysmmu_table[idx].valid)
 		return ERROR;
 
@@ -63,7 +63,7 @@ RET_STATUS Sysmmu::insert(sysmmu_ctrl_if& ctrl)
 RET_STATUS Sysmmu::del(sysmmu_ctrl_if& ctrl)
 {
 #pragma HLS PIPELINE
-	ap_uint<TABLE_SHIFT> idx = BLOCK_IDX(ctrl.addr);
+	ap_uint<TABLE_SHIFT> idx = ctrl.idx;
 	if (!sysmmu_table[idx].valid)
 		return ERROR;
 

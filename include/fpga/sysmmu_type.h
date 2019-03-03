@@ -10,6 +10,9 @@
 #ifndef _LEGO_FPGA_SYSMMU_TYPE_
 #define _LEGO_FPGA_SYSMMU_TYPE_
 
+#include <ap_int.h>
+#include <hls_stream.h>
+
 typedef enum {
 	SYSMMU_ALLOC = 0,
 	SYSMMU_FREE = 1,
@@ -32,6 +35,7 @@ typedef enum {
 
 #define SIZE(shift)			(1UL << shift)
 #define IDX(addr, shift)		(addr >> shift)
+#define ADDR(idx ,shift)			(idx << shift)
 
 #define BLOCK_SIZE			SIZE(BLOCK_SHIFT)
 #define TABLE_SHIFT			(PA_SHIFT - BLOCK_SHIFT)

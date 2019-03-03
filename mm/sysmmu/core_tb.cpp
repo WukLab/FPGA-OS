@@ -51,7 +51,7 @@ static int ctrl_test(OPCODE opcode, ap_uint<PA_SHIFT> addr, ap_uint<PID_SHIFT> p
 	RET_STATUS dummy, result;
 
 	req.opcode = opcode;
-	req.addr = addr;
+	req.idx = BLOCK_IDX(addr);
 	req.pid = pid;
 	req.rw = rw;
 	ctrlpath.write(req);
@@ -60,8 +60,8 @@ static int ctrl_test(OPCODE opcode, ap_uint<PA_SHIFT> addr, ap_uint<PID_SHIFT> p
 		std::cout << "[ALLOC]  ";
 	else
 		std::cout << "[FREE]   ";
-	std::cout << "Address:" << std::hex << std::setw(10) << req.addr
-			<< " IDX:" << std::dec << std::setw(3) << BLOCK_IDX(req.addr)
+	std::cout << "Address:" << std::hex << std::setw(10) << addr
+			<< " IDX:" << std::dec << std::setw(3) << req.idx
 			<< " PID:" << req.pid
 			<< " Size:" << std::setw(10) << "N/A"
 			<< " RW:" << req.rw;

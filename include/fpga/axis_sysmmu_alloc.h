@@ -10,10 +10,7 @@
 #ifndef _LEGO_FPGA_AXIS_SYSMMU_ALLOC_
 #define _LEGO_FPGA_AXIS_SYSMMU_ALLOC_
 
-#include <ap_axi_sdata.h>
-#include <hls_stream.h>
-#include "../shared/sysmmu_op.h"
-#include "axis_sysmmu_config.h"
+#include "sysmmu_type.h"
 
 template <int PID_WIDTH, int ADDR_WIDTH>
 struct sysmmu_alloc {

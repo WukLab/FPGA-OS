@@ -10,8 +10,6 @@
 #ifndef _LEGO_FPGA_AXIS_SYSMMU_DATA_
 #define _LEGO_FPGA_AXIS_SYSMMU_DATA_
 
-#include <ap_axi_sdata.h>
-#include <hls_stream.h>
 #include "sysmmu_type.h"
 
 template <int PID_WIDTH, int ADDR_WIDTH>

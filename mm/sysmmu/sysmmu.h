@@ -7,7 +7,6 @@
 
 #include <fpga/axis_sysmmu_ctrl.h>
 #include <fpga/axis_sysmmu_data.h>
-#include <fpga/sysmmu_type.h>
 
 typedef struct {
 	ap_uint<1>		valid;
