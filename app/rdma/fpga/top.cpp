@@ -114,8 +114,10 @@ static void handle_write(unsigned long address, unsigned long length,
 
 	/*
 	 * FIXME
-	 * We leave app BUG here: length is not checked.
+	 * 1) We leave app BUG here: length is not checked.
 	 * Leave this during development phase.
+	 *
+	 * 2) And should check TKEEP here!
 	 */
 	for (i = 0; i < NR_BYTES_AXIS_512; i++) {
 		int start, end;

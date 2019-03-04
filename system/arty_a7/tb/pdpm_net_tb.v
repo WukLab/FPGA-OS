@@ -641,7 +641,8 @@ module pdpm_net_tb;
     );
 */
 
-	pDPM_top  dut_2 (
+
+	pDPM_top  dut_1 (
 		.glbl_rst                   (reset),
 		.sys_clk_100M		(clk_100MHZ),
 		.mii_ref_clk_out		(),
@@ -679,7 +680,6 @@ module pdpm_net_tb;
 		.activity_flash			(),
 		.activity_flash_gen		(),
 
-		/* DDR3 */
 		.ddr3_sdram_addr	(ddr3_sdram_addr),
 		.ddr3_sdram_ba		(ddr3_sdram_ba),
 		.ddr3_sdram_cas_n	(ddr3_sdram_cas_n),
@@ -696,6 +696,47 @@ module pdpm_net_tb;
 		.ddr3_sdram_reset_n	(ddr3_sdram_reset_n),
 		.ddr3_sdram_we_n	(ddr3_sdram_we_n)
 	);
+
+/*
+	Lego_net_app  dut_2 (
+		.glbl_rst                   (reset),
+		.sys_clk_100M		(clk_100MHZ),
+		.mii_ref_clk_out		(),
+		.phy_resetn		(),
+
+		// MII Interface
+		//---------------
+		.mii_txd                    (mii_txd),
+		.mii_tx_en                  (mii_tx_en),
+		.mii_rxd                    (mii_rxd_dut),
+		.mii_rx_dv                  (mii_rx_dv_dut),
+		.mii_rx_er                  (mii_rx_er_dut),
+		.mii_rx_clk                 (mii_rx_clk),
+		.mii_tx_clk                 (mii_tx_clk),
+		.mdio                       (mdio),
+		.mdc                        (mdc),
+		.tx_statistics_s            (),
+		.rx_statistics_s            (),
+
+		// Serialised Pause interface controls
+		//------------------------------------
+		.pause_req_s                (1'b0),
+
+		// Main example design controls
+		//-----------------------------
+		.mac_speed                  (mac_speed),
+		.update_speed               (update_speed),
+		.config_board               (config_bist),
+		.serial_response            (serial_response),
+		.gen_tx_data                (gen_tx_data),
+		.chk_tx_data                (check_tx_data),
+		.reset_error                (1'b0),
+		.frame_error                (frame_error),
+		.user_LED				(),
+		.activity_flash			(),
+		.activity_flash_gen		()
+	);
+*/
 
   //---------------------------------------------------------------------------
   //-- If the simulation is still going then
@@ -1095,13 +1136,13 @@ module pdpm_net_tb;
     // 100 Mb/s speed
     //-----------------------------------------------------
     while (management_config_finished !== 1) @(posedge management_config_finished);
-
     $display("Rx Stimulus: sending 4 frames at 100M ... ");
+
     send_frame_10_100m(frame0.tobits(0));
-    send_frame_10_100m(frame1.tobits(1));
-    send_frame_10_100m(frame2.tobits(2));
-    send_frame_10_100m(frame3.tobits(3));
-    $display(" .. finished sending, waiting");
+    //send_frame_10_100m(frame1.tobits(1));
+    //send_frame_10_100m(frame2.tobits(2));
+    //send_frame_10_100m(frame3.tobits(3));
+    $display(" .. finished sending, now wait..");
 
     wait (tx_monitor_finished_100M == 1);
     #10000;
@@ -1115,6 +1156,7 @@ module pdpm_net_tb;
     send_frame_10_100m(frame1.tobits(1));
     send_frame_10_100m(frame2.tobits(2));
     send_frame_10_100m(frame3.tobits(3));
+
 
   end // p_rx_stimulus
 
@@ -1209,7 +1251,6 @@ module pdpm_net_tb;
           end
 
           @(posedge mii_tx_clk);
-
           if (mii_tx_en !== tx_monitor_working_frame.valid[column_index-6]) begin
             $display("** ERROR: mii_tx_en incorrect during Source Address");
             demo_mode_error <= 1;
@@ -1337,15 +1378,15 @@ module pdpm_net_tb;
        //-----------------------------------------------------
 
        // Check the frames
-       $display("Checking 10_100m packets.. wait..");
+       $display("Wait for packets... ");
        check_frame_10_100m(frame0.tobits(0));
-       //check_frame_10_100m(frame1.tobits(0));
+      // check_frame_10_100m(frame1.tobits(0));
        //check_frame_10_100m(frame2.tobits(0));
        //check_frame_10_100m(frame3.tobits(0));
+       $display("Packets received and checked.");
 
        #200000
        tx_monitor_finished_100M  <= 1;
-       $display("Finish Checking 10_100m packets");
 
        // 10 Mb/s speed
        //-----------------------------------------------------

@@ -196,6 +196,7 @@ set files [list \
  [file normalize "${origin_dir}/rtl/tri_mode_ethernet_mac_0_ten_100_1g_eth_fifo.v"] \
  [file normalize "${origin_dir}/rtl/tri_mode_ethernet_mac_0_tx_client_fifo.v"] \
  [file normalize "${origin_dir}/rtl/top.v"] \
+ [file normalize "${origin_dir}/rtl/top_test_net.v"] \
  [file normalize "${origin_dir}/rtl/tri_mode_ethernet_mac_0_clk_wiz.v"] \
  [file normalize "${origin_dir}/rtl/tri_mode_ethernet_mac_0_example_design_clocks.v"] \
  [file normalize "${origin_dir}/rtl/tri_mode_ethernet_mac_0_address_swap.v"] \
@@ -314,11 +315,10 @@ proc cr_bd_LegoFPGA_1 { parentCell } {
      set list_check_ips "\ 
   wuklab:hls:app_rdma:1.0\
   xilinx.com:ip:axis_data_fifo:1.1\
-  xilinx.com:ip:ila:6.2\
-  xilinx.com:ip:jtag_axi:1.2\
   xilinx.com:ip:mig_7series:4.1\
   wuklab:hls:sysnet_rx_512:1.0\
-  xilinx.com:ip:vio:3.0\
+  xilinx.com:ip:util_vector_logic:2.0\
+  xilinx.com:ip:xlconstant:1.1\
   "
 
    set list_ips_missing ""
@@ -408,40 +408,14 @@ proc cr_bd_LegoFPGA_1 { parentCell } {
   set axi_interconnect_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_interconnect_0 ]
   set_property -dict [ list \
    CONFIG.NUM_MI {1} \
-   CONFIG.NUM_SI {2} \
  ] $axi_interconnect_0
 
   # Create instance: axis_data_fifo_0, and set properties
   set axis_data_fifo_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_data_fifo:1.1 axis_data_fifo_0 ]
   set_property -dict [ list \
    CONFIG.IS_ACLK_ASYNC {1} \
+   CONFIG.TDATA_NUM_BYTES {1} \
  ] $axis_data_fifo_0
-
-  # Create instance: axis_data_fifo_1, and set properties
-  set axis_data_fifo_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_data_fifo:1.1 axis_data_fifo_1 ]
-  set_property -dict [ list \
-   CONFIG.IS_ACLK_ASYNC {1} \
- ] $axis_data_fifo_1
-
-  # Create instance: ila_0, and set properties
-  set ila_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:ila:6.2 ila_0 ]
-  set_property -dict [ list \
-   CONFIG.C_ENABLE_ILA_AXI_MON {false} \
-   CONFIG.C_MONITOR_TYPE {Native} \
-   CONFIG.C_NUM_OF_PROBES {6} \
-   CONFIG.C_PROBE0_WIDTH {32} \
-   CONFIG.C_PROBE1_WIDTH {32} \
-   CONFIG.C_PROBE2_WIDTH {32} \
-   CONFIG.C_PROBE3_WIDTH {32} \
-   CONFIG.C_PROBE4_WIDTH {32} \
-   CONFIG.C_PROBE5_WIDTH {32} \
- ] $ila_0
-
-  # Create instance: ila_1, and set properties
-  set ila_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:ila:6.2 ila_1 ]
-
-  # Create instance: jtag_axi_0, and set properties
-  set jtag_axi_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:jtag_axi:1.2 jtag_axi_0 ]
 
   # Create instance: mig_7series_0, and set properties
   set mig_7series_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:mig_7series:4.1 mig_7series_0 ]
@@ -449,50 +423,58 @@ proc cr_bd_LegoFPGA_1 { parentCell } {
    CONFIG.BOARD_MIG_PARAM {ddr3_sdram} \
  ] $mig_7series_0
 
+  # Create instance: rx_8to512, and set properties
+  set rx_8to512 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect:2.1 rx_8to512 ]
+  set_property -dict [ list \
+   CONFIG.NUM_MI {1} \
+ ] $rx_8to512
+
   # Create instance: sysnet_rx_512_0, and set properties
   set sysnet_rx_512_0 [ create_bd_cell -type ip -vlnv wuklab:hls:sysnet_rx_512:1.0 sysnet_rx_512_0 ]
 
-  # Create instance: vio_0, and set properties
-  set vio_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:vio:3.0 vio_0 ]
+  # Create instance: tx_512to8, and set properties
+  set tx_512to8 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect:2.1 tx_512to8 ]
   set_property -dict [ list \
-   CONFIG.C_EN_PROBE_IN_ACTIVITY {0} \
-   CONFIG.C_NUM_PROBE_IN {0} \
-   CONFIG.C_NUM_PROBE_OUT {2} \
- ] $vio_0
+   CONFIG.NUM_MI {1} \
+ ] $tx_512to8
+
+  # Create instance: util_vector_logic_0, and set properties
+  set util_vector_logic_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_0 ]
+  set_property -dict [ list \
+   CONFIG.C_OPERATION {and} \
+   CONFIG.C_SIZE {1} \
+   CONFIG.LOGO_FILE {data/sym_andgate.png} \
+ ] $util_vector_logic_0
+
+  # Create instance: xlconstant_0, and set properties
+  set xlconstant_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_0 ]
 
   # Create interface connections
-  connect_bd_intf_net -intf_net S_AXIS_0_1 [get_bd_intf_ports S_AXIS_0] [get_bd_intf_pins axis_data_fifo_0/S_AXIS]
+  connect_bd_intf_net -intf_net S_AXIS_0_1 [get_bd_intf_ports S_AXIS_0] [get_bd_intf_pins rx_8to512/S00_AXIS]
   connect_bd_intf_net -intf_net app_rdma_0_m_axi_dram [get_bd_intf_pins app_rdma_0/m_axi_dram] [get_bd_intf_pins axi_interconnect_0/S00_AXI]
-  connect_bd_intf_net -intf_net app_rdma_0_to_net [get_bd_intf_pins app_rdma_0/to_net] [get_bd_intf_pins axis_data_fifo_1/S_AXIS]
+  connect_bd_intf_net -intf_net app_rdma_0_to_net [get_bd_intf_pins app_rdma_0/to_net] [get_bd_intf_pins tx_512to8/S00_AXIS]
   connect_bd_intf_net -intf_net axi_interconnect_0_M00_AXI [get_bd_intf_pins axi_interconnect_0/M00_AXI] [get_bd_intf_pins mig_7series_0/S_AXI]
-connect_bd_intf_net -intf_net [get_bd_intf_nets axi_interconnect_0_M00_AXI] [get_bd_intf_pins axi_interconnect_0/M00_AXI] [get_bd_intf_pins ila_1/SLOT_0_AXI]
-  connect_bd_intf_net -intf_net axis_data_fifo_0_M_AXIS [get_bd_intf_pins axis_data_fifo_0/M_AXIS] [get_bd_intf_pins sysnet_rx_512_0/input_r]
-  connect_bd_intf_net -intf_net axis_data_fifo_1_M_AXIS [get_bd_intf_ports M_AXIS_0] [get_bd_intf_pins axis_data_fifo_1/M_AXIS]
-  connect_bd_intf_net -intf_net jtag_axi_0_M_AXI [get_bd_intf_pins axi_interconnect_0/S01_AXI] [get_bd_intf_pins jtag_axi_0/M_AXI]
+  connect_bd_intf_net -intf_net axis_data_fifo_0_M_AXIS [get_bd_intf_ports M_AXIS_0] [get_bd_intf_pins axis_data_fifo_0/M_AXIS]
+  connect_bd_intf_net -intf_net axis_interconnect_0_M00_AXIS [get_bd_intf_pins rx_8to512/M00_AXIS] [get_bd_intf_pins sysnet_rx_512_0/input_r]
   connect_bd_intf_net -intf_net mig_7series_0_DDR3 [get_bd_intf_ports ddr3_sdram] [get_bd_intf_pins mig_7series_0/DDR3]
   connect_bd_intf_net -intf_net sysnet_rx_512_0_output_0 [get_bd_intf_pins app_rdma_0/from_net] [get_bd_intf_pins sysnet_rx_512_0/output_0]
+  connect_bd_intf_net -intf_net tx_512to8_M00_AXIS [get_bd_intf_pins axis_data_fifo_0/S_AXIS] [get_bd_intf_pins tx_512to8/M00_AXIS]
 
   # Create port connections
-  connect_bd_net -net axis_data_fifo_0_axis_data_count [get_bd_pins axis_data_fifo_0/axis_data_count] [get_bd_pins ila_0/probe3]
-  connect_bd_net -net axis_data_fifo_0_axis_rd_data_count [get_bd_pins axis_data_fifo_0/axis_rd_data_count] [get_bd_pins ila_0/probe5]
-  connect_bd_net -net axis_data_fifo_0_axis_wr_data_count [get_bd_pins axis_data_fifo_0/axis_wr_data_count] [get_bd_pins ila_0/probe4]
-  connect_bd_net -net axis_data_fifo_1_axis_data_count [get_bd_pins axis_data_fifo_1/axis_data_count] [get_bd_pins ila_0/probe0]
-  connect_bd_net -net axis_data_fifo_1_axis_rd_data_count [get_bd_pins axis_data_fifo_1/axis_rd_data_count] [get_bd_pins ila_0/probe2]
-  connect_bd_net -net axis_data_fifo_1_axis_wr_data_count [get_bd_pins axis_data_fifo_1/axis_wr_data_count] [get_bd_pins ila_0/probe1]
-  connect_bd_net -net clk_wiz_0_locked [get_bd_ports mig_sys_rst_n] [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axi_interconnect_0/S01_ARESETN] [get_bd_pins axis_data_fifo_0/m_axis_aresetn] [get_bd_pins axis_data_fifo_1/s_axis_aresetn] [get_bd_pins jtag_axi_0/aresetn] [get_bd_pins mig_7series_0/aresetn] [get_bd_pins mig_7series_0/sys_rst]
-  connect_bd_net -net m_axis_aclk_0_1 [get_bd_ports m_axis_aclk_0] [get_bd_pins axis_data_fifo_1/m_axis_aclk]
-  connect_bd_net -net m_axis_aresetn_0_1 [get_bd_ports m_axis_aresetn_0] [get_bd_pins axis_data_fifo_1/m_axis_aresetn]
+  connect_bd_net -net clk_wiz_0_locked [get_bd_ports mig_sys_rst_n] [get_bd_pins mig_7series_0/aresetn] [get_bd_pins mig_7series_0/sys_rst]
+  connect_bd_net -net m_axis_aclk_0_1 [get_bd_ports m_axis_aclk_0] [get_bd_pins axis_data_fifo_0/m_axis_aclk]
+  connect_bd_net -net m_axis_aresetn_0_1 [get_bd_ports m_axis_aresetn_0] [get_bd_pins axis_data_fifo_0/m_axis_aresetn]
   connect_bd_net -net mig_166MHZ_1 [get_bd_ports mig_166MHZ] [get_bd_pins mig_7series_0/sys_clk_i]
-  connect_bd_net -net mig_7series_0_ui_clk [get_bd_pins app_rdma_0/ap_clk] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axi_interconnect_0/S01_ACLK] [get_bd_pins axis_data_fifo_0/m_axis_aclk] [get_bd_pins axis_data_fifo_1/s_axis_aclk] [get_bd_pins ila_0/clk] [get_bd_pins ila_1/clk] [get_bd_pins jtag_axi_0/aclk] [get_bd_pins mig_7series_0/ui_clk] [get_bd_pins sysnet_rx_512_0/ap_clk] [get_bd_pins vio_0/clk]
+  connect_bd_net -net mig_7series_0_ui_clk [get_bd_pins app_rdma_0/ap_clk] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axis_data_fifo_0/s_axis_aclk] [get_bd_pins mig_7series_0/ui_clk] [get_bd_pins rx_8to512/ACLK] [get_bd_pins rx_8to512/M00_AXIS_ACLK] [get_bd_pins sysnet_rx_512_0/ap_clk] [get_bd_pins tx_512to8/ACLK] [get_bd_pins tx_512to8/M00_AXIS_ACLK] [get_bd_pins tx_512to8/S00_AXIS_ACLK]
+  connect_bd_net -net mig_7series_0_ui_clk_sync_rst [get_bd_pins mig_7series_0/ui_clk_sync_rst] [get_bd_pins util_vector_logic_0/Op1]
   connect_bd_net -net mig_ref_200MHZ_1 [get_bd_ports mig_ref_200MHZ] [get_bd_pins mig_7series_0/clk_ref_i]
-  connect_bd_net -net s_axis_aclk_0_1 [get_bd_ports s_axis_aclk_0] [get_bd_pins axis_data_fifo_0/s_axis_aclk]
-  connect_bd_net -net s_axis_aresetn_0_1 [get_bd_ports s_axis_aresetn_0] [get_bd_pins axis_data_fifo_0/s_axis_aresetn]
-  connect_bd_net -net vio_0_probe_out0 [get_bd_pins sysnet_rx_512_0/ap_rst_n] [get_bd_pins vio_0/probe_out0]
-  connect_bd_net -net vio_0_probe_out1 [get_bd_pins app_rdma_0/ap_rst_n] [get_bd_pins vio_0/probe_out1]
+  connect_bd_net -net s_axis_aclk_0_1 [get_bd_ports s_axis_aclk_0] [get_bd_pins rx_8to512/S00_AXIS_ACLK]
+  connect_bd_net -net s_axis_aresetn_0_1 [get_bd_ports s_axis_aresetn_0] [get_bd_pins rx_8to512/S00_AXIS_ARESETN]
+  connect_bd_net -net util_vector_logic_0_Res [get_bd_pins app_rdma_0/ap_rst_n] [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axis_data_fifo_0/s_axis_aresetn] [get_bd_pins rx_8to512/ARESETN] [get_bd_pins rx_8to512/M00_AXIS_ARESETN] [get_bd_pins sysnet_rx_512_0/ap_rst_n] [get_bd_pins tx_512to8/ARESETN] [get_bd_pins tx_512to8/M00_AXIS_ARESETN] [get_bd_pins tx_512to8/S00_AXIS_ARESETN] [get_bd_pins util_vector_logic_0/Res]
+  connect_bd_net -net xlconstant_0_dout [get_bd_pins util_vector_logic_0/Op2] [get_bd_pins xlconstant_0/dout]
 
   # Create address segments
   create_bd_addr_seg -range 0x10000000 -offset 0x00000000 [get_bd_addr_spaces app_rdma_0/Data_m_axi_dram] [get_bd_addr_segs mig_7series_0/memmap/memaddr] SEG_mig_7series_0_memaddr
-  create_bd_addr_seg -range 0x10000000 -offset 0x00000000 [get_bd_addr_spaces jtag_axi_0/Data] [get_bd_addr_segs mig_7series_0/memmap/memaddr] SEG_mig_7series_0_memaddr
 
 
   # Restore current instance
@@ -645,6 +627,186 @@ cr_bd_design_1 ""
 set_property IS_MANAGED "0" [get_files design_1.bd ] 
 set_property REGISTERED_WITH_MANAGER "1" [get_files design_1.bd ] 
 set_property SYNTH_CHECKPOINT_MODE "Hierarchical" [get_files design_1.bd ] 
+
+# Proc to create BD app_test
+proc cr_bd_app_test { parentCell } {
+
+  # CHANGE DESIGN NAME HERE
+  set design_name app_test
+
+  common::send_msg_id "BD_TCL-003" "INFO" "Currently there is no design <$design_name> in project, so creating one..."
+
+  create_bd_design $design_name
+
+  set bCheckIPsPassed 1
+  ##################################################################
+  # CHECK IPs
+  ##################################################################
+  set bCheckIPs 1
+  if { $bCheckIPs == 1 } {
+     set list_check_ips "\ 
+  wuklab:hls:app_rdma:1.0\
+  xilinx.com:ip:axis_data_fifo:1.1\
+  wuklab:hls:sysnet_rx_512:1.0\
+  "
+
+   set list_ips_missing ""
+   common::send_msg_id "BD_TCL-006" "INFO" "Checking if the following IPs exist in the project's IP catalog: $list_check_ips ."
+
+   foreach ip_vlnv $list_check_ips {
+      set ip_obj [get_ipdefs -all $ip_vlnv]
+      if { $ip_obj eq "" } {
+         lappend list_ips_missing $ip_vlnv
+      }
+   }
+
+   if { $list_ips_missing ne "" } {
+      catch {common::send_msg_id "BD_TCL-115" "ERROR" "The following IPs are not found in the IP Catalog:\n  $list_ips_missing\n\nResolution: Please add the repository containing the IP(s) to the project." }
+      set bCheckIPsPassed 0
+   }
+
+  }
+
+  if { $bCheckIPsPassed != 1 } {
+    common::send_msg_id "BD_TCL-1003" "WARNING" "Will not continue with creation of design due to the error(s) above."
+    return 3
+  }
+
+  variable script_folder
+
+  if { $parentCell eq "" } {
+     set parentCell [get_bd_cells /]
+  }
+
+  # Get object for parentCell
+  set parentObj [get_bd_cells $parentCell]
+  if { $parentObj == "" } {
+     catch {common::send_msg_id "BD_TCL-100" "ERROR" "Unable to find parent cell <$parentCell>!"}
+     return
+  }
+
+  # Make sure parentObj is hier blk
+  set parentType [get_property TYPE $parentObj]
+  if { $parentType ne "hier" } {
+     catch {common::send_msg_id "BD_TCL-101" "ERROR" "Parent <$parentObj> has TYPE = <$parentType>. Expected to be <hier>."}
+     return
+  }
+
+  # Save current instance; Restore later
+  set oldCurInst [current_bd_instance .]
+
+  # Set parent object as current
+  current_bd_instance $parentObj
+
+
+  # Create interface ports
+  set M_AXIS_0 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 M_AXIS_0 ]
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {125000000} \
+   ] $M_AXIS_0
+  set S_AXIS_0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 S_AXIS_0 ]
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {125000000} \
+   CONFIG.HAS_TKEEP {0} \
+   CONFIG.HAS_TLAST {1} \
+   CONFIG.HAS_TREADY {1} \
+   CONFIG.HAS_TSTRB {0} \
+   CONFIG.LAYERED_METADATA {undef} \
+   CONFIG.TDATA_NUM_BYTES {1} \
+   CONFIG.TDEST_WIDTH {0} \
+   CONFIG.TID_WIDTH {0} \
+   CONFIG.TUSER_WIDTH {0} \
+   ] $S_AXIS_0
+  set m_axi_dram_0 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 m_axi_dram_0 ]
+  set_property -dict [ list \
+   CONFIG.ADDR_WIDTH {32} \
+   CONFIG.DATA_WIDTH {32} \
+   CONFIG.FREQ_HZ {125000000} \
+   CONFIG.HAS_BURST {0} \
+   CONFIG.NUM_READ_OUTSTANDING {16} \
+   CONFIG.NUM_WRITE_OUTSTANDING {16} \
+   CONFIG.PROTOCOL {AXI4} \
+   ] $m_axi_dram_0
+
+  # Create ports
+  set m_axis_aclk_0 [ create_bd_port -dir I -type clk m_axis_aclk_0 ]
+  set_property -dict [ list \
+   CONFIG.ASSOCIATED_BUSIF {M_AXIS_1:M_AXIS_0} \
+   CONFIG.FREQ_HZ {125000000} \
+ ] $m_axis_aclk_0
+  set m_axis_aresetn_0 [ create_bd_port -dir I -type rst m_axis_aresetn_0 ]
+  set mig_sys_rst_n [ create_bd_port -dir I -type rst mig_sys_rst_n ]
+  set s_axis_aclk_0 [ create_bd_port -dir I -type clk s_axis_aclk_0 ]
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {125000000} \
+ ] $s_axis_aclk_0
+  set s_axis_aresetn_0 [ create_bd_port -dir I -type rst s_axis_aresetn_0 ]
+
+  # Create instance: app_rdma_0, and set properties
+  set app_rdma_0 [ create_bd_cell -type ip -vlnv wuklab:hls:app_rdma:1.0 app_rdma_0 ]
+
+  # Create instance: fifo_512to8, and set properties
+  set fifo_512to8 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_data_fifo:1.1 fifo_512to8 ]
+  set_property -dict [ list \
+   CONFIG.IS_ACLK_ASYNC {1} \
+   CONFIG.TDATA_NUM_BYTES {1} \
+ ] $fifo_512to8
+
+  # Create instance: rx_interconnect, and set properties
+  set rx_interconnect [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect:2.1 rx_interconnect ]
+  set_property -dict [ list \
+   CONFIG.M00_FIFO_DEPTH {64} \
+   CONFIG.M00_FIFO_MODE {0} \
+   CONFIG.NUM_MI {1} \
+   CONFIG.S00_FIFO_DEPTH {64} \
+   CONFIG.S00_FIFO_MODE {0} \
+ ] $rx_interconnect
+
+  # Create instance: sysnet_rx_512_0, and set properties
+  set sysnet_rx_512_0 [ create_bd_cell -type ip -vlnv wuklab:hls:sysnet_rx_512:1.0 sysnet_rx_512_0 ]
+
+  # Create instance: tx_interconnect, and set properties
+  set tx_interconnect [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect:2.1 tx_interconnect ]
+  set_property -dict [ list \
+   CONFIG.M00_FIFO_MODE {0} \
+   CONFIG.NUM_MI {1} \
+   CONFIG.S00_FIFO_MODE {0} \
+   CONFIG.S00_HAS_REGSLICE {0} \
+ ] $tx_interconnect
+
+  # Create interface connections
+  connect_bd_intf_net -intf_net S_AXIS_0_1 [get_bd_intf_ports S_AXIS_0] [get_bd_intf_pins rx_interconnect/S00_AXIS]
+  connect_bd_intf_net -intf_net app_rdma_0_m_axi_dram [get_bd_intf_ports m_axi_dram_0] [get_bd_intf_pins app_rdma_0/m_axi_dram]
+  connect_bd_intf_net -intf_net app_rdma_0_to_net [get_bd_intf_pins app_rdma_0/to_net] [get_bd_intf_pins tx_interconnect/S00_AXIS]
+  connect_bd_intf_net -intf_net axis_data_fifo_0_M_AXIS [get_bd_intf_ports M_AXIS_0] [get_bd_intf_pins fifo_512to8/M_AXIS]
+  connect_bd_intf_net -intf_net rx_interconnect_M00_AXIS [get_bd_intf_pins rx_interconnect/M00_AXIS] [get_bd_intf_pins sysnet_rx_512_0/input_r]
+  connect_bd_intf_net -intf_net sysnet_rx_512_0_output_0 [get_bd_intf_pins app_rdma_0/from_net] [get_bd_intf_pins sysnet_rx_512_0/output_0]
+  connect_bd_intf_net -intf_net tx_interconnect_M00_AXIS [get_bd_intf_pins fifo_512to8/S_AXIS] [get_bd_intf_pins tx_interconnect/M00_AXIS]
+
+  # Create port connections
+  connect_bd_net -net m_axis_aclk_0_1 [get_bd_ports m_axis_aclk_0] [get_bd_pins fifo_512to8/m_axis_aclk] [get_bd_pins fifo_512to8/s_axis_aclk] [get_bd_pins tx_interconnect/M00_AXIS_ACLK]
+  connect_bd_net -net m_axis_aresetn_0_1 [get_bd_ports m_axis_aresetn_0] [get_bd_pins fifo_512to8/m_axis_aresetn] [get_bd_pins fifo_512to8/s_axis_aresetn] [get_bd_pins tx_interconnect/M00_AXIS_ARESETN]
+  connect_bd_net -net s_axis_aclk_0_1 [get_bd_ports s_axis_aclk_0] [get_bd_pins app_rdma_0/ap_clk] [get_bd_pins rx_interconnect/ACLK] [get_bd_pins rx_interconnect/M00_AXIS_ACLK] [get_bd_pins rx_interconnect/S00_AXIS_ACLK] [get_bd_pins sysnet_rx_512_0/ap_clk] [get_bd_pins tx_interconnect/ACLK] [get_bd_pins tx_interconnect/S00_AXIS_ACLK]
+  connect_bd_net -net s_axis_aresetn_0_1 [get_bd_ports s_axis_aresetn_0] [get_bd_pins app_rdma_0/ap_rst_n] [get_bd_pins rx_interconnect/ARESETN] [get_bd_pins rx_interconnect/M00_AXIS_ARESETN] [get_bd_pins rx_interconnect/S00_AXIS_ARESETN] [get_bd_pins sysnet_rx_512_0/ap_rst_n] [get_bd_pins tx_interconnect/ARESETN] [get_bd_pins tx_interconnect/S00_AXIS_ARESETN]
+
+  # Create address segments
+  create_bd_addr_seg -range 0x00010000 -offset 0x00000000 [get_bd_addr_spaces app_rdma_0/Data_m_axi_dram] [get_bd_addr_segs m_axi_dram_0/Reg] SEG_m_axi_dram_0_Reg
+
+
+  # Restore current instance
+  current_bd_instance $oldCurInst
+
+  save_bd_design
+common::send_msg_id "BD_TCL-1000" "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
+
+  close_bd_design $design_name 
+}
+# End of cr_bd_app_test()
+cr_bd_app_test ""
+set_property IS_MANAGED "0" [get_files app_test.bd ] 
+set_property REGISTERED_WITH_MANAGER "1" [get_files app_test.bd ] 
+set_property SYNTH_CHECKPOINT_MODE "Hierarchical" [get_files app_test.bd ] 
+
 
 # Create 'synth_1' run (if not found)
 if {[string equal [get_runs -quiet synth_1] ""]} {

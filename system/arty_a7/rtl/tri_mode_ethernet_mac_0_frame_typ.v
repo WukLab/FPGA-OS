@@ -169,5 +169,3 @@ module tri_mode_ethernet_mac_0_frame_typ ;
    endtask // frombits
 
 endmodule // tri_mode_ethernet_mac_0_frame_typ
-
-

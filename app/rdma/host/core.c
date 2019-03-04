@@ -142,16 +142,18 @@ int main(int argc, char *argv[])
 	/* Ethertype field */
 	eh->ether_type = htons(ETH_P_IP);
 
-	addr = 0x100;
+	addr = 0x0;
 
+#if 0
 	/* Write */
 	printf("Write\n");
-	tx_len = 300;
+	tx_len = 256;
 	app_rdma_prepare_write(sendbuf, tx_len, addr);
 	if (sendto(sockfd, sendbuf, tx_len, 0,
 		   (struct sockaddr *)&socket_address,
 		   sizeof(struct sockaddr_ll)) < 0)
 		printf("Send failed\n");
+#endif
 
 	/* READ */
 #if 1
