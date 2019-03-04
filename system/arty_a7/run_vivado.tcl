@@ -47,9 +47,7 @@
 #    "/root/Github/FPGA/system/arty_a7/rtl/tri_mode_ethernet_mac_0_axi_pipe.v"
 #    "/root/Github/FPGA/system/arty_a7/rtl/tri_mode_ethernet_mac_0_basic_pat_gen.v"
 #    "/root/Github/FPGA/system/arty_a7/top.xdc"
-#    "/root/Github/FPGA/system/arty_a7/tb/pdpm_mem_tb.v"
-#    "/root/Github/FPGA/system/arty_a7/tb/pdpm_top_tb.v"
-#    "/root/Github/FPGA/system/arty_a7/tb/pdpm_net_tb.v"
+#    "/root/Github/FPGA/system/arty_a7/tb/top_tb.v"
 #    "/root/Github/FPGA/system/arty_a7/rtl/tri_mode_ethernet_mac_0_frame_typ.v"
 #
 #*****************************************************************************************
@@ -263,15 +261,13 @@ if {[string equal [get_filesets -quiet sim_1] ""]} {
 # Set 'sim_1' fileset object
 set obj [get_filesets sim_1]
 set files [list \
- [file normalize "${origin_dir}/tb/pdpm_mem_tb.v"] \
- [file normalize "${origin_dir}/tb/pdpm_top_tb.v"] \
- [file normalize "${origin_dir}/tb/pdpm_net_tb.v"] \
+ [file normalize "${origin_dir}/tb/top_tb.v"] \
  [file normalize "${origin_dir}/rtl/tri_mode_ethernet_mac_0_frame_typ.v"] \
 ]
 add_files -norecurse -fileset $obj $files
 
 # Set 'sim_1' fileset file properties for remote files
-set file "$origin_dir/tb/pdpm_net_tb.v"
+set file "$origin_dir/tb/top_tb.v"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sim_1] [list "*$file"]]
 set_property -name "used_in" -value "implementation simulation" -objects $file_obj
@@ -288,10 +284,10 @@ set_property -name "used_in_synthesis" -value "0" -objects $file_obj
 # None
 
 # Set 'sim_1' fileset properties
-set obj [get_filesets sim_1]
-set_property -name "top" -value "pdpm_mem_tb" -objects $obj
-set_property -name "top_auto_set" -value "0" -objects $obj
-set_property -name "top_lib" -value "xil_defaultlib" -objects $obj
+#set obj [get_filesets sim_1]
+#set_property -name "top" -value "pdpm_mem_tb" -objects $obj
+#set_property -name "top_auto_set" -value "0" -objects $obj
+#set_property -name "top_lib" -value "xil_defaultlib" -objects $obj
 
 
 # Adding sources referenced in BDs, if not already added
