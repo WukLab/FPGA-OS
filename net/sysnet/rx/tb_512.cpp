@@ -24,6 +24,9 @@ int main(void)
 
 	for (i = 0; i < nr_packets; i++) {
 		for (j = 0; j < nr_units_per_packet; j++) {
+			tmp.last = 0;
+			tmp.data = 0;
+			tmp.keep = 0;
 
 			/*
 			 * Make the 64B unit packet special
@@ -48,10 +51,6 @@ int main(void)
 				tmp.last = 1;
 
 			input.write(tmp);
-
-			/* Cleanup */
-			tmp.last = 0;
-			tmp.data = 0;
 		}
 	}
 
