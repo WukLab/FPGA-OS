@@ -58,8 +58,17 @@ static void handle_read(unsigned long address, unsigned long length,
 
 	/* Output headers */
 	to_net->write(eth_header);
+
+	/*
+	 * In the original packet, the app_header
+	 * is the last unit thus has the LAST asserted.
+	 * If length is valid, clear it.
+	 */
+	if (length > 0)
+		app_header.last = 0;
+	else
+		app_header.last = 1;
 	app_header.data(7, 0)= APP_RDMA_OPCODE_REPLY_READ;
-	app_header.last = 0;
 	to_net->write(app_header);
 
 	/* Output data */
@@ -169,7 +178,8 @@ void app_rdma(hls::stream<struct net_axis_512> *from_net,
 	case APP_RDMA_ETH_HEADER:
 		if (from_net->empty())
 			break;
-		eth_header = from_net->read();
+		current = from_net->read();
+		eth_header = current;
 
 		inc_nr_requests();
 		state = APP_RDMA_APP_HEADER;
@@ -177,7 +187,8 @@ void app_rdma(hls::stream<struct net_axis_512> *from_net,
 	case APP_RDMA_APP_HEADER:
 		if (from_net->empty())
 			break;
-		app_header = from_net->read();
+		current = from_net->read();
+		app_header = current;
 
 		/* Extract APP header info */
 		opcode	= app_header.data(7, 0);
@@ -252,10 +263,13 @@ void app_rdma(hls::stream<struct net_axis_512> *from_net,
 #pragma HLS INTERFACE axis both port=from_net
 #pragma HLS INTERFACE axis both port=to_net
 #pragma HLS INTERFACE m_axi depth=64 port=dram offset=off
-	struct net_axis_512 tmp;
+	struct net_axis_512 tmp = {0, 0, 0};
+
 	if (from_net->empty())
 		return;
+
 	tmp = from_net->read();
+	tmp.data(7,0) = 0xff;
 	to_net->write(tmp);
 	*dram = 0;
 }

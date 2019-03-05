@@ -100,13 +100,13 @@ module pdpm_net_tb;
     //-----------
     // Frame 0
     //-----------
-    frame0.data[0]  = 8'hDA;  frame0.valid[0]  = 1'b1;  frame0.error[0]  = 1'b0; // Destination Address (DA)
+    frame0.data[0]  = 8'h01;  frame0.valid[0]  = 1'b1;  frame0.error[0]  = 1'b0; // Destination Address (DA)
     frame0.data[1]  = 8'h02;  frame0.valid[1]  = 1'b1;  frame0.error[1]  = 1'b0;
     frame0.data[2]  = 8'h03;  frame0.valid[2]  = 1'b1;  frame0.error[2]  = 1'b0;
     frame0.data[3]  = 8'h04;  frame0.valid[3]  = 1'b1;  frame0.error[3]  = 1'b0;
     frame0.data[4]  = 8'h05;  frame0.valid[4]  = 1'b1;  frame0.error[4]  = 1'b0;
     frame0.data[5]  = 8'h06;  frame0.valid[5]  = 1'b1;  frame0.error[5]  = 1'b0;
-    frame0.data[6]  = 8'h5A;  frame0.valid[6]  = 1'b1;  frame0.error[6]  = 1'b0; // Source Address  (5A)
+    frame0.data[6]  = 8'h01;  frame0.valid[6]  = 1'b1;  frame0.error[6]  = 1'b0; // Source Address  (5A)
     frame0.data[7]  = 8'h02;  frame0.valid[7]  = 1'b1;  frame0.error[7]  = 1'b0;
     frame0.data[8]  = 8'h03;  frame0.valid[8]  = 1'b1;  frame0.error[8]  = 1'b0;
     frame0.data[9]  = 8'h04;  frame0.valid[9]  = 1'b1;  frame0.error[9]  = 1'b0;
@@ -1136,7 +1136,7 @@ module pdpm_net_tb;
     // 100 Mb/s speed
     //-----------------------------------------------------
     while (management_config_finished !== 1) @(posedge management_config_finished);
-    $display("Rx Stimulus: sending 4 frames at 100M ... ");
+    $display("Rx Stimulus: sending 1 frames at 100M ... ");
 
     send_frame_10_100m(frame0.tobits(0));
     //send_frame_10_100m(frame1.tobits(1));
@@ -1152,12 +1152,10 @@ module pdpm_net_tb;
     while (management_config_finished !== 1) @(posedge management_config_finished);
     $display("Rx Stimulus: sending 4 frames at 10M ... ");
 
-    send_frame_10_100m(frame0.tobits(0));
-    send_frame_10_100m(frame1.tobits(1));
-    send_frame_10_100m(frame2.tobits(2));
-    send_frame_10_100m(frame3.tobits(3));
-
-
+    //send_frame_10_100m(frame0.tobits(0));
+    //send_frame_10_100m(frame1.tobits(1));
+    //send_frame_10_100m(frame2.tobits(2));
+    //send_frame_10_100m(frame3.tobits(3));
   end // p_rx_stimulus
 
 
@@ -1217,9 +1215,15 @@ module pdpm_net_tb;
             demo_mode_error <= 1;
           end
 
+
           if (mii_txd !== {tx_monitor_working_frame.data[(column_index+6)][3:0]}) begin
-            $display("** ERROR: mii_txd incorrect during Destination Address");
+            $display("** ERROR: mii_txd incorrect during Destination Address 3:0");
+            $display("**        mii_txd = %x original_data=%x, c=%d",
+					 mii_txd, tx_monitor_working_frame.data[(column_index+6)][3:0], column_index);
             demo_mode_error <= 1;
+          end
+          else begin
+            $display("%x", mii_txd);
           end
 
           @(posedge mii_tx_clk);
@@ -1230,8 +1234,13 @@ module pdpm_net_tb;
           end
 
           if (mii_txd !== {tx_monitor_working_frame.data[(column_index+6)][7:4]}) begin
-            $display("** ERROR: mii_txd incorrect during Destination Address");
+            $display("** ERROR: mii_txd incorrect during Destination Address 7:4");
+            $display("**        mii_txd = %x original_data=%x, c=%d",
+					 mii_txd, tx_monitor_working_frame.data[(column_index+6)][7:4], column_index);
             demo_mode_error <= 1;
+          end
+          else begin
+            $display("%x", mii_txd);
           end
         end
 
@@ -1246,19 +1255,30 @@ module pdpm_net_tb;
           end
 
           if (mii_txd !== {tx_monitor_working_frame.data[(column_index-6)][3:0]}) begin
-            $display("** ERROR: mii_txd incorrect during Source Address");
+            $display("** ERROR: mii_txd incorrect during Source Address 3:0");
+            $display("**        mii_txd = %x original_data=%x, c=%d",
+					 mii_txd, tx_monitor_working_frame.data[(column_index-6)][3:0], column_index);
             demo_mode_error <= 1;
+          end
+          else begin
+                      $display("%x", mii_txd);
           end
 
           @(posedge mii_tx_clk);
+
           if (mii_tx_en !== tx_monitor_working_frame.valid[column_index-6]) begin
             $display("** ERROR: mii_tx_en incorrect during Source Address");
             demo_mode_error <= 1;
           end
 
           if (mii_txd !== {tx_monitor_working_frame.data[(column_index-6)][7:4]}) begin
-            $display("** ERROR: mii_txd incorrect during Source Address");
+            $display("** ERROR: mii_txd incorrect during Source Address 7:4");
+            $display("**        mii_txd = %x original_data=%x, c=%d",
+					 mii_txd, tx_monitor_working_frame.data[(column_index-6)][7:4],column_index);
             demo_mode_error <= 1;
+          end
+          else begin
+                      $display("%x", mii_txd);
           end
         end
 
@@ -1275,6 +1295,9 @@ module pdpm_net_tb;
             $display("** ERROR: mii_txd incorrect");
             demo_mode_error <= 1;
           end
+          else begin
+                      $display("%x", mii_txd);
+           end
 
           @(posedge mii_tx_clk);
 
@@ -1286,6 +1309,9 @@ module pdpm_net_tb;
           if (mii_txd !== {tx_monitor_working_frame.data[column_index][7:4]}) begin
             $display("** ERROR: mii_txd incorrect");
             demo_mode_error <= 1;
+          end
+          else begin
+                      $display("%x", mii_txd);
           end
         end
 

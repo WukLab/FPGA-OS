@@ -156,7 +156,6 @@ int main(int argc, char *argv[])
 #endif
 
 	/* READ */
-#if 1
 	printf("Read\n");
 	tx_len = APP_RDMA_DATA_OFFSET;
 	app_rdma_prepare_read(sendbuf, addr, 64);
@@ -165,6 +164,7 @@ int main(int argc, char *argv[])
 		   sizeof(struct sockaddr_ll)) < 0)
 		printf("Send failed\n");
 
+#if 0
 	if (recvfrom(sockfd, recvbuf, BUF_SIZ, 0,
 		   (struct sockaddr *)&socket_address,
 		   NULL))
@@ -179,7 +179,6 @@ int main(int argc, char *argv[])
 			printf("\n");
 	}
 #endif
-
 
 	return 0;
 }

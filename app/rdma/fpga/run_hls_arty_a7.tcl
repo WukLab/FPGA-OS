@@ -25,7 +25,9 @@ open_solution -reset solution1
 #
 #set_part {xcvu095-ffva2104-2-e}
 set_part {xc7a100tcsg324-1}
-create_clock -period 10 -name default
+
+# 125MHz -> 8us
+create_clock -period 8 -name default
 set_clock_uncertainty 1.25
 
 # Simulate the C code 
