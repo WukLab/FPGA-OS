@@ -144,7 +144,7 @@ int main(int argc, char *argv[])
 
 	addr = 0x0;
 
-#if 0
+#if 1
 	/* Write */
 	printf("Write\n");
 	tx_len = 256;

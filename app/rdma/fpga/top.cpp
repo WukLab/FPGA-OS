@@ -49,6 +49,7 @@ static void handle_error(void)
  * 	64B |          Data         | (read data)
  * 	...
  */
+#define MAX_READ_LENGTH	1024
 static void handle_read(unsigned long address, unsigned long length,
 			stream<struct net_axis_512> *to_net, char *dram)
 {
@@ -73,9 +74,15 @@ static void handle_read(unsigned long address, unsigned long length,
 
 	/* Output data */
 	nr_read = 0;
+	if (length > MAX_READ_LENGTH)
+		length = MAX_READ_LENGTH;
+
 	while (nr_read < length) {
+#pragma HLS LOOP_TRIPCOUNT min=1 max=1024 avg=128
+
 		tmp.data = 0;
 		for (i = 0; i < NR_BYTES_AXIS_512; i++) {
+#pragma HLS LOOP_TRIPCOUNT min=64 max=64 avg=64
 			int start, end;
 
 			start = i * NR_BITS_PER_BYTE;
