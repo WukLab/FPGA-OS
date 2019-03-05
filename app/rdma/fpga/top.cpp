@@ -46,7 +46,7 @@ static void handle_error(void)
  * Reply packet format:
  * 	64B | Eth | IP | UDP | Lego |
  * 	64B | App header |    pad   | (opcode: REPLY_READ)
- * 	64B |          Data         | (read data)
+ * 	64B |          Data         | (read data if any)
  * 	...
  */
 #define MAX_READ_LENGTH	1024
@@ -57,56 +57,50 @@ static void handle_read(unsigned long address, unsigned long length,
 	int nr_read, i;
 	struct net_axis_512 tmp;
 
-	/* Output headers */
+	/* Output Eth/IP/UDP/Lego header */
 	to_net->write(eth_header);
 
-	/*
-	 * In the original packet, the app_header
-	 * is the last unit thus has the LAST asserted.
-	 * If length is valid, clear it.
-	 */
-	if (length > 0)
-		app_header.last = 0;
-	else
-		app_header.last = 1;
+	/* Output app header */
 	app_header.data(7, 0)= APP_RDMA_OPCODE_REPLY_READ;
-	to_net->write(app_header);
+	if (length == 0) {
+		app_header.last = 1;
+		to_net->write(app_header);
+		return;
+	} else {
+		app_header.last = 0;
+		to_net->write(app_header);
+	}
 
-	/* Output data */
-	nr_read = 0;
+	/* Sanity check */
 	if (length > MAX_READ_LENGTH)
 		length = MAX_READ_LENGTH;
 
+	/* Output data */
+	nr_read = 0;
 	while (nr_read < length) {
-#pragma HLS LOOP_TRIPCOUNT min=1 max=1024 avg=128
+	#pragma HLS LOOP_TRIPCOUNT min=1 max=1024 avg=128
 
 		tmp.data = 0;
+		tmp.keep = 0;
+		tmp.last = 0;
+
 		for (i = 0; i < NR_BYTES_AXIS_512; i++) {
-#pragma HLS LOOP_TRIPCOUNT min=64 max=64 avg=64
+		#pragma HLS LOOP_TRIPCOUNT min=64 max=64 avg=64
 			int start, end;
 
 			start = i * NR_BITS_PER_BYTE;
 			end = (i + 1) * NR_BITS_PER_BYTE - 1;
 
-#ifdef __SYNTHESIS__
-			dram = dram + (address + nr_read);
-#else
-			dram = (char *)(address + nr_read);
-#endif
-			tmp.data(end, start) = *dram;
-
-			nr_read++;
+			tmp.data(end, start) = dram[address + nr_read];
+			tmp.keep(i, i) = 1;
 
 			/* Last unit case (can be partial )*/
+			nr_read++;
 			if (nr_read == length)
 				break;
 		}
-
 		if (nr_read == length)
 			tmp.last = 1;
-		else
-			tmp.last = 0;
-
 		to_net->write(tmp);
 	}
 }
@@ -126,28 +120,30 @@ static void handle_write(unsigned long address, unsigned long length,
 #pragma HLS PIPELINE
 	static unsigned long nr_written = 0;
 	int i;
-	char *dst;
 
 	/*
 	 * FIXME
-	 * 1) We leave app BUG here: length is not checked.
-	 * Leave this during development phase.
-	 *
-	 * 2) And should check TKEEP here!
+	 * And should check TKEEP here!
 	 */
 	for (i = 0; i < NR_BYTES_AXIS_512; i++) {
+	#pragma HLS LOOP_TRIPCOUNT min=64 max=64 avg=64
 		int start, end;
+
+		/*
+		 * Already reach limit?
+		 * Note: if the actual data is larger than what
+		 * the length field indicates, we may have incoming
+		 * units with tlast=0. But this is okay. The following
+		 * check can already skip all these. When the tlast comes
+		 * we reset nr_written to 0.
+		 */
+		if (nr_written >= length)
+			break;
 
 		start = i * NR_BITS_PER_BYTE;
 		end = (i + 1) * NR_BITS_PER_BYTE - 1;
 
-#ifdef __SYNTHESIS__
-		dram = dram + (address + nr_written);
-#else
-		dram = (char *)(address + nr_written);
-#endif
-		*dram = axis_data.data(end, start);
-
+		dram[address + nr_written] = axis_data.data(end, start);
 		nr_written++;
 	}
 
@@ -261,6 +257,65 @@ void app_rdma(hls::stream<struct net_axis_512> *from_net,
 }
 #else
 
+void handle_fake(char *dram, stream<struct net_axis_512> *to_net)
+{
+	struct net_axis_512 tmp = {0, 0, 0};
+	unsigned long address;
+	int i;
+
+	address = 0x10;
+
+	tmp.data = 0;
+
+	tmp.data(7, 0) = dram[address];
+	tmp.data(15, 8) = dram[0x20];
+	tmp.data(23, 9) = dram[0x30];
+
+	tmp.last = 1;
+	tmp.keep = 0xffffffffffffffff;
+	to_net->write(tmp);
+}
+
+void handle_fake_read(char *dram, stream<struct net_axis_512> *to_net)
+{
+#pragma HLS PIPELINE
+	int nr_read, i;
+	struct net_axis_512 tmp;
+	unsigned long length, address;
+
+	address = 0x20;
+	length = 8;
+
+	/* Output data */
+	nr_read = 0;
+	while (nr_read < length) {
+	#pragma HLS LOOP_TRIPCOUNT min=1 max=1024 avg=128
+
+		tmp.data = 0;
+		tmp.keep = 0;
+		tmp.last = 0;
+
+		for (i = 0; i < NR_BYTES_AXIS_512; i++) {
+		#pragma HLS LOOP_TRIPCOUNT min=64 max=64 avg=64
+			int start, end;
+
+			start = i * NR_BITS_PER_BYTE;
+			end = (i + 1) * NR_BITS_PER_BYTE - 1;
+
+			tmp.data(end, start) = dram[address + nr_read];
+			tmp.keep(i, i) = 1;
+
+			/* Last unit case (can be partial )*/
+			nr_read++;
+			if (nr_read == length)
+				break;
+		}
+		if (nr_read == length)
+			tmp.last = 1;
+		to_net->write(tmp);
+	}
+}
+
 void app_rdma(hls::stream<struct net_axis_512> *from_net,
 	      hls::stream<struct net_axis_512> *to_net, char *dram)
 {
@@ -270,14 +325,25 @@ void app_rdma(hls::stream<struct net_axis_512> *from_net,
 #pragma HLS INTERFACE axis both port=from_net
 #pragma HLS INTERFACE axis both port=to_net
 #pragma HLS INTERFACE m_axi depth=64 port=dram offset=off
+
 	struct net_axis_512 tmp = {0, 0, 0};
+	unsigned long address, offset;
+	int i;
 
 	if (from_net->empty())
 		return;
 
 	tmp = from_net->read();
-	tmp.data(7,0) = 0xff;
+	for (i = 0; i < NR_BYTES_AXIS_512; i++) {
+		int start, end;
+
+		start = i * NR_BITS_PER_BYTE;
+		end = (i + 1) * NR_BITS_PER_BYTE - 1;
+		tmp.data(end, start) = i;
+	}
+	tmp.last = 0;
 	to_net->write(tmp);
-	*dram = 0;
+
+	handle_fake_read(dram, to_net);
 }
 #endif

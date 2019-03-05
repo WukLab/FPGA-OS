@@ -73,7 +73,7 @@ next_pkt:
 				/* The second unit is app header */
 				if (j == 1) {
 					tmp.data(7, 0) = APP_RDMA_OPCODE_WRITE;
-					tmp.data(71, 8) = (unsigned long)dram;
+					tmp.data(71, 8) = 4;
 					tmp.data(135, 72) = 64;
 				}
 			}
@@ -85,7 +85,7 @@ next_pkt:
 				} else if (j == 1) {
 				/* The second unit is app header */
 					tmp.data(7, 0) = APP_RDMA_OPCODE_READ;
-					tmp.data(71, 8) = (unsigned long)dram;
+					tmp.data(71, 8) = 0x0;
 					tmp.data(135, 72) = 32;
 
 					/* Read should only have two units */
