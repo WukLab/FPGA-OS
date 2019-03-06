@@ -148,7 +148,6 @@ static void handle_write(unsigned long address, unsigned long length,
  * 	...
  * 	N B |          Data         |
  */
-#if 1
 void app_rdma(hls::stream<struct net_axis_512> *from_net,
 	      hls::stream<struct net_axis_512> *to_net, char *dram)
 {
@@ -243,95 +242,3 @@ void app_rdma(hls::stream<struct net_axis_512> *from_net,
 		break;
 	};
 }
-#else
-
-void handle_fake(char *dram, stream<struct net_axis_512> *to_net)
-{
-	struct net_axis_512 tmp = {0, 0, 0};
-	unsigned long address;
-	int i;
-
-	address = 0x10;
-
-	tmp.data = 0;
-
-	tmp.data(7, 0) = dram[address];
-	tmp.data(15, 8) = dram[0x20];
-	tmp.data(23, 9) = dram[0x30];
-
-	tmp.last = 1;
-	tmp.keep = 0xffffffffffffffff;
-	to_net->write(tmp);
-}
-
-void handle_fake_read(char *dram, stream<struct net_axis_512> *to_net)
-{
-#pragma HLS PIPELINE
-	int nr_read, i;
-	struct net_axis_512 tmp;
-	unsigned long length, address;
-
-	address = 0x20;
-	length = 8;
-
-	/* Output data */
-	nr_read = 0;
-	while (nr_read < length) {
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=1024 avg=128
-
-		tmp.data = 0;
-		tmp.keep = 0;
-		tmp.last = 0;
-
-		for (i = 0; i < NR_BYTES_AXIS_512; i++) {
-		#pragma HLS LOOP_TRIPCOUNT min=64 max=64 avg=64
-			int start, end;
-
-			start = i * NR_BITS_PER_BYTE;
-			end = (i + 1) * NR_BITS_PER_BYTE - 1;
-
-			tmp.data(end, start) = dram[address + nr_read];
-			tmp.keep(i, i) = 1;
-
-			/* Last unit case (can be partial )*/
-			nr_read++;
-			if (nr_read == length)
-				break;
-		}
-		if (nr_read == length)
-			tmp.last = 1;
-		to_net->write(tmp);
-	}
-}
-
-void app_rdma(hls::stream<struct net_axis_512> *from_net,
-	      hls::stream<struct net_axis_512> *to_net, char *dram)
-{
-#pragma HLS INTERFACE ap_ctrl_none port=return
-#pragma HLS PIPELINE
-
-#pragma HLS INTERFACE axis both port=from_net
-#pragma HLS INTERFACE axis both port=to_net
-#pragma HLS INTERFACE m_axi depth=64 port=dram offset=off
-
-	struct net_axis_512 tmp = {0, 0, 0};
-	unsigned long address, offset;
-	int i;
-
-	if (from_net->empty())
-		return;
-
-	tmp = from_net->read();
-	for (i = 0; i < NR_BYTES_AXIS_512; i++) {
-		int start, end;
-
-		start = i * NR_BITS_PER_BYTE;
-		end = (i + 1) * NR_BITS_PER_BYTE - 1;
-		tmp.data(end, start) = i;
-	}
-	tmp.last = 0;
-	to_net->write(tmp);
-
-	handle_fake_read(dram, to_net);
-}
-#endif
