@@ -18,7 +18,7 @@ open_project	-reset generated_hls_project
 
 # The source file and test bench
 add_files	core.cpp	-cflags "-I../../include"
-add_files	chunk_alloc.cpp	-cflags "-I../../include"
+add_files	buddy.cpp	-cflags "-I../../include"
 add_files -tb	core_tb.cpp	-cflags "-I../../include"
 
 # Specify the top-level function for synthesis
@@ -35,7 +35,7 @@ open_solution -reset solution1
 # VCU108:	xcvu095-ffva2104-2-e
 # ArtyA7:	xc7a100tcsg324-1
 #
-set_part {xc7a100tcsg324-1}
+set_part {xcvu095-ffva2104-2-e}
 create_clock -period 8 -name default
 config_rtl  -encoding onehot -reset control  -reset_level high  -vivado_impl_strategy default -vivado_phys_opt place -vivado_synth_design_args {-directive sdx_optimization_effort_high} -vivado_synth_strategy default
 set_clock_uncertainty 1.25
@@ -47,7 +47,7 @@ set_clock_uncertainty 1.25
 csynth_design
 
 # Export IP block
-export_design -format ip_catalog -display_name "CHUNK_ALLOCATOR" -description "Allocator for System Memory Chunk Unit" -vendor "purdue.wuklab" -version "1.0"
+export_design -format ip_catalog -display_name "BUDDY_ALLOCATOR" -description "Buddy Allocator as library for apps using on-demand memory allocation" -vendor "purdue.wuklab" -version "1.0"
 
 # Do not perform any other steps
 # - The basic project will be opened in the GUI 
