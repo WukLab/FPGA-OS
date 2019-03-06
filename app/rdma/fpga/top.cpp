@@ -6,6 +6,7 @@
 #include <fpga/axis_net.h>
 #include <uapi/net_header.h>
 #include <uapi/compiler.h>
+#include <string.h>
 
 #include "top.hpp"
 #include "../include/rdma.h"
@@ -49,13 +50,15 @@ static void handle_error(void)
  * 	64B |          Data         | (read data if any)
  * 	...
  */
-#define MAX_READ_LENGTH	1024
+#define MAX_READ_LOOPS	4
+#define MAX_READ_LENGTH	(MAX_READ_LOOPS * NR_BYTES_AXIS_512)
 static void handle_read(unsigned long address, unsigned long length,
 			stream<struct net_axis_512> *to_net, char *dram)
 {
 #pragma HLS PIPELINE
-	int nr_read, i;
 	struct net_axis_512 tmp;
+	ap_uint<512> cache;
+	int offset = 0;
 
 	/* Output Eth/IP/UDP/Lego header */
 	to_net->write(eth_header);
@@ -75,33 +78,33 @@ static void handle_read(unsigned long address, unsigned long length,
 	if (length > MAX_READ_LENGTH)
 		length = MAX_READ_LENGTH;
 
-	/* Output data */
-	nr_read = 0;
-	while (nr_read < length) {
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=1024 avg=128
+	while (length) {
+	/* Set max according the above MAX_READ_LOOPS */
+	#pragma HLS LOOP_TRIPCOUNT min=1 max=4 avg=1
+		tmp.keep(NR_BYTES_AXIS_512 - 1, 0) = 0xffffffffffffffff;
+		memcpy((void *)&cache, (void *)&dram[address + offset],
+			NR_BYTES_AXIS_512);
 
-		tmp.data = 0;
-		tmp.keep = 0;
-		tmp.last = 0;
-
-		for (i = 0; i < NR_BYTES_AXIS_512; i++) {
-		#pragma HLS LOOP_TRIPCOUNT min=64 max=64 avg=64
-			int start, end;
-
-			start = i * NR_BITS_PER_BYTE;
-			end = (i + 1) * NR_BITS_PER_BYTE - 1;
-
-			tmp.data(end, start) = dram[address + nr_read];
-			tmp.keep(i, i) = 1;
-
-			/* Last unit case (can be partial )*/
-			nr_read++;
-			if (nr_read == length)
-				break;
-		}
-		if (nr_read == length)
+		/* Now decice which part should stay */
+		if (length >= NR_BYTES_AXIS_512) {
+			tmp.data = cache;
+			if (length > NR_BYTES_AXIS_512) {
+				tmp.last = 0;
+				length = length - NR_BYTES_AXIS_512;
+			} else
+				tmp.last = 1;
+		} else {
+			int end = length * 8 - 1;
+			tmp.data = 0;
+			tmp.data(end, 0) = cache(end, 0);
+			tmp.keep(NR_BYTES_AXIS_512 - 1, length) = 0;
 			tmp.last = 1;
+		}
 		to_net->write(tmp);
+		offset = offset + NR_BYTES_AXIS_512;
+
+		if (tmp.last == 1)
+			break;
 	}
 }
 
@@ -118,38 +121,23 @@ static void handle_write(unsigned long address, unsigned long length,
 			 struct net_axis_512 axis_data, char *dram)
 {
 #pragma HLS PIPELINE
-	static unsigned long nr_written = 0;
-	int i;
+	static unsigned long offset = 0;
+	long nr_remain;
 
-	/*
-	 * FIXME
-	 * And should check TKEEP here!
-	 */
-	for (i = 0; i < NR_BYTES_AXIS_512; i++) {
-	#pragma HLS LOOP_TRIPCOUNT min=64 max=64 avg=64
-		int start, end;
+	nr_remain = length - offset;
+	if (nr_remain >= NR_BYTES_AXIS_512) {
+		memcpy((void *)&dram[address + offset],
+		       (void *)&axis_data.data, NR_BYTES_AXIS_512);
+		offset = offset + NR_BYTES_AXIS_512;
+	} else {
+		ap_uint<512> *_dram;
 
-		/*
-		 * Already reach limit?
-		 * Note: if the actual data is larger than what
-		 * the length field indicates, we may have incoming
-		 * units with tlast=0. But this is okay. The following
-		 * check can already skip all these. When the tlast comes
-		 * we reset nr_written to 0.
-		 */
-		if (nr_written >= length)
-			break;
-
-		start = i * NR_BITS_PER_BYTE;
-		end = (i + 1) * NR_BITS_PER_BYTE - 1;
-
-		dram[address + nr_written] = axis_data.data(end, start);
-		nr_written++;
+		_dram = (ap_uint<512> *)&dram[address + offset];
+		memcpy((void *)_dram, (void *)&axis_data.data, nr_remain);
 	}
 
-	/* Reset states if last unit */
 	if (axis_data.last)
-		nr_written = 0;
+		offset = 0;
 }
 
 /*

@@ -31,7 +31,7 @@ int main(void)
 		printf("Unable to malloc\n");
 		return -1;
 	}
-	memset(dram, 0, BUF_SIZE);
+	memset(dram, 0x0, BUF_SIZE);
 
 	if ((NR_UNITS_PER_PKT * NR_BYTES_AXIS_512) > BUF_SIZE) {
 		printf("Message size larger than buffer size, write may overflow\n");
@@ -55,6 +55,8 @@ next_pkt:
 		for (j = 0; j < NR_UNITS_PER_PKT; j++) {
 			tmp.last = 0;
 			tmp.data = 0;
+			tmp.keep = 0;
+
 			for (k = 0; k < NR_BYTES_AXIS_512; k++) {
 				int start, end;
 
@@ -62,6 +64,7 @@ next_pkt:
 				end = (k + 1) * NR_BITS_PER_BYTE - 1;
 
 				tmp.data(end, start) = k + 1;
+				tmp.keep(k, k) = 1;
 			}
 
 			/* The first packet: WRITE */
@@ -73,8 +76,8 @@ next_pkt:
 				/* The second unit is app header */
 				if (j == 1) {
 					tmp.data(7, 0) = APP_RDMA_OPCODE_WRITE;
-					tmp.data(71, 8) = 4;
-					tmp.data(135, 72) = 64;
+					tmp.data(71, 8) = 0x0;
+					tmp.data(135, 72) = 7;
 				}
 			}
 			/* The second packet: READ */
@@ -86,7 +89,7 @@ next_pkt:
 				/* The second unit is app header */
 					tmp.data(7, 0) = APP_RDMA_OPCODE_READ;
 					tmp.data(71, 8) = 0x0;
-					tmp.data(135, 72) = 32;
+					tmp.data(135, 72) = 65;
 
 					/* Read should only have two units */
 					tmp.last = 1;
@@ -129,6 +132,7 @@ next_pkt:
 	i = j = 0;
 	while (!output.empty()) {
 		tmp = output.read();
+		printf("unit[%d] last=%d keep=%#llx\n", i, tmp.last.to_uint(), tmp.keep.to_ulong());
 		for (j = 0; j < NR_BYTES_AXIS_512; j++) {
 			int start, end;
 			unsigned char c;
