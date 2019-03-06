@@ -13,6 +13,7 @@
 #include <uapi/net_header.h>
 
 void app_rdma(hls::stream<struct net_axis_512> *from_net,
-	      hls::stream<struct net_axis_512> *to_net, char *dram);
+	      hls::stream<struct net_axis_512> *to_net,
+	      ap_uint<512> *dram);
 
 #endif /* _APP_RDMA_TOP_HPP_ */

@@ -53,23 +53,30 @@ static void handle_error(void)
 #define MAX_READ_LOOPS	4
 #define MAX_READ_LENGTH	(MAX_READ_LOOPS * NR_BYTES_AXIS_512)
 static void handle_read(unsigned long address, unsigned long length,
-			stream<struct net_axis_512> *to_net, char *dram)
+			stream<struct net_axis_512> *to_net,
+			ap_uint<512> *dram)
 {
 #pragma HLS PIPELINE
+#pragma HLS INLINE
+
 	struct net_axis_512 tmp;
 	ap_uint<512> cache;
-	int offset = 0;
+	unsigned int offset = 0, index;
 
 	/* Output Eth/IP/UDP/Lego header */
 	to_net->write(eth_header);
 
-	/* Output app header */
-	app_header.data(7, 0)= APP_RDMA_OPCODE_REPLY_READ;
-	if (length == 0) {
+	/*
+	 * FIXME
+	 * Now assume the starting address is 64B aligned
+	 */
+	if ((length == 0) || (address % NR_BYTES_AXIS_512 != 0)) {
+		app_header.data(7, 0)= APP_RDMA_OPCODE_REPLY_READ_ERROR;
 		app_header.last = 1;
 		to_net->write(app_header);
 		return;
 	} else {
+		app_header.data(7, 0)= APP_RDMA_OPCODE_REPLY_READ;
 		app_header.last = 0;
 		to_net->write(app_header);
 	}
@@ -78,12 +85,13 @@ static void handle_read(unsigned long address, unsigned long length,
 	if (length > MAX_READ_LENGTH)
 		length = MAX_READ_LENGTH;
 
+	index = address / NR_BYTES_AXIS_512;
 	while (length) {
 	/* Set max according the above MAX_READ_LOOPS */
 	#pragma HLS LOOP_TRIPCOUNT min=1 max=4 avg=1
+
 		tmp.keep(NR_BYTES_AXIS_512 - 1, 0) = 0xffffffffffffffff;
-		memcpy((void *)&cache, (void *)&dram[address + offset],
-			NR_BYTES_AXIS_512);
+		cache = dram[index + offset];
 
 		/* Now decice which part should stay */
 		if (length >= NR_BYTES_AXIS_512) {
@@ -101,7 +109,7 @@ static void handle_read(unsigned long address, unsigned long length,
 			tmp.last = 1;
 		}
 		to_net->write(tmp);
-		offset = offset + NR_BYTES_AXIS_512;
+		offset++;
 
 		if (tmp.last == 1)
 			break;
@@ -116,24 +124,39 @@ static void handle_read(unsigned long address, unsigned long length,
  * And different from handle_read(), this function will have a minimum
  * state: nr_written. Because this function will be repeatly invoked
  * during data streaming phase.
+ *
  */
 static void handle_write(unsigned long address, unsigned long length,
-			 struct net_axis_512 axis_data, char *dram)
+			 struct net_axis_512 axis_data,
+			 ap_uint<512> *dram)
 {
-#pragma HLS PIPELINE
-	static unsigned long offset = 0;
+#pragma HLS PIPELINE II=1
+#pragma HLS INLINE
+	static unsigned int offset = 0;
+	static unsigned int nr_written = 0;
+	unsigned int index;
 	long nr_remain;
 
-	nr_remain = length - offset;
-	if (nr_remain >= NR_BYTES_AXIS_512) {
-		memcpy((void *)&dram[address + offset],
-		       (void *)&axis_data.data, NR_BYTES_AXIS_512);
-		offset = offset + NR_BYTES_AXIS_512;
-	} else {
-		ap_uint<512> *_dram;
+ 	/*
+	 * FIXME
+	 * Assume the starting address is always 64B aligned.
+	 * Otherwise skip.
+	 */
+	if (address % NR_BYTES_AXIS_512)
+		return;
 
-		_dram = (ap_uint<512> *)&dram[address + offset];
-		memcpy((void *)_dram, (void *)&axis_data.data, nr_remain);
+	index = (address / NR_BYTES_AXIS_512) + offset;
+	nr_remain = length - nr_written;
+
+	if (nr_remain >= NR_BYTES_AXIS_512) {
+		dram[index] = axis_data.data;
+		offset++;
+		nr_written = offset * NR_BYTES_AXIS_512;
+	} else {
+		int end;
+
+		end = nr_remain * 8 - 1;
+		dram[index](end, 0) = axis_data.data(end, 0);
 	}
 
 	if (axis_data.last)
@@ -149,7 +172,8 @@ static void handle_write(unsigned long address, unsigned long length,
  * 	N B |          Data         |
  */
 void app_rdma(hls::stream<struct net_axis_512> *from_net,
-	      hls::stream<struct net_axis_512> *to_net, char *dram)
+	      hls::stream<struct net_axis_512> *to_net,
+	      ap_uint<512> *dram)
 {
 #pragma HLS INTERFACE ap_ctrl_none port=return
 #pragma HLS PIPELINE

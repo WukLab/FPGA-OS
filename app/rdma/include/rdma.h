@@ -18,6 +18,7 @@ enum APP_RDMA_OPCODE {
 
 	/* Parsed by Host side */
 	APP_RDMA_OPCODE_REPLY_READ,
+	APP_RDMA_OPCODE_REPLY_READ_ERROR,
 };
 
 struct app_rdma_header {
