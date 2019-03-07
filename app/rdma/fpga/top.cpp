@@ -56,6 +56,7 @@ static void handle_read(unsigned long address, unsigned long length,
 			stream<struct net_axis_512> *to_net,
 			ap_uint<512> *dram)
 {
+#if 1
 #pragma HLS PIPELINE
 #pragma HLS INLINE
 
@@ -114,6 +115,33 @@ static void handle_read(unsigned long address, unsigned long length,
 		if (tmp.last == 1)
 			break;
 	}
+#endif
+}
+
+static inline void narrow_memcpy_to_axi_512(ap_uint<512> &to, ap_uint<512> &from, int n)
+{
+#pragma HLS INLINE
+	switch (n) {
+	case 1:		to(7, 0)	= from(7, 0);		break;
+	case 2:		to(15, 0)	= from(15, 0);		break;
+	case 3:		to(23, 0)	= from(23, 0);		break;
+	case 4:		to(31, 0)	= from(31, 0);		break;
+	case 5:		to(39, 0)	= from(39, 0);		break;
+	case 6:		to(47, 0)	= from(47, 0);		break;
+	case 7:		to(55, 0)	= from(55, 0);		break;
+	case 8:		to(63, 0)	= from(63, 0);		break;
+	case 9:		to(71, 0)	= from(71, 0);		break;
+	case 10:	to(79, 0)	= from(79, 0);		break;
+	case 11:	to(87, 0)	= from(87, 0);		break;
+	case 12:	to(95, 0)	= from(95, 0);		break;
+	case 13:	to(103, 0)	= from(103, 0);		break;
+	case 14:	to(111, 0)	= from(111, 0);		break;
+	case 15:	to(119, 0)	= from(119, 0);		break;
+	default:
+		// TODO
+		to(n * 8 - 1, 0) = from(n * 8 - 1, 0);
+		break;
+	}
 }
 
 /*
@@ -153,10 +181,7 @@ static void handle_write(unsigned long address, unsigned long length,
 		offset++;
 		nr_written = offset * NR_BYTES_AXIS_512;
 	} else {
-		int end;
-
-		end = nr_remain * 8 - 1;
-		dram[index](end, 0) = axis_data.data(end, 0);
+		narrow_memcpy_to_axi_512(dram[index], axis_data.data, nr_remain);
 	}
 
 	if (axis_data.last)

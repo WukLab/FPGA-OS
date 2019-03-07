@@ -76,8 +76,8 @@ next_pkt:
 				/* The second unit is app header */
 				if (j == 1) {
 					tmp.data(7, 0) = APP_RDMA_OPCODE_WRITE;
-					tmp.data(71, 8) = 64;
-					tmp.data(135, 72) = 70;
+					tmp.data(71, 8) = 0x0;
+					tmp.data(135, 72) = 127;
 				}
 			}
 			/* The second packet: READ */
