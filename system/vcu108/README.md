@@ -13,3 +13,12 @@ The `LegoFPGA.bd` essentially has three major interfaces
 - DDR to DRAM
 
 Keep in mind.
+
+
+## Issues
+
+Having AXI Ethernet Subsystem within the example design, the whole thing can NOT be
+exported a Block Diagram IP, which is annoying.
+
+One possible way to do it is extract the SM/clock as a standlone RTL IP, and
+then merge it with a MAC IP in a BD design. Doable. Later.
