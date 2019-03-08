@@ -1,0 +1,4 @@
+*.*
+!board.prj
+!axi_ethernet_0.xci
+!.gitignore
