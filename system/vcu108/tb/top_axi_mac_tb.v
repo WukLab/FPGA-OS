@@ -174,13 +174,13 @@ axi_ethernet_0_frame_typ tx_monitor_working_frame();
 //-----------
 // Frame 0
 //-----------
-    frame0.data[0]  = 8'hFF;  frame0.valid[0]  = 1'b1;  frame0.error[0]  = 1'b0; // Destination Address (DA)
-    frame0.data[1]  = 8'hFF;  frame0.valid[1]  = 1'b1;  frame0.error[1]  = 1'b0;
-    frame0.data[2]  = 8'hFF;  frame0.valid[2]  = 1'b1;  frame0.error[2]  = 1'b0;
-    frame0.data[3]  = 8'hFF;  frame0.valid[3]  = 1'b1;  frame0.error[3]  = 1'b0;
-    frame0.data[4]  = 8'hFF;  frame0.valid[4]  = 1'b1;  frame0.error[4]  = 1'b0;
-    frame0.data[5]  = 8'hFF;  frame0.valid[5]  = 1'b1;  frame0.error[5]  = 1'b0;
-    frame0.data[6]  = 8'h5A;  frame0.valid[6]  = 1'b1;  frame0.error[6]  = 1'b0; // Source Address  (5A)
+    frame0.data[0]  = 8'h01;  frame0.valid[0]  = 1'b1;  frame0.error[0]  = 1'b0; // Destination Address (DA)
+    frame0.data[1]  = 8'h02;  frame0.valid[1]  = 1'b1;  frame0.error[1]  = 1'b0;
+    frame0.data[2]  = 8'h03;  frame0.valid[2]  = 1'b1;  frame0.error[2]  = 1'b0;
+    frame0.data[3]  = 8'h04;  frame0.valid[3]  = 1'b1;  frame0.error[3]  = 1'b0;
+    frame0.data[4]  = 8'h05;  frame0.valid[4]  = 1'b1;  frame0.error[4]  = 1'b0;
+    frame0.data[5]  = 8'h06;  frame0.valid[5]  = 1'b1;  frame0.error[5]  = 1'b0;
+    frame0.data[6]  = 8'h01;  frame0.valid[6]  = 1'b1;  frame0.error[6]  = 1'b0; // Source Address  (5A)
     frame0.data[7]  = 8'h02;  frame0.valid[7]  = 1'b1;  frame0.error[7]  = 1'b0;
     frame0.data[8]  = 8'h03;  frame0.valid[8]  = 1'b1;  frame0.error[8]  = 1'b0;
     frame0.data[9]  = 8'h04;  frame0.valid[9]  = 1'b1;  frame0.error[9]  = 1'b0;
@@ -1851,9 +1851,10 @@ initial begin
           $display("Rx Stimulus: %t sending 5 frames at 1G ... ",$time);
 
         send_frame(frame0.tobits(0));
-        send_frame(frame1.tobits(1));
-        send_frame(frame2.tobits(2));
-        send_frame(frame3.tobits(3));
+	$display("Finished sending ...");
+        //send_frame(frame1.tobits(1));
+        //send_frame(frame2.tobits(2));
+        //send_frame(frame3.tobits(3));
         while (tx_monitor_finished_1G != 1)
             send_I2;
 
@@ -2026,6 +2027,8 @@ initial begin
             frame_filtered = 1;
         end
 
+            frame_filtered = 0;
+
         column_index = 0;
         if  (frame_filtered === 1'b1) begin
             $display("FRAME %d DROPPED by Address Filter ",frame_number);
@@ -2175,11 +2178,13 @@ initial begin
 //-----------------------------------------------------
 // Check the frames
             check_frame(frame0.tobits(0),1);
-            check_frame(frame1.tobits(0),2);
-            check_frame(frame2.tobits(0),3);
-            check_frame(frame3.tobits(0),4);
+            //check_frame(frame1.tobits(0),2);
+            //check_frame(frame2.tobits(0),3);
+            //check_frame(frame3.tobits(0),4);
+	    $display("Finishied 1G 1 frame checking");
             #200000
             tx_monitor_finished_1G  <= 1;
+/*
 // 100 Mb/s speed
 //-----------------------------------------------------
 // Check the frames
@@ -2210,7 +2215,7 @@ initial begin
 
         #200000
         tx_monitor_finished_1G  <= 1;
-
+*/
     end
     else begin
         forever check_frame(frame0.tobits(0),1);

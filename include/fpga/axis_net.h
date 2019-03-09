@@ -20,12 +20,14 @@ struct net_axis_64 {
 	ap_uint<64>			data;
 	ap_uint<1>			last;
 	ap_uint<NR_BYTES_AXIS_64>	keep;
+	ap_uint<NR_BYTES_AXIS_64>	user;
 };
 
 struct net_axis_512 {
 	ap_uint<512>			data;
 	ap_uint<1>			last;
 	ap_uint<NR_BYTES_AXIS_512>	keep;
+	ap_uint<NR_BYTES_AXIS_512>	user;
 };
 
 #endif /* _LEGO_FPGA_AXIS_NET_ */

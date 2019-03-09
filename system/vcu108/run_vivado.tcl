@@ -245,6 +245,7 @@ proc cr_bd_LegoFPGA_1 { parentCell } {
   set bCheckIPs 1
   if { $bCheckIPs == 1 } {
      set list_check_ips "\ 
+  xilinx.com:ip:axis_data_fifo:1.1\
   wuklab:hls:net_loopback:1.0\
   "
 
@@ -316,16 +317,41 @@ proc cr_bd_LegoFPGA_1 { parentCell } {
   set clk_125 [ create_bd_port -dir I -type clk clk_125 ]
   set clk_125_rstn [ create_bd_port -dir I -type rst clk_125_rstn ]
 
+  # Create instance: axis_data_fifo_0, and set properties
+  set axis_data_fifo_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_data_fifo:1.1 axis_data_fifo_0 ]
+  set_property -dict [ list \
+   CONFIG.TDATA_NUM_BYTES {1} \
+ ] $axis_data_fifo_0
+
   # Create instance: net_loopback_0, and set properties
   set net_loopback_0 [ create_bd_cell -type ip -vlnv wuklab:hls:net_loopback:1.0 net_loopback_0 ]
 
+  # Create instance: rx_8to512, and set properties
+  set rx_8to512 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect:2.1 rx_8to512 ]
+  set_property -dict [ list \
+   CONFIG.M00_FIFO_DEPTH {1024} \
+   CONFIG.NUM_MI {1} \
+   CONFIG.S00_FIFO_DEPTH {1024} \
+ ] $rx_8to512
+
+  # Create instance: tx_512to8, and set properties
+  set tx_512to8 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect:2.1 tx_512to8 ]
+  set_property -dict [ list \
+   CONFIG.M00_FIFO_DEPTH {1024} \
+   CONFIG.NUM_MI {1} \
+   CONFIG.S00_FIFO_DEPTH {1024} \
+ ] $tx_512to8
+
   # Create interface connections
-  connect_bd_intf_net -intf_net from_net_0_1 [get_bd_intf_ports from_mac] [get_bd_intf_pins net_loopback_0/from_net]
-  connect_bd_intf_net -intf_net net_loopback_0_to_net [get_bd_intf_ports to_mac] [get_bd_intf_pins net_loopback_0/to_net]
+  connect_bd_intf_net -intf_net axis_data_fifo_0_M_AXIS [get_bd_intf_ports to_mac] [get_bd_intf_pins axis_data_fifo_0/M_AXIS]
+  connect_bd_intf_net -intf_net axis_interconnect_0_M00_AXIS [get_bd_intf_pins net_loopback_0/from_net] [get_bd_intf_pins rx_8to512/M00_AXIS]
+  connect_bd_intf_net -intf_net from_mac_1 [get_bd_intf_ports from_mac] [get_bd_intf_pins rx_8to512/S00_AXIS]
+  connect_bd_intf_net -intf_net net_loopback_0_to_net [get_bd_intf_pins net_loopback_0/to_net] [get_bd_intf_pins tx_512to8/S00_AXIS]
+  connect_bd_intf_net -intf_net tx_512to8_M00_AXIS [get_bd_intf_pins axis_data_fifo_0/S_AXIS] [get_bd_intf_pins tx_512to8/M00_AXIS]
 
   # Create port connections
-  connect_bd_net -net ap_clk_0_1 [get_bd_ports clk_125] [get_bd_pins net_loopback_0/ap_clk]
-  connect_bd_net -net ap_rst_n_0_1 [get_bd_ports clk_125_rstn] [get_bd_pins net_loopback_0/ap_rst_n]
+  connect_bd_net -net ap_clk_0_1 [get_bd_ports clk_125] [get_bd_pins axis_data_fifo_0/s_axis_aclk] [get_bd_pins net_loopback_0/ap_clk] [get_bd_pins rx_8to512/ACLK] [get_bd_pins rx_8to512/M00_AXIS_ACLK] [get_bd_pins rx_8to512/S00_AXIS_ACLK] [get_bd_pins tx_512to8/ACLK] [get_bd_pins tx_512to8/M00_AXIS_ACLK] [get_bd_pins tx_512to8/S00_AXIS_ACLK]
+  connect_bd_net -net ap_rst_n_0_1 [get_bd_ports clk_125_rstn] [get_bd_pins axis_data_fifo_0/s_axis_aresetn] [get_bd_pins net_loopback_0/ap_rst_n] [get_bd_pins rx_8to512/ARESETN] [get_bd_pins rx_8to512/M00_AXIS_ARESETN] [get_bd_pins rx_8to512/S00_AXIS_ARESETN] [get_bd_pins tx_512to8/ARESETN] [get_bd_pins tx_512to8/M00_AXIS_ARESETN] [get_bd_pins tx_512to8/S00_AXIS_ARESETN]
 
   # Create address segments
 
