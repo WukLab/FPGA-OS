@@ -27,7 +27,7 @@ HLS_IP_CORES=(src)
 GENERATED_IP_FOLDER="${HLS_DIR}/../../generated_ip"
 
 # Customize: new IP folder prefix
-PREFIX=net_loopback
+PREFIX=dummy_net_dram
 
 # Check if the shared IP repo exists
 if [ ! -d "$GENERATED_IP_FOLDER" ]; then
