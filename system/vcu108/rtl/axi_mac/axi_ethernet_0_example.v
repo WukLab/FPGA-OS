@@ -5,7 +5,7 @@
 `timescale 1ps/1ps
 
 (* DowngradeIPIdentifiedWarnings = "yes" *)
-module axi_ethernet_0_example
+module legofpga_top
 (
     input          sys_rst              ,
     output         mtrlb_pktchk_error   ,
@@ -36,7 +36,22 @@ module axi_ethernet_0_example
     input clk_100,
     input clk_166,
     input clk_50,
-    input mmcm_locked_i
+    input mmcm_locked_i,
+    
+    output ddr4_sdram_c1_act_n,
+    output [16:0]ddr4_sdram_c1_adr,
+    output [1:0]ddr4_sdram_c1_ba,
+    output ddr4_sdram_c1_bg,
+    output ddr4_sdram_c1_ck_c,
+    output ddr4_sdram_c1_ck_t,
+    output ddr4_sdram_c1_cke,
+    output ddr4_sdram_c1_cs_n,
+    inout [7:0]ddr4_sdram_c1_dm_n,
+    inout [63:0]ddr4_sdram_c1_dq,
+    inout [7:0]ddr4_sdram_c1_dqs_c,
+    inout [7:0]ddr4_sdram_c1_dqs_t,
+    output ddr4_sdram_c1_odt,
+    output ddr4_sdram_c1_reset_n
 );
 
 wire [31:0] m_axis_rxd_tdata, m_axis_rxs_tdata, s_axis_txc_tdata, s_axis_txd_tdata;
@@ -112,20 +127,31 @@ wire loopback_from_net_TREADY;
 
 wire _rst;
 wire tx_mac_aclk_rst, tx_mac_aclk_rstn;
+wire clk_300_rst, clk_300_rstn;
 
-axi_ethernet_0_reset_sync tx_mac_aclk_rstn_gen(
+assign _rst = ~mmcm_locked_i || soft_rst;
+assign tx_mac_aclk_rstn = ~tx_mac_aclk_rst;
+assign clk_300_rstn = ~clk_300_rst;
+
+axi_ethernet_0_reset_sync rst_gen_tx_mac_aclk(
     .clk       (tx_mac_aclk),
     .reset_in  (_rst),
     .reset_out (tx_mac_aclk_rst)
 );
 
-assign _rst = ~mmcm_locked_i || soft_rst;
-assign tx_mac_aclk_rstn = ~tx_mac_aclk_rst;
+axi_ethernet_0_reset_sync rst_gen_clk_300(
+    .clk       (clk_300),
+    .reset_in  (_rst),
+    .reset_out (clk_300_rst)
+);
 
-LegoFPGA_1  legofpga
+LegoFPGA_1  u_legofpga_sys
 (
+    .sys_rst         (sys_rst),
     .clk_125         (tx_mac_aclk),
     .clk_125_rstn    (tx_mac_aclk_rstn),
+    .clk_300         (clk_300),
+    .clk_300_rstn    (clk_300_rstn),
 
     .to_mac_tdata   (tx_axis_mac_tdata),
     .to_mac_tvalid  (tx_axis_mac_tvalid),
@@ -137,10 +163,25 @@ LegoFPGA_1  legofpga
     .from_mac_tvalid  (rx_axis_mac_tvalid),
     .from_mac_tlast   (rx_axis_mac_tlast),
     .from_mac_tready  (loopback_from_net_TREADY),
-    .from_mac_tuser   (rx_axis_mac_tuser)
+    .from_mac_tuser   (rx_axis_mac_tuser),
+    
+    .ddr4_sdram_c1_act_n	(ddr4_sdram_c1_act_n),
+    .ddr4_sdram_c1_adr		(ddr4_sdram_c1_adr),
+    .ddr4_sdram_c1_ba		(ddr4_sdram_c1_ba),
+    .ddr4_sdram_c1_bg		(ddr4_sdram_c1_bg),
+    .ddr4_sdram_c1_ck_c		(ddr4_sdram_c1_ck_c),
+    .ddr4_sdram_c1_ck_t		(ddr4_sdram_c1_ck_t),
+    .ddr4_sdram_c1_cke		(ddr4_sdram_c1_cke),
+    .ddr4_sdram_c1_cs_n		(ddr4_sdram_c1_cs_n),
+    .ddr4_sdram_c1_dm_n		(ddr4_sdram_c1_dm_n),
+    .ddr4_sdram_c1_dq		(ddr4_sdram_c1_dq),
+    .ddr4_sdram_c1_dqs_c	(ddr4_sdram_c1_dqs_c),
+    .ddr4_sdram_c1_dqs_t	(ddr4_sdram_c1_dqs_t),
+    .ddr4_sdram_c1_odt		(ddr4_sdram_c1_odt),
+    .ddr4_sdram_c1_reset_n	(ddr4_sdram_c1_reset_n)
 );
 
-axi_ethernet_0_support   axi_ethernet_0_support
+axi_ethernet_0_support   mac_core
 (
     .s_axi_lite_resetn   (axi_lite_resetn   ),
     .s_axi_araddr        (s_axi_araddr      ),
@@ -194,7 +235,7 @@ axi_ethernet_0_support   axi_ethernet_0_support
     .s_axi_lite_clk      (axi_lite_clk      )
 );
 
-axi_ethernet_0_clocks_resets example_clocks_resets
+axi_ethernet_0_clocks_resets mac_clock_resets
 (
 	.clk_300(clk_300),
 	.clk_125(clk_125),
@@ -220,7 +261,7 @@ axi_ethernet_0_clocks_resets example_clocks_resets
     .axi_lite_clk_bufg (axi_lite_clk   )
 );
 
-axi_ethernet_0_axi_lite_ctrl axi_lite_ctrl_inst
+axi_ethernet_0_axi_lite_ctrl mac_axi_lite_ctrl
 (
     .axi_lite_resetn           (axi_lite_resetn         ),
     .m_axi_araddr              (s_axi_araddr            ),

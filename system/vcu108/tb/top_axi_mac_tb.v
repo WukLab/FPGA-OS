@@ -635,6 +635,21 @@ axi_ethernet_0_frame_typ tx_monitor_working_frame();
 //----------------------------------------------------------------------------
   wire phy_resetn;
 
+wire  ddr4_sdram_c1_act_n;
+wire  [16:0]ddr4_sdram_c1_adr;
+wire  [1:0]ddr4_sdram_c1_ba;
+wire  ddr4_sdram_c1_bg;
+wire  ddr4_sdram_c1_ck_c;
+wire  ddr4_sdram_c1_ck_t;
+wire  ddr4_sdram_c1_cke;
+wire  ddr4_sdram_c1_cs_n;
+wire  [7:0]ddr4_sdram_c1_dm_n;
+wire  [63:0]ddr4_sdram_c1_dq;
+wire  [7:0]ddr4_sdram_c1_dqs_c;
+wire  [7:0]ddr4_sdram_c1_dqs_t;
+wire  ddr4_sdram_c1_odt;
+wire  ddr4_sdram_c1_reset_n;
+
 top dut (
 // asynchronous reset
       .sys_rst              (reset           ),
@@ -659,7 +674,22 @@ top dut (
 
 // 125MHZ clock input from board
       .sysclk_125_clk_p           (ref_clk),
-      .sysclk_125_clk_n           (~ref_clk)
+      .sysclk_125_clk_n           (~ref_clk),
+
+    .ddr4_sdram_c1_act_n	(ddr4_sdram_c1_act_n),
+    .ddr4_sdram_c1_adr		(ddr4_sdram_c1_adr),
+    .ddr4_sdram_c1_ba		(ddr4_sdram_c1_ba),
+    .ddr4_sdram_c1_bg		(ddr4_sdram_c1_bg),
+    .ddr4_sdram_c1_ck_c		(ddr4_sdram_c1_ck_c),
+    .ddr4_sdram_c1_ck_t		(ddr4_sdram_c1_ck_t),
+    .ddr4_sdram_c1_cke		(ddr4_sdram_c1_cke),
+    .ddr4_sdram_c1_cs_n		(ddr4_sdram_c1_cs_n),
+    .ddr4_sdram_c1_dm_n		(ddr4_sdram_c1_dm_n),
+    .ddr4_sdram_c1_dq		(ddr4_sdram_c1_dq),
+    .ddr4_sdram_c1_dqs_c	(ddr4_sdram_c1_dqs_c),
+    .ddr4_sdram_c1_dqs_t	(ddr4_sdram_c1_dqs_t),
+    .ddr4_sdram_c1_odt		(ddr4_sdram_c1_odt),
+    .ddr4_sdram_c1_reset_n	(ddr4_sdram_c1_reset_n)
 );
 
 //---------------------------------------------------------------------------

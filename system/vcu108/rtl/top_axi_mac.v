@@ -40,13 +40,28 @@ module top(
 
     // VCU108: 125MHz clock input from board
     input          sysclk_125_clk_p,
-    input          sysclk_125_clk_n
+    input          sysclk_125_clk_n,
+
+    output ddr4_sdram_c1_act_n,
+    output [16:0]ddr4_sdram_c1_adr,
+    output [1:0]ddr4_sdram_c1_ba,
+    output ddr4_sdram_c1_bg,
+    output ddr4_sdram_c1_ck_c,
+    output ddr4_sdram_c1_ck_t,
+    output ddr4_sdram_c1_cke,
+    output ddr4_sdram_c1_cs_n,
+    inout [7:0]ddr4_sdram_c1_dm_n,
+    inout [63:0]ddr4_sdram_c1_dq,
+    inout [7:0]ddr4_sdram_c1_dqs_c,
+    inout [7:0]ddr4_sdram_c1_dqs_t,
+    output ddr4_sdram_c1_odt,
+    output ddr4_sdram_c1_reset_n
 );
 
   wire clk_300, clk_125, clk_100, clk_166, clk_50;
   wire mmcm_lock_i, mmcm_lock_i_2;
 
-  clock_axi_eth clk_gen (
+  clock_axi_eth u_legofpga_clk (
         .clk_in1_p_0(sysclk_125_clk_p),
         .clk_in1_n_0(sysclk_125_clk_n),
         
@@ -60,7 +75,7 @@ module top(
         .clk_50(clk_50)
   );
 
-  axi_ethernet_0_example system (
+  legofpga_top u_legofpga_top (
       .sys_rst              (sys_rst),
       .start_config         (start_config),
  
@@ -86,7 +101,22 @@ module top(
       .clk_100(clk_100),
       .clk_166(clk_166),
       .clk_50(clk_50),
-      .mmcm_locked_i(mmcm_locked_i)
+      .mmcm_locked_i(mmcm_locked_i),
+
+    .ddr4_sdram_c1_act_n	(ddr4_sdram_c1_act_n),
+    .ddr4_sdram_c1_adr		(ddr4_sdram_c1_adr),
+    .ddr4_sdram_c1_ba		(ddr4_sdram_c1_ba),
+    .ddr4_sdram_c1_bg		(ddr4_sdram_c1_bg),
+    .ddr4_sdram_c1_ck_c		(ddr4_sdram_c1_ck_c),
+    .ddr4_sdram_c1_ck_t		(ddr4_sdram_c1_ck_t),
+    .ddr4_sdram_c1_cke		(ddr4_sdram_c1_cke),
+    .ddr4_sdram_c1_cs_n		(ddr4_sdram_c1_cs_n),
+    .ddr4_sdram_c1_dm_n		(ddr4_sdram_c1_dm_n),
+    .ddr4_sdram_c1_dq		(ddr4_sdram_c1_dq),
+    .ddr4_sdram_c1_dqs_c	(ddr4_sdram_c1_dqs_c),
+    .ddr4_sdram_c1_dqs_t	(ddr4_sdram_c1_dqs_t),
+    .ddr4_sdram_c1_odt		(ddr4_sdram_c1_odt),
+    .ddr4_sdram_c1_reset_n	(ddr4_sdram_c1_reset_n)
    );
 
 endmodule

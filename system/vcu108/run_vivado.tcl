@@ -246,7 +246,9 @@ proc cr_bd_LegoFPGA_1 { parentCell } {
   if { $bCheckIPs == 1 } {
      set list_check_ips "\ 
   xilinx.com:ip:axis_data_fifo:1.1\
-  wuklab:hls:net_loopback:1.0\
+  xilinx.com:ip:ddr4:2.2\
+  wuklab:hls:top_func:1.0\
+  xilinx.com:ip:util_vector_logic:2.0\
   "
 
    set list_ips_missing ""
@@ -299,6 +301,7 @@ proc cr_bd_LegoFPGA_1 { parentCell } {
 
 
   # Create interface ports
+  set ddr4_sdram_c1 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 ddr4_sdram_c1 ]
   set from_mac [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 from_mac ]
   set_property -dict [ list \
    CONFIG.HAS_TKEEP {0} \
@@ -315,7 +318,26 @@ proc cr_bd_LegoFPGA_1 { parentCell } {
 
   # Create ports
   set clk_125 [ create_bd_port -dir I -type clk clk_125 ]
+  set_property -dict [ list \
+   CONFIG.ASSOCIATED_BUSIF {from_mac:to_mac:m_axi_dram} \
+ ] $clk_125
   set clk_125_rstn [ create_bd_port -dir I -type rst clk_125_rstn ]
+  set clk_300 [ create_bd_port -dir I -type clk clk_300 ]
+  set_property -dict [ list \
+   CONFIG.ASSOCIATED_RESET {clk_300_rstn} \
+   CONFIG.FREQ_HZ {300000000} \
+ ] $clk_300
+  set clk_300_rstn [ create_bd_port -dir I -type rst clk_300_rstn ]
+  set sys_rst [ create_bd_port -dir I -type rst sys_rst ]
+  set_property -dict [ list \
+   CONFIG.POLARITY {ACTIVE_HIGH} \
+ ] $sys_rst
+
+  # Create instance: axi_interconnect_0, and set properties
+  set axi_interconnect_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_interconnect_0 ]
+  set_property -dict [ list \
+   CONFIG.NUM_MI {1} \
+ ] $axi_interconnect_0
 
   # Create instance: axis_data_fifo_0, and set properties
   set axis_data_fifo_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_data_fifo:1.1 axis_data_fifo_0 ]
@@ -323,8 +345,11 @@ proc cr_bd_LegoFPGA_1 { parentCell } {
    CONFIG.TDATA_NUM_BYTES {1} \
  ] $axis_data_fifo_0
 
-  # Create instance: net_loopback_0, and set properties
-  set net_loopback_0 [ create_bd_cell -type ip -vlnv wuklab:hls:net_loopback:1.0 net_loopback_0 ]
+  # Create instance: ddr4_0, and set properties
+  set ddr4_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:ddr4:2.2 ddr4_0 ]
+  set_property -dict [ list \
+   CONFIG.C0_DDR4_BOARD_INTERFACE {ddr4_sdram_c1} \
+ ] $ddr4_0
 
   # Create instance: rx_8to512, and set properties
   set rx_8to512 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect:2.1 rx_8to512 ]
@@ -334,6 +359,9 @@ proc cr_bd_LegoFPGA_1 { parentCell } {
    CONFIG.S00_FIFO_DEPTH {1024} \
  ] $rx_8to512
 
+  # Create instance: top_func_0, and set properties
+  set top_func_0 [ create_bd_cell -type ip -vlnv wuklab:hls:top_func:1.0 top_func_0 ]
+
   # Create instance: tx_512to8, and set properties
   set tx_512to8 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect:2.1 tx_512to8 ]
   set_property -dict [ list \
@@ -342,18 +370,36 @@ proc cr_bd_LegoFPGA_1 { parentCell } {
    CONFIG.S00_FIFO_DEPTH {1024} \
  ] $tx_512to8
 
+  # Create instance: util_vector_logic_0, and set properties
+  set util_vector_logic_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_0 ]
+  set_property -dict [ list \
+   CONFIG.C_OPERATION {not} \
+   CONFIG.C_SIZE {1} \
+   CONFIG.LOGO_FILE {data/sym_notgate.png} \
+ ] $util_vector_logic_0
+
   # Create interface connections
+  connect_bd_intf_net -intf_net axi_interconnect_0_M00_AXI [get_bd_intf_pins axi_interconnect_0/M00_AXI] [get_bd_intf_pins ddr4_0/C0_DDR4_S_AXI]
   connect_bd_intf_net -intf_net axis_data_fifo_0_M_AXIS [get_bd_intf_ports to_mac] [get_bd_intf_pins axis_data_fifo_0/M_AXIS]
-  connect_bd_intf_net -intf_net axis_interconnect_0_M00_AXIS [get_bd_intf_pins net_loopback_0/from_net] [get_bd_intf_pins rx_8to512/M00_AXIS]
+  connect_bd_intf_net -intf_net ddr4_0_C0_DDR4 [get_bd_intf_ports ddr4_sdram_c1] [get_bd_intf_pins ddr4_0/C0_DDR4]
   connect_bd_intf_net -intf_net from_mac_1 [get_bd_intf_ports from_mac] [get_bd_intf_pins rx_8to512/S00_AXIS]
-  connect_bd_intf_net -intf_net net_loopback_0_to_net [get_bd_intf_pins net_loopback_0/to_net] [get_bd_intf_pins tx_512to8/S00_AXIS]
+  connect_bd_intf_net -intf_net rx_8to512_M00_AXIS [get_bd_intf_pins rx_8to512/M00_AXIS] [get_bd_intf_pins top_func_0/from_net]
+  connect_bd_intf_net -intf_net top_func_0_m_axi_dram_V [get_bd_intf_pins axi_interconnect_0/S00_AXI] [get_bd_intf_pins top_func_0/m_axi_dram_V]
+  connect_bd_intf_net -intf_net top_func_0_to_net [get_bd_intf_pins top_func_0/to_net] [get_bd_intf_pins tx_512to8/S00_AXIS]
   connect_bd_intf_net -intf_net tx_512to8_M00_AXIS [get_bd_intf_pins axis_data_fifo_0/S_AXIS] [get_bd_intf_pins tx_512to8/M00_AXIS]
 
   # Create port connections
-  connect_bd_net -net ap_clk_0_1 [get_bd_ports clk_125] [get_bd_pins axis_data_fifo_0/s_axis_aclk] [get_bd_pins net_loopback_0/ap_clk] [get_bd_pins rx_8to512/ACLK] [get_bd_pins rx_8to512/M00_AXIS_ACLK] [get_bd_pins rx_8to512/S00_AXIS_ACLK] [get_bd_pins tx_512to8/ACLK] [get_bd_pins tx_512to8/M00_AXIS_ACLK] [get_bd_pins tx_512to8/S00_AXIS_ACLK]
-  connect_bd_net -net ap_rst_n_0_1 [get_bd_ports clk_125_rstn] [get_bd_pins axis_data_fifo_0/s_axis_aresetn] [get_bd_pins net_loopback_0/ap_rst_n] [get_bd_pins rx_8to512/ARESETN] [get_bd_pins rx_8to512/M00_AXIS_ARESETN] [get_bd_pins rx_8to512/S00_AXIS_ARESETN] [get_bd_pins tx_512to8/ARESETN] [get_bd_pins tx_512to8/M00_AXIS_ARESETN] [get_bd_pins tx_512to8/S00_AXIS_ARESETN]
+  connect_bd_net -net M00_ACLK_1 [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins ddr4_0/c0_ddr4_ui_clk]
+  connect_bd_net -net ap_clk_0_1 [get_bd_ports clk_125] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axis_data_fifo_0/s_axis_aclk] [get_bd_pins rx_8to512/ACLK] [get_bd_pins rx_8to512/M00_AXIS_ACLK] [get_bd_pins rx_8to512/S00_AXIS_ACLK] [get_bd_pins top_func_0/ap_clk] [get_bd_pins tx_512to8/ACLK] [get_bd_pins tx_512to8/M00_AXIS_ACLK] [get_bd_pins tx_512to8/S00_AXIS_ACLK]
+  connect_bd_net -net ap_rst_n_0_1 [get_bd_ports clk_125_rstn] [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axis_data_fifo_0/s_axis_aresetn] [get_bd_pins rx_8to512/ARESETN] [get_bd_pins rx_8to512/M00_AXIS_ARESETN] [get_bd_pins rx_8to512/S00_AXIS_ARESETN] [get_bd_pins top_func_0/ap_rst_n] [get_bd_pins tx_512to8/ARESETN] [get_bd_pins tx_512to8/M00_AXIS_ARESETN] [get_bd_pins tx_512to8/S00_AXIS_ARESETN]
+  connect_bd_net -net c0_ddr4_aresetn_0_1 [get_bd_ports clk_300_rstn] [get_bd_pins ddr4_0/c0_ddr4_aresetn]
+  connect_bd_net -net c0_sys_clk_i_0_1 [get_bd_ports clk_300] [get_bd_pins ddr4_0/c0_sys_clk_i]
+  connect_bd_net -net ddr4_0_c0_ddr4_ui_clk_sync_rst [get_bd_pins ddr4_0/c0_ddr4_ui_clk_sync_rst] [get_bd_pins util_vector_logic_0/Op1]
+  connect_bd_net -net sys_rst_0_1 [get_bd_ports sys_rst] [get_bd_pins ddr4_0/sys_rst]
+  connect_bd_net -net util_vector_logic_0_Res [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins util_vector_logic_0/Res]
 
   # Create address segments
+  create_bd_addr_seg -range 0x000100000000 -offset 0x00000000 [get_bd_addr_spaces top_func_0/Data_m_axi_dram_V] [get_bd_addr_segs ddr4_0/C0_DDR4_MEMORY_MAP/C0_DDR4_ADDRESS_BLOCK] SEG_ddr4_0_C0_DDR4_ADDRESS_BLOCK
 
 
   # Restore current instance
