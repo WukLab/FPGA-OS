@@ -137,10 +137,10 @@ set files [list \
  [file normalize "${origin_dir}/rtl/axi_mac/axi_ethernet_0_example.v" ]\
  [file normalize "${origin_dir}/rtl/axi_mac/axi_ethernet_0_reset_sync.v" ]\
  [file normalize "${origin_dir}/rtl/axi_mac/axi_ethernet_0_support.v" ]\
+ [file normalize "${origin_dir}/rtl/qsfp_mac/sm.v"]\
+ [file normalize "${origin_dir}/rtl/qsfp_mac/axi4_lite.v"]\
  [file normalize "${origin_dir}/rtl/top_axi_mac.v" ]\
- [file normalize "${origin_dir}/rtl/qsfp_mac/xxv_ethernet_0_exdes.v"] \
- [file normalize "${origin_dir}/rtl/qsfp_mac/xxv_ethernet_0_pkt_gen_mon.v"] \
- [file normalize "${origin_dir}/rtl/qsfp_mac/xxv_ethernet_0_axi4_lite_user_if.v"] \
+ [file normalize "${origin_dir}/rtl/top_qsfp_mac.v" ]\
 ]
 add_files -norecurse -fileset $obj $files
 
@@ -171,6 +171,14 @@ if {[string equal [get_filesets -quiet constrs_1] ""]} {
 
 # Set 'constrs_1' fileset object
 set obj [get_filesets constrs_1]
+
+# Add/Import constrs file and set constrs file properties
+set file "[file normalize "$origin_dir/rtl/top_qsfp_mac.xdc"]"
+set file_added [add_files -norecurse -fileset $obj [list $file]]
+set file "rtl/top_qsfp_mac.xdc"
+set file_obj [get_files -of_objects [get_filesets constrs_1] [list "*$file"]]
+set_property -name "file_type" -value "XDC" -objects $file_obj
+set_property -name "processing_order" -value "EARLY" -objects $file_obj
 
 # Add/Import constrs file and set constrs file properties
 set file "[file normalize "$origin_dir/rtl/axi_mac/axi_ethernet_0_example_design.xdc"]"

@@ -60,8 +60,6 @@ module legofpga_mac_qsfp_tb
 	reg             sys_reset;
 	wire [1-1:0] gt_txp_out;
 	wire [1-1:0] gt_txn_out;
-	reg             restart_tx_rx_0;
-	reg             send_continous_pkts_0;
 	wire            rx_gt_locked_led_0;
 	wire            rx_block_lock_led_0;
 	reg             timed_out;
@@ -70,21 +68,20 @@ module legofpga_mac_qsfp_tb
 	wire [4:0]      completion_status;
 
 	legofpga_mac_qsfp	DUT (
-		.gt_refclk_p		(gt_refclk_p),
-		.gt_refclk_n		(gt_refclk_n),
 		.gt_rxp_in		(gt_txp_out),
 		.gt_rxn_in		(gt_txn_out),
 		.gt_txp_out		(gt_txp_out),
 		.gt_txn_out		(gt_txn_out),
+
+		.gt_refclk_p		(gt_refclk_p),
+		.gt_refclk_n		(gt_refclk_n),
 
 		.sys_reset		(sys_reset),
 		.dclk			(dclk),
 
 		.rx_gt_locked_led_0	(rx_gt_locked_led_0),
 		.rx_block_lock_led_0	(rx_block_lock_led_0),
-		.completion_status	(completion_status),
-		.restart_tx_rx_0	(restart_tx_rx_0),
-		.send_continous_pkts_0	(send_continous_pkts_0)
+		.completion_status	(completion_status)
 	);
 
     initial
@@ -100,8 +97,6 @@ module legofpga_mac_qsfp_tb
       gt_refclk_n = 1;
       dclk   = 0;
       sys_reset  = 1; 
-      restart_tx_rx_0 = 0;
-      send_continous_pkts_0 = 0;
 
       repeat (20) @(posedge dclk);
       sys_reset = 0;
@@ -136,25 +131,9 @@ module legofpga_mac_qsfp_tb
       end
       time_out_cntr_en = 0;
 
-      $display("INFO : WAITING FOR COMPLETION STATUS..........");
+      $display("INFO : Waiting for completion status..........");
       wait ( ( completion_status != 5'h1F ) && ( completion_status != 5'h0 ) ) ;
-      if (completion_status == 5'h01)
-          $display("INFO : COMPLETION_STATUS = 5'b00001");
-
-      repeat(100) #1_000_000_000;         // wait for 100 more us
       display_result(completion_status);
-
-      restart_tx_rx_0 = 1;                      //// Restarting packet generation.
-      repeat (10) @(posedge dclk);
-      restart_tx_rx_0 = 0;
-      $display("INFO : PACKET GENERATION RESTARTED");
-      $display("INFO : WAITING FOR COMPLETION STATUS..........");
-      wait ( ( completion_status != 5'h1F ) && ( completion_status != 5'h0 ) ) ;
-      if (completion_status == 5'h01)
-      $display("INFO : COMPLETION_STATUS = 5'b00001");
-      repeat(300) #1_000_000_000;         // wait for 300 more us
-      display_result(completion_status);
-
 
   $finish; 
 
