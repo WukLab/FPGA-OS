@@ -175,10 +175,26 @@ module legofpga_mac_qsfp
 
 	assign txoutclksel_in_0 = 3'b101;    // this value should not be changed as per gtwizard 
 	assign rxoutclksel_in_0 = 3'b101;    // this value should not be changed as per gtwizard
-	assign rx_block_lock_led_0 = block_lock_led_0 & stat_rx_status_0;
 	wire [31:0] user_reg0_0;
 
 	wire gt_refclk_out;
+
+	wire mac_ready;
+	wire fsm_out_pktgen_enable;
+	wire fsm_out_sys_reset;
+
+	assign rx_block_lock_led_0 = block_lock_led_0 & stat_rx_status_0;
+
+	/*
+	 * mac_ready indicate the the MAC layer is ready
+	 * to be used by LegoFPGA layer.
+	 *
+	 * The *_led signals are legacy code from reference
+	 * design. the pktgen_enable is from FSM output.
+	 */
+	assign mac_ready = fsm_out_pktgen_enable &
+			   rx_gt_locked_led_0 &
+			   rx_block_lock_led_0;
 
 	/*
 	 * This is a block diagram, which only has the xxv IP.
@@ -335,6 +351,9 @@ module legofpga_mac_qsfp
 	mac_qsfp_sm u_mac_qsfp_sm (
 		.dclk			(dclk),
 		.sys_reset		(sys_reset),
+
+		.fsm_out_pktgen_enable	(fsm_out_pktgen_enable),
+		.fsm_out_sys_reset	(fsm_out_sys_reset),
 
 		// User Interface signals
 		.completion_status	(completion_status),

@@ -15,6 +15,9 @@ module mac_qsfp_sm
 	input		dclk,
 	input		sys_reset,
 
+	output		fsm_out_pktgen_enable,
+	output		fsm_out_sys_reset,
+
 	output reg [4:0]completion_status,
 	output wire	rx_gt_locked_led,
 	output wire	rx_block_lock_led,
@@ -219,9 +222,12 @@ module mac_qsfp_sm
 		  .stat_rx_aligned             (stat_rx_aligned),
 		  .stat_rx_status              (stat_rx_status),
 
-		  /* Output from fsm */
-		  .sys_reset                   (),
-		  .pktgen_enable               (),
+		  // Output from fsm
+		  // - fsm_out_pktgen_enable: wait until its is 1
+		  //   before sending out any packets.
+		  // - fsm_out_sys_reset:
+		  .sys_reset                   (fsm_out_sys_reset),
+		  .pktgen_enable               (fsm_out_pktgen_enable),
 		  .completion_status           (completion_status_int)
 	);
 
@@ -236,9 +242,7 @@ module mac_qsfp_sm
 	      end
 	  end
 
-	//
 	// Now deal with gt_locked and block_lock signals
-	//
 	gen_lock_signals u_gen_lock (
 		.rx_clk			(mon_clk),
 		.tx_resetn		(user_tx_reset),
@@ -392,9 +396,9 @@ module FSM_AXIS
 		  S0: state <= S1;
 		  S1: begin
 `ifdef SIM_SPEED_UP
-			common_timer <= cvt_us ( 32'd100 );               // If this is the example simulation then only wait for 100 us
+			common_timer <= cvt_us ( 32'd100 );	// If this is the example simulation then only wait for 100 us
 `else
-			common_timer <= cvt_us ( 32'd10_000 );               // Wait for 10ms...do nothing; settling time for MMCs, oscilators, QPLLs etc.
+			common_timer <= cvt_us ( 32'd10_000 );	// Wait for 10ms...do nothing; settling time for MMCs, oscilators, QPLLs etc.
 `endif
 			completion_status <= TEST_START;
 			state <= S2;
@@ -407,8 +411,8 @@ module FSM_AXIS
 		      end
 		  S4: state <= (|common_timer) ? S4 : S5;
 		  S5: begin
-			common_timer <= cvt_us( 5 );                    // Allow about 5 us for the reset to propagate into the downstream hardware
-			sys_reset <= 1'b0;     // Clear the reset
+			common_timer <= cvt_us( 5 ); // Allow about 5 us for the reset to propagate into the downstream hardware
+			sys_reset <= 1'b0;           // Clear the reset
 			state <= S16;
 		      end
 		 S16: state <= (|common_timer) ? S16 : S17;
