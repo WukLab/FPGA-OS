@@ -120,7 +120,7 @@
 // This module is the demonstration testbench
 //------------------------------------------------------------------------------
 
-module axi_ethernet_0_demo_tb ;
+module legofpga_mac_axi_tb ;
 
 //---------------------------------
 // testbench mode selection

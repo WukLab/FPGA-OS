@@ -138,6 +138,9 @@ set files [list \
  [file normalize "${origin_dir}/rtl/axi_mac/axi_ethernet_0_reset_sync.v" ]\
  [file normalize "${origin_dir}/rtl/axi_mac/axi_ethernet_0_support.v" ]\
  [file normalize "${origin_dir}/rtl/top_axi_mac.v" ]\
+ [file normalize "${origin_dir}/rtl/qsfp_mac/xxv_ethernet_0_exdes.v"] \
+ [file normalize "${origin_dir}/rtl/qsfp_mac/xxv_ethernet_0_pkt_gen_mon.v"] \
+ [file normalize "${origin_dir}/rtl/qsfp_mac/xxv_ethernet_0_axi4_lite_user_if.v"] \
 ]
 add_files -norecurse -fileset $obj $files
 
@@ -199,6 +202,7 @@ set obj [get_filesets sim_1]
 set files [list \
  [file normalize "${origin_dir}/tb/axi_ethernet_0_frame_typ.v" ]\
  [file normalize "${origin_dir}/tb/top_axi_mac_tb.v" ]\
+ [file normalize "${origin_dir}/tb/top_qsfp_mac_tb.v" ]\
 ]
 add_files -norecurse -fileset $obj $files
 
@@ -610,6 +614,261 @@ cr_bd_clock_axi_eth ""
 set_property IS_MANAGED "0" [get_files clock_axi_eth.bd ] 
 set_property REGISTERED_WITH_MANAGER "1" [get_files clock_axi_eth.bd ] 
 set_property SYNTH_CHECKPOINT_MODE "Hierarchical" [get_files clock_axi_eth.bd ] 
+
+
+# Proc to create BD mac_qsfp
+proc cr_bd_mac_qsfp { parentCell } {
+
+  # CHANGE DESIGN NAME HERE
+  set design_name mac_qsfp
+
+  common::send_msg_id "BD_TCL-003" "INFO" "Currently there is no design <$design_name> in project, so creating one..."
+
+  create_bd_design $design_name
+
+  set bCheckIPsPassed 1
+  ##################################################################
+  # CHECK IPs
+  ##################################################################
+  set bCheckIPs 1
+  if { $bCheckIPs == 1 } {
+     set list_check_ips "\ 
+  xilinx.com:ip:xxv_ethernet:2.4\
+  "
+
+   set list_ips_missing ""
+   common::send_msg_id "BD_TCL-006" "INFO" "Checking if the following IPs exist in the project's IP catalog: $list_check_ips ."
+
+   foreach ip_vlnv $list_check_ips {
+      set ip_obj [get_ipdefs -all $ip_vlnv]
+      if { $ip_obj eq "" } {
+         lappend list_ips_missing $ip_vlnv
+      }
+   }
+
+   if { $list_ips_missing ne "" } {
+      catch {common::send_msg_id "BD_TCL-115" "ERROR" "The following IPs are not found in the IP Catalog:\n  $list_ips_missing\n\nResolution: Please add the repository containing the IP(s) to the project." }
+      set bCheckIPsPassed 0
+   }
+
+  }
+
+  if { $bCheckIPsPassed != 1 } {
+    common::send_msg_id "BD_TCL-1003" "WARNING" "Will not continue with creation of design due to the error(s) above."
+    return 3
+  }
+
+  variable script_folder
+
+  if { $parentCell eq "" } {
+     set parentCell [get_bd_cells /]
+  }
+
+  # Get object for parentCell
+  set parentObj [get_bd_cells $parentCell]
+  if { $parentObj == "" } {
+     catch {common::send_msg_id "BD_TCL-100" "ERROR" "Unable to find parent cell <$parentCell>!"}
+     return
+  }
+
+  # Make sure parentObj is hier blk
+  set parentType [get_property TYPE $parentObj]
+  if { $parentType ne "hier" } {
+     catch {common::send_msg_id "BD_TCL-101" "ERROR" "Parent <$parentObj> has TYPE = <$parentType>. Expected to be <hier>."}
+     return
+  }
+
+  # Save current instance; Restore later
+  set oldCurInst [current_bd_instance .]
+
+  # Set parent object as current
+  current_bd_instance $parentObj
+
+
+  # Create interface ports
+  set ctl_tx [ create_bd_intf_port -mode Slave -vlnv xilinx.com:display_xxv_ethernet:ctrl_ports:2.0 ctl_tx ]
+  set gt_ref_clk_0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 gt_ref_clk_0 ]
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {161132812} \
+   ] $gt_ref_clk_0
+  set gt_serial_port_0 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:gt_rtl:1.0 gt_serial_port_0 ]
+  set rx_axis [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 rx_axis ]
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {390625000} \
+   CONFIG.PHASE {0} \
+   ] $rx_axis
+  set s_axi [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 s_axi ]
+  set_property -dict [ list \
+   CONFIG.ADDR_WIDTH {32} \
+   CONFIG.ARUSER_WIDTH {0} \
+   CONFIG.AWUSER_WIDTH {0} \
+   CONFIG.BUSER_WIDTH {0} \
+   CONFIG.DATA_WIDTH {32} \
+   CONFIG.HAS_BRESP {1} \
+   CONFIG.HAS_BURST {0} \
+   CONFIG.HAS_CACHE {0} \
+   CONFIG.HAS_LOCK {0} \
+   CONFIG.HAS_PROT {0} \
+   CONFIG.HAS_QOS {0} \
+   CONFIG.HAS_REGION {0} \
+   CONFIG.HAS_RRESP {1} \
+   CONFIG.HAS_WSTRB {1} \
+   CONFIG.ID_WIDTH {0} \
+   CONFIG.MAX_BURST_LENGTH {1} \
+   CONFIG.NUM_READ_OUTSTANDING {1} \
+   CONFIG.NUM_READ_THREADS {1} \
+   CONFIG.NUM_WRITE_OUTSTANDING {1} \
+   CONFIG.NUM_WRITE_THREADS {1} \
+   CONFIG.PROTOCOL {AXI4LITE} \
+   CONFIG.READ_WRITE_MODE {READ_WRITE} \
+   CONFIG.RUSER_BITS_PER_BYTE {0} \
+   CONFIG.RUSER_WIDTH {0} \
+   CONFIG.SUPPORTS_NARROW_BURST {0} \
+   CONFIG.WUSER_BITS_PER_BYTE {0} \
+   CONFIG.WUSER_WIDTH {0} \
+   ] $s_axi
+  set stat_rx [ create_bd_intf_port -mode Master -vlnv xilinx.com:display_xxv_ethernet:statistics_ports:2.0 stat_rx ]
+  set stat_tx [ create_bd_intf_port -mode Master -vlnv xilinx.com:display_xxv_ethernet:statistics_ports:2.0 stat_tx ]
+  set tx_axis [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 tx_axis ]
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {390625000} \
+   CONFIG.HAS_TKEEP {1} \
+   CONFIG.HAS_TLAST {1} \
+   CONFIG.HAS_TREADY {1} \
+   CONFIG.HAS_TSTRB {0} \
+   CONFIG.LAYERED_METADATA {undef} \
+   CONFIG.TDATA_NUM_BYTES {8} \
+   CONFIG.TDEST_WIDTH {0} \
+   CONFIG.TID_WIDTH {0} \
+   CONFIG.TUSER_WIDTH {1} \
+   ] $tx_axis
+
+  # Create ports
+  set dclk [ create_bd_port -dir I -type clk dclk ]
+  set_property -dict [ list \
+   CONFIG.ASSOCIATED_RESET {sys_reset} \
+ ] $dclk
+  set gt_refclk_out_0 [ create_bd_port -dir O -type clk gt_refclk_out_0 ]
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {161132812} \
+ ] $gt_refclk_out_0
+  set gtpowergood_out_0 [ create_bd_port -dir O gtpowergood_out_0 ]
+  set gtwiz_reset_rx_datapath_0 [ create_bd_port -dir I -type rst gtwiz_reset_rx_datapath_0 ]
+  set_property -dict [ list \
+   CONFIG.POLARITY {ACTIVE_HIGH} \
+ ] $gtwiz_reset_rx_datapath_0
+  set gtwiz_reset_tx_datapath_0 [ create_bd_port -dir I -type rst gtwiz_reset_tx_datapath_0 ]
+  set_property -dict [ list \
+   CONFIG.POLARITY {ACTIVE_HIGH} \
+ ] $gtwiz_reset_tx_datapath_0
+  set pm_tick_0 [ create_bd_port -dir I pm_tick_0 ]
+  set rx_clk_out_0 [ create_bd_port -dir O -type clk rx_clk_out_0 ]
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {390625000} \
+ ] $rx_clk_out_0
+  set rx_core_clk_0 [ create_bd_port -dir I -type clk rx_core_clk_0 ]
+  set_property -dict [ list \
+   CONFIG.ASSOCIATED_BUSIF {rx_axis} \
+   CONFIG.ASSOCIATED_RESET {rx_reset_0} \
+   CONFIG.FREQ_HZ {390625000} \
+   CONFIG.PHASE {0} \
+ ] $rx_core_clk_0
+  set rx_preambleout_0 [ create_bd_port -dir O -from 55 -to 0 rx_preambleout_0 ]
+  set rx_reset_0 [ create_bd_port -dir I -type rst rx_reset_0 ]
+  set_property -dict [ list \
+   CONFIG.POLARITY {ACTIVE_HIGH} \
+ ] $rx_reset_0
+  set rxoutclksel_in_0 [ create_bd_port -dir I -from 2 -to 0 rxoutclksel_in_0 ]
+  set rxrecclkout_0 [ create_bd_port -dir O -type clk rxrecclkout_0 ]
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {390625000} \
+ ] $rxrecclkout_0
+  set s_axi_aclk_0 [ create_bd_port -dir I -type clk s_axi_aclk_0 ]
+  set_property -dict [ list \
+   CONFIG.ASSOCIATED_BUSIF {s_axi} \
+   CONFIG.ASSOCIATED_RESET {s_axi_aresetn_0} \
+ ] $s_axi_aclk_0
+  set s_axi_aresetn_0 [ create_bd_port -dir I -type rst s_axi_aresetn_0 ]
+  set stat_rx_status_0 [ create_bd_port -dir O stat_rx_status_0 ]
+  set sys_reset [ create_bd_port -dir I -type rst sys_reset ]
+  set_property -dict [ list \
+   CONFIG.POLARITY {ACTIVE_HIGH} \
+ ] $sys_reset
+  set tx_clk_out_0 [ create_bd_port -dir O -type clk tx_clk_out_0 ]
+  set_property -dict [ list \
+   CONFIG.ASSOCIATED_BUSIF {tx_axis} \
+   CONFIG.FREQ_HZ {390625000} \
+ ] $tx_clk_out_0
+  set tx_preamblein_0 [ create_bd_port -dir I -from 55 -to 0 tx_preamblein_0 ]
+  set tx_reset_0 [ create_bd_port -dir I -type rst tx_reset_0 ]
+  set_property -dict [ list \
+   CONFIG.POLARITY {ACTIVE_HIGH} \
+ ] $tx_reset_0
+  set tx_unfout_0 [ create_bd_port -dir O tx_unfout_0 ]
+  set txoutclksel_in_0 [ create_bd_port -dir I -from 2 -to 0 txoutclksel_in_0 ]
+  set user_reg0_0 [ create_bd_port -dir O -from 31 -to 0 user_reg0_0 ]
+  set user_rx_reset_0 [ create_bd_port -dir O -type rst user_rx_reset_0 ]
+  set user_tx_reset_0 [ create_bd_port -dir O -type rst user_tx_reset_0 ]
+
+  # Create instance: xxv_ethernet_0, and set properties
+  set xxv_ethernet_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xxv_ethernet:2.4 xxv_ethernet_0 ]
+  set_property -dict [ list \
+   CONFIG.DIFFCLK_BOARD_INTERFACE {qsfp_mgt_si570_clock2} \
+   CONFIG.ETHERNET_BOARD_INTERFACE {qsfp_1x} \
+   CONFIG.USE_BOARD_FLOW {true} \
+ ] $xxv_ethernet_0
+
+  # Create interface connections
+  connect_bd_intf_net -intf_net axis_tx_0_0_1 [get_bd_intf_ports tx_axis] [get_bd_intf_pins xxv_ethernet_0/axis_tx_0]
+  connect_bd_intf_net -intf_net ctl_tx_0_0_1 [get_bd_intf_ports ctl_tx] [get_bd_intf_pins xxv_ethernet_0/ctl_tx_0]
+  connect_bd_intf_net -intf_net gt_ref_clk_0_1 [get_bd_intf_ports gt_ref_clk_0] [get_bd_intf_pins xxv_ethernet_0/gt_ref_clk]
+  connect_bd_intf_net -intf_net s_axi_0_0_1 [get_bd_intf_ports s_axi] [get_bd_intf_pins xxv_ethernet_0/s_axi_0]
+  connect_bd_intf_net -intf_net xxv_ethernet_0_axis_rx_0 [get_bd_intf_ports rx_axis] [get_bd_intf_pins xxv_ethernet_0/axis_rx_0]
+  connect_bd_intf_net -intf_net xxv_ethernet_0_gt_serial_port [get_bd_intf_ports gt_serial_port_0] [get_bd_intf_pins xxv_ethernet_0/gt_serial_port]
+  connect_bd_intf_net -intf_net xxv_ethernet_0_stat_rx_0 [get_bd_intf_ports stat_rx] [get_bd_intf_pins xxv_ethernet_0/stat_rx_0]
+  connect_bd_intf_net -intf_net xxv_ethernet_0_stat_tx_0 [get_bd_intf_ports stat_tx] [get_bd_intf_pins xxv_ethernet_0/stat_tx_0]
+
+  # Create port connections
+  connect_bd_net -net dclk_0_1 [get_bd_ports dclk] [get_bd_pins xxv_ethernet_0/dclk]
+  connect_bd_net -net gtwiz_reset_rx_datapath_0_0_1 [get_bd_ports gtwiz_reset_rx_datapath_0] [get_bd_pins xxv_ethernet_0/gtwiz_reset_rx_datapath_0]
+  connect_bd_net -net gtwiz_reset_tx_datapath_0_0_1 [get_bd_ports gtwiz_reset_tx_datapath_0] [get_bd_pins xxv_ethernet_0/gtwiz_reset_tx_datapath_0]
+  connect_bd_net -net pm_tick_0_0_1 [get_bd_ports pm_tick_0] [get_bd_pins xxv_ethernet_0/pm_tick_0]
+  connect_bd_net -net rx_core_clk_0_0_1 [get_bd_ports rx_core_clk_0] [get_bd_pins xxv_ethernet_0/rx_core_clk_0]
+  connect_bd_net -net rx_reset_0_0_1 [get_bd_ports rx_reset_0] [get_bd_pins xxv_ethernet_0/rx_reset_0]
+  connect_bd_net -net rxoutclksel_in_0_0_1 [get_bd_ports rxoutclksel_in_0] [get_bd_pins xxv_ethernet_0/rxoutclksel_in_0]
+  connect_bd_net -net s_axi_aclk_0_0_1 [get_bd_ports s_axi_aclk_0] [get_bd_pins xxv_ethernet_0/s_axi_aclk_0]
+  connect_bd_net -net s_axi_aresetn_0_0_1 [get_bd_ports s_axi_aresetn_0] [get_bd_pins xxv_ethernet_0/s_axi_aresetn_0]
+  connect_bd_net -net sys_reset_0_1 [get_bd_ports sys_reset] [get_bd_pins xxv_ethernet_0/sys_reset]
+  connect_bd_net -net tx_preamblein_0_0_1 [get_bd_ports tx_preamblein_0] [get_bd_pins xxv_ethernet_0/tx_preamblein_0]
+  connect_bd_net -net tx_reset_0_0_1 [get_bd_ports tx_reset_0] [get_bd_pins xxv_ethernet_0/tx_reset_0]
+  connect_bd_net -net txoutclksel_in_0_0_1 [get_bd_ports txoutclksel_in_0] [get_bd_pins xxv_ethernet_0/txoutclksel_in_0]
+  connect_bd_net -net xxv_ethernet_0_gt_refclk_out [get_bd_ports gt_refclk_out_0] [get_bd_pins xxv_ethernet_0/gt_refclk_out]
+  connect_bd_net -net xxv_ethernet_0_gtpowergood_out_0 [get_bd_ports gtpowergood_out_0] [get_bd_pins xxv_ethernet_0/gtpowergood_out_0]
+  connect_bd_net -net xxv_ethernet_0_rx_clk_out_0 [get_bd_ports rx_clk_out_0] [get_bd_pins xxv_ethernet_0/rx_clk_out_0]
+  connect_bd_net -net xxv_ethernet_0_rx_preambleout_0 [get_bd_ports rx_preambleout_0] [get_bd_pins xxv_ethernet_0/rx_preambleout_0]
+  connect_bd_net -net xxv_ethernet_0_rxrecclkout_0 [get_bd_ports rxrecclkout_0] [get_bd_pins xxv_ethernet_0/rxrecclkout_0]
+  connect_bd_net -net xxv_ethernet_0_stat_rx_status_0 [get_bd_ports stat_rx_status_0] [get_bd_pins xxv_ethernet_0/stat_rx_status_0]
+  connect_bd_net -net xxv_ethernet_0_tx_clk_out_0 [get_bd_ports tx_clk_out_0] [get_bd_pins xxv_ethernet_0/tx_clk_out_0]
+  connect_bd_net -net xxv_ethernet_0_tx_unfout_0 [get_bd_ports tx_unfout_0] [get_bd_pins xxv_ethernet_0/tx_unfout_0]
+  connect_bd_net -net xxv_ethernet_0_user_reg0_0 [get_bd_ports user_reg0_0] [get_bd_pins xxv_ethernet_0/user_reg0_0]
+  connect_bd_net -net xxv_ethernet_0_user_rx_reset_0 [get_bd_ports user_rx_reset_0] [get_bd_pins xxv_ethernet_0/user_rx_reset_0]
+  connect_bd_net -net xxv_ethernet_0_user_tx_reset_0 [get_bd_ports user_tx_reset_0] [get_bd_pins xxv_ethernet_0/user_tx_reset_0]
+
+  # Create address segments
+  create_bd_addr_seg -range 0x01000000 -offset 0x00000000 [get_bd_addr_spaces s_axi] [get_bd_addr_segs xxv_ethernet_0/s_axi_0/Reg] SEG_xxv_ethernet_0_Reg
+
+
+  # Restore current instance
+  current_bd_instance $oldCurInst
+
+  save_bd_design
+  close_bd_design $design_name 
+}
+# End of cr_bd_mac_qsfp()
+cr_bd_mac_qsfp ""
+set_property IS_MANAGED "0" [get_files mac_qsfp.bd ] 
+set_property REGISTERED_WITH_MANAGER "1" [get_files mac_qsfp.bd ] 
+set_property SYNTH_CHECKPOINT_MODE "Hierarchical" [get_files mac_qsfp.bd ] 
 
 # Create 'synth_1' run (if not found)
 if {[string equal [get_runs -quiet synth_1] ""]} {

@@ -15,7 +15,7 @@
 
 `timescale 1ns / 1ps
 
-module top(
+module legofpga_mac_axi (
     // asynchronous reset
     input          sys_rst              ,
     output         mtrlb_pktchk_error   ,
