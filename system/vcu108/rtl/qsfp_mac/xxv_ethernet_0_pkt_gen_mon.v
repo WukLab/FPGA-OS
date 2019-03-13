@@ -1,56 +1,8 @@
-////------------------------------------------------------------------------------
-////  (c) Copyright 2013 Xilinx, Inc. All rights reserved.
-////
-////  This file contains confidential and proprietary information
-////  of Xilinx, Inc. and is protected under U.S. and
-////  international copyright and other intellectual property
-////  laws.
-////
-////  DISCLAIMER
-////  This disclaimer is not a license and does not grant any
-////  rights to the materials distributed herewith. Except as
-////  otherwise provided in a valid license issued to you by
-////  Xilinx, and to the maximum extent permitted by applicable
-////  law: (1) THESE MATERIALS ARE MADE AVAILABLE "AS IS" AND
-////  WITH ALL FAULTS, AND XILINX HEREBY DISCLAIMS ALL WARRANTIES
-////  AND CONDITIONS, EXPRESS, IMPLIED, OR STATUTORY, INCLUDING
-////  BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, NON-
-////  INFRINGEMENT, OR FITNESS FOR ANY PARTICULAR PURPOSE; and
-////  (2) Xilinx shall not be liable (whether in contract or tort,
-////  including negligence, or under any other theory of
-////  liability) for any loss or damage of any kind or nature
-////  related to, arising under or in connection with these
-////  materials, including for any direct, or any indirect,
-////  special, incidental, or consequential loss or damage
-////  (including loss of data, profits, goodwill, or any type of
-////  loss or damage suffered as a result of any action brought
-////  by a third party) even if such damage or loss was
-////  reasonably foreseeable or Xilinx had been advised of the
-////  possibility of the same.
-////
-////  CRITICAL APPLICATIONS
-////  Xilinx products are not designed or intended to be fail-
-////  safe, or for use in any application requiring fail-safe
-////  performance, such as life-support or safety devices or
-////  systems, Class III medical devices, nuclear facilities,
-////  applications related to the deployment of airbags, or any
-////  other applications that could lead to death, personal
-////  injury, or severe property or environmental damage
-////  (individually and collectively, "Critical
-////  Applications"). Customer assumes the sole risk and
-////  liability of any use of Xilinx products in Critical
-////  Applications, subject only to applicable laws and
-////  regulations governing limitations on product liability.
-////
-////  THIS COPYRIGHT NOTICE AND DISCLAIMER MUST BE RETAINED AS
-////  PART OF THIS FILE AT ALL TIMES.
-////------------------------------------------------------------------------------
-
 `define SIM_SPEED_UP
 
 `timescale 1fs/1fs
 (* DowngradeIPIdentifiedWarnings="yes" *)
-////module lbus_if
+
 module xxv_ethernet_0_pkt_gen_mon
 (
   input                      gen_clk,
@@ -139,7 +91,6 @@ module xxv_ethernet_0_pkt_gen_mon
   input  wire stat_rx_received_local_fault,
 
 
-    output wire        stat_reg_compare,
 //// TX Signals
   output wire         tx_reset,
   input  wire         user_tx_reset,
@@ -251,33 +202,32 @@ module xxv_ethernet_0_pkt_gen_mon
   assign pm_tick = 1'b0;
 
 
- xxv_ethernet_0_axi4_lite_user_if i_xxv_ethernet_0_axi4_lite_user_if (
- .s_axi_aclk (s_axi_aclk),
- .s_axi_sreset (~s_axi_aresetn ),
- .stat_rx_aligned (stat_rx_block_lock),
- .stat_reg_compare (stat_reg_compare),
- .rx_gt_locked(~rx_reset),
- .restart (axi_fsm_restart),
- .completion_status (completion_status),
- .s_axi_pm_tick (pm_tick),
- .s_axi_awaddr (s_axi_awaddr),
- .s_axi_awvalid (s_axi_awvalid),
- .s_axi_awready (s_axi_awready),
- .s_axi_wdata (s_axi_wdata),
- .s_axi_wstrb (s_axi_wstrb),
- .s_axi_wvalid (s_axi_wvalid),
- .s_axi_wready (s_axi_wready),
- .s_axi_bresp (s_axi_bresp),
- .s_axi_bvalid (s_axi_bvalid),
- .s_axi_bready (s_axi_bready),
- .s_axi_araddr (s_axi_araddr),
- .s_axi_arvalid (s_axi_arvalid),
- .s_axi_arready (s_axi_arready),
- .s_axi_rdata (s_axi_rdata),
- .s_axi_rresp (s_axi_rresp),
- .s_axi_rvalid (s_axi_rvalid),
- .s_axi_rready (s_axi_rready)
-
+ xxv_ethernet_0_axi4_lite_user_if	u_axi4_lite_user_if (
+	 .s_axi_aclk (s_axi_aclk),
+	 .s_axi_sreset (~s_axi_aresetn ),
+	 .stat_rx_aligned (stat_rx_block_lock),
+	 .rx_gt_locked(~rx_reset),
+	 .restart (axi_fsm_restart),
+	 .completion_status (completion_status),
+	 .s_axi_pm_tick (pm_tick),
+	 .s_axi_awaddr (s_axi_awaddr),
+	 .s_axi_awvalid (s_axi_awvalid),
+	 .s_axi_awready (s_axi_awready),
+	 .s_axi_wdata (s_axi_wdata),
+	 .s_axi_wstrb (s_axi_wstrb),
+	 .s_axi_wvalid (s_axi_wvalid),
+	 .s_axi_wready (s_axi_wready),
+	 .s_axi_bresp (s_axi_bresp),
+	 .s_axi_bvalid (s_axi_bvalid),
+	 .s_axi_bready (s_axi_bready),
+	 .s_axi_araddr (s_axi_araddr),
+	 .s_axi_arvalid (s_axi_arvalid),
+	 .s_axi_arready (s_axi_arready),
+	 .s_axi_rdata (s_axi_rdata),
+	 .s_axi_rresp (s_axi_rresp),
+	 .s_axi_rvalid (s_axi_rvalid),
+	 .s_axi_rready (s_axi_rready),
+	 .stat_reg_compare ()
 );
 
   assign rx_errors            = |rx_prot_err_count || |rx_error_count ;
@@ -431,27 +381,27 @@ xxv_ethernet_0_user_cdc_sync i_xxv_ethernet_0_core_cdc_sync_pkt_gen_enable (
     .signal_out          (pktgen_enable_sync)
 );
 
-xxv_ethernet_0_example_fsm_axis  
-   i_xxv_ethernet_0_EXAMPLE_FSM  (
-  .dclk                        (dclk),
-  .fsm_reset                   (sys_reset | restart_tx_rx | axi_fsm_restart ),
-  .stat_rx_block_lock          (stat_rx_block_lock_sync),
-  .stat_rx_synced              (stat_rx_synced),
-  .stat_rx_aligned             (stat_rx_aligned),
-  .stat_rx_status              (stat_rx_status),
-  .tx_timeout                  (tx_time_out_sync),
-  .tx_done                     (tx_done_sync),
-  .ok_to_start                 (1'b1),
-  .rx_packet_count             (rx_packet_count_sync),
-  .rx_total_bytes              (rx_total_bytes_sync),
-  .rx_errors                   (rx_errors_sync),
-  .rx_data_errors              (rx_data_err_sync),
-  .tx_sent_count               (tx_sent_count_sync),
-  .tx_total_bytes              (tx_total_bytes_sync),
-  .sys_reset                   (   ),
-  .pktgen_enable               (pktgen_enable),
-  .completion_status           (completion_status_int)
-);
+	xxv_ethernet_0_example_fsm_axis i_EXAMPLE_FSM  (
+		  .dclk                        (dclk),
+		  .fsm_reset                   (sys_reset | restart_tx_rx | axi_fsm_restart ),
+		  .stat_rx_block_lock          (stat_rx_block_lock_sync),
+		  .stat_rx_synced              (stat_rx_synced),
+		  .stat_rx_aligned             (stat_rx_aligned),
+		  .stat_rx_status              (stat_rx_status),
+		  .tx_timeout                  (tx_time_out_sync),
+		  .tx_done                     (tx_done_sync),
+		  .ok_to_start                 (1'b1),
+		  .rx_packet_count             (rx_packet_count_sync),
+		  .rx_total_bytes              (rx_total_bytes_sync),
+		  .rx_errors                   (rx_errors_sync),
+		  .rx_data_errors              (rx_data_err_sync),
+		  .tx_sent_count               (tx_sent_count_sync),
+		  .tx_total_bytes              (tx_total_bytes_sync),
+		  .sys_reset                   (   ),
+		  .pktgen_enable               (pktgen_enable),
+		  .completion_status           (completion_status_int)
+	);
+
   always @( posedge dclk, posedge sys_reset  )
   begin
       if ( sys_reset == 1'b1 )
@@ -469,140 +419,134 @@ xxv_ethernet_0_axis_traffic_gen_mon #(
   .MIN_LENGTH     ( MIN_LENGTH ),
   .MAX_LENGTH     ( MAX_LENGTH )
 ) i_xxv_ethernet_0_TRAFFIC_GENERATOR (
-  .tx_clk (gen_clk),
-  .tx_resetn (user_tx_reset || restart_tx_rx),
-  .rx_clk (mon_clk),
-  .rx_resetn (user_rx_reset || restart_tx_rx),
-  .sys_reset (sys_reset),
-  .pktgen_enable (pktgen_enable_sync),
-//// RX Control Signals
+	.tx_clk (gen_clk),
+	.tx_resetn (user_tx_reset || restart_tx_rx),
+	.rx_clk (mon_clk),
+	.rx_resetn (user_rx_reset || restart_tx_rx),
+	.sys_reset (sys_reset),
+	.pktgen_enable (pktgen_enable_sync),
 
+	.rx_reset (rx_reset),
+	.tx_reset (tx_reset),
+	.insert_crc (insert_crc),
+	.tx_packet_count (tx_packet_count),
+	.clear_count (clear_count),
 
-//// RX Stats Signals
-  .stat_rx_block_lock (stat_rx_block_lock),
-  .stat_rx_framing_err_valid (stat_rx_framing_err_valid),
-  .stat_rx_framing_err (stat_rx_framing_err),
-  .stat_rx_hi_ber (stat_rx_hi_ber),
-  .stat_rx_valid_ctrl_code (stat_rx_valid_ctrl_code),
-  .stat_rx_bad_code (stat_rx_bad_code),
-  .stat_rx_total_packets (stat_rx_total_packets),
-  .stat_rx_total_good_packets (stat_rx_total_good_packets),
-  .stat_rx_total_bytes (stat_rx_total_bytes),
-  .stat_rx_total_good_bytes (stat_rx_total_good_bytes),
-  .stat_rx_packet_small (stat_rx_packet_small),
-  .stat_rx_jabber (stat_rx_jabber),
-  .stat_rx_packet_large (stat_rx_packet_large),
-  .stat_rx_oversize (stat_rx_oversize),
-  .stat_rx_undersize (stat_rx_undersize),
-  .stat_rx_toolong (stat_rx_toolong),
-  .stat_rx_fragment (stat_rx_fragment),
-  .stat_rx_packet_64_bytes (stat_rx_packet_64_bytes),
-  .stat_rx_packet_65_127_bytes (stat_rx_packet_65_127_bytes),
-  .stat_rx_packet_128_255_bytes (stat_rx_packet_128_255_bytes),
-  .stat_rx_packet_256_511_bytes (stat_rx_packet_256_511_bytes),
-  .stat_rx_packet_512_1023_bytes (stat_rx_packet_512_1023_bytes),
-  .stat_rx_packet_1024_1518_bytes (stat_rx_packet_1024_1518_bytes),
-  .stat_rx_packet_1519_1522_bytes (stat_rx_packet_1519_1522_bytes),
-  .stat_rx_packet_1523_1548_bytes (stat_rx_packet_1523_1548_bytes),
-  .stat_rx_bad_fcs (stat_rx_bad_fcs),
-  .stat_rx_packet_bad_fcs (stat_rx_packet_bad_fcs),
-  .stat_rx_stomped_fcs (stat_rx_stomped_fcs),
-  .stat_rx_packet_1549_2047_bytes (stat_rx_packet_1549_2047_bytes),
-  .stat_rx_packet_2048_4095_bytes (stat_rx_packet_2048_4095_bytes),
-  .stat_rx_packet_4096_8191_bytes (stat_rx_packet_4096_8191_bytes),
-  .stat_rx_packet_8192_9215_bytes (stat_rx_packet_8192_9215_bytes),
-  .stat_rx_bad_preamble (stat_rx_bad_preamble),
-  .stat_rx_bad_sfd (stat_rx_bad_sfd),
-  .stat_rx_got_signal_os (stat_rx_got_signal_os),
-  .stat_rx_test_pattern_mismatch (stat_rx_test_pattern_mismatch),
-  .stat_rx_truncated (stat_rx_truncated),
-  .stat_rx_local_fault (stat_rx_local_fault),
-  .stat_rx_remote_fault (stat_rx_remote_fault),
-  .stat_rx_internal_local_fault (stat_rx_internal_local_fault),
-  .stat_rx_received_local_fault (stat_rx_received_local_fault),
+	// RX LBUS Signals
+	.rx_axis_tvalid (rx_axis_tvalid),
+	.rx_axis_tdata (rx_axis_tdata),
+	.rx_axis_tlast (rx_axis_tlast),
+	.rx_axis_tkeep (rx_axis_tkeep),
+	.rx_axis_tuser (rx_axis_tuser),
+	.rx_preambleout (rx_preambleout),
 
+	.rx_lane_align (rx_block_lock_sync),
 
-//// TX Control Signals
-  .ctl_tx_send_lfi (ctl_tx_send_lfi),
-  .ctl_tx_send_rfi (ctl_tx_send_rfi),
-  .ctl_tx_send_idle (ctl_tx_send_idle),
+	// TX LBUS Signals
+	.tx_axis_tready (tx_axis_tready),
+	.tx_axis_tvalid (tx_axis_tvalid),
+	.tx_axis_tdata (tx_axis_tdata),
+	.tx_axis_tlast (tx_axis_tlast),
+	.tx_axis_tkeep (tx_axis_tkeep),
+	.tx_axis_tuser (tx_axis_tuser),
+	.tx_unfout (tx_unfout),
+	.tx_preamblein (tx_preamblein),
+	.tx_time_out (tx_time_out),
+	.tx_done (tx_done),
+	.rx_protocol_error (rx_protocol_error),
+	.rx_packet_count (rx_packet_count),
+	.rx_total_bytes (rx_total_bytes),
+	.rx_prot_err_count (rx_prot_err_count),
+	.rx_error_count (rx_error_count),
+	.rx_packet_count_overflow (rx_packet_count_overflow),
+	.rx_total_bytes_overflow (rx_total_bytes_overflow),
+	.rx_prot_err_overflow (rx_prot_err_overflow),
+	.rx_error_overflow (rx_error_overflow),
+	.tx_sent_count (tx_sent_count),
+	.tx_sent_overflow (tx_sent_overflow),
+	.tx_total_bytes (tx_total_bytes),
+	.tx_total_bytes_overflow (tx_total_bytes_overflow),
+	.rx_data_err_count (rx_data_err_count),
+	.rx_data_err_overflow (rx_data_err_overflow),
+	.rx_gt_locked_led (rx_gt_locked_led),
+	.rx_block_lock_led (rx_block_lock_led),
 
+	// TX Control Signals
+	.ctl_tx_send_lfi (ctl_tx_send_lfi),
+	.ctl_tx_send_rfi (ctl_tx_send_rfi),
+	.ctl_tx_send_idle (ctl_tx_send_idle),
 
-//// TX Stats Signals
-  .stat_tx_total_packets (stat_tx_total_packets),
-  .stat_tx_total_bytes (stat_tx_total_bytes),
-  .stat_tx_total_good_packets (stat_tx_total_good_packets),
-  .stat_tx_total_good_bytes (stat_tx_total_good_bytes),
-  .stat_tx_packet_64_bytes (stat_tx_packet_64_bytes),
-  .stat_tx_packet_65_127_bytes (stat_tx_packet_65_127_bytes),
-  .stat_tx_packet_128_255_bytes (stat_tx_packet_128_255_bytes),
-  .stat_tx_packet_256_511_bytes (stat_tx_packet_256_511_bytes),
-  .stat_tx_packet_512_1023_bytes (stat_tx_packet_512_1023_bytes),
-  .stat_tx_packet_1024_1518_bytes (stat_tx_packet_1024_1518_bytes),
-  .stat_tx_packet_1519_1522_bytes (stat_tx_packet_1519_1522_bytes),
-  .stat_tx_packet_1523_1548_bytes (stat_tx_packet_1523_1548_bytes),
-  .stat_tx_packet_small (stat_tx_packet_small),
-  .stat_tx_packet_large (stat_tx_packet_large),
-  .stat_tx_packet_1549_2047_bytes (stat_tx_packet_1549_2047_bytes),
-  .stat_tx_packet_2048_4095_bytes (stat_tx_packet_2048_4095_bytes),
-  .stat_tx_packet_4096_8191_bytes (stat_tx_packet_4096_8191_bytes),
-  .stat_tx_packet_8192_9215_bytes (stat_tx_packet_8192_9215_bytes),
-  .stat_tx_bad_fcs (stat_tx_bad_fcs),
-  .stat_tx_frame_error (stat_tx_frame_error),
-  .stat_tx_local_fault (stat_tx_local_fault),
+	// RX Stats Signals
+	.stat_rx_block_lock (stat_rx_block_lock),
+	.stat_rx_framing_err_valid (stat_rx_framing_err_valid),
+	.stat_rx_framing_err (stat_rx_framing_err),
+	.stat_rx_hi_ber (stat_rx_hi_ber),
+	.stat_rx_valid_ctrl_code (stat_rx_valid_ctrl_code),
+	.stat_rx_bad_code (stat_rx_bad_code),
+	.stat_rx_total_packets (stat_rx_total_packets),
+	.stat_rx_total_good_packets (stat_rx_total_good_packets),
+	.stat_rx_total_bytes (stat_rx_total_bytes),
+	.stat_rx_total_good_bytes (stat_rx_total_good_bytes),
+	.stat_rx_packet_small (stat_rx_packet_small),
+	.stat_rx_jabber (stat_rx_jabber),
+	.stat_rx_packet_large (stat_rx_packet_large),
+	.stat_rx_oversize (stat_rx_oversize),
+	.stat_rx_undersize (stat_rx_undersize),
+	.stat_rx_toolong (stat_rx_toolong),
+	.stat_rx_fragment (stat_rx_fragment),
+	.stat_rx_packet_64_bytes (stat_rx_packet_64_bytes),
+	.stat_rx_packet_65_127_bytes (stat_rx_packet_65_127_bytes),
+	.stat_rx_packet_128_255_bytes (stat_rx_packet_128_255_bytes),
+	.stat_rx_packet_256_511_bytes (stat_rx_packet_256_511_bytes),
+	.stat_rx_packet_512_1023_bytes (stat_rx_packet_512_1023_bytes),
+	.stat_rx_packet_1024_1518_bytes (stat_rx_packet_1024_1518_bytes),
+	.stat_rx_packet_1519_1522_bytes (stat_rx_packet_1519_1522_bytes),
+	.stat_rx_packet_1523_1548_bytes (stat_rx_packet_1523_1548_bytes),
+	.stat_rx_bad_fcs (stat_rx_bad_fcs),
+	.stat_rx_packet_bad_fcs (stat_rx_packet_bad_fcs),
+	.stat_rx_stomped_fcs (stat_rx_stomped_fcs),
+	.stat_rx_packet_1549_2047_bytes (stat_rx_packet_1549_2047_bytes),
+	.stat_rx_packet_2048_4095_bytes (stat_rx_packet_2048_4095_bytes),
+	.stat_rx_packet_4096_8191_bytes (stat_rx_packet_4096_8191_bytes),
+	.stat_rx_packet_8192_9215_bytes (stat_rx_packet_8192_9215_bytes),
+	.stat_rx_bad_preamble (stat_rx_bad_preamble),
+	.stat_rx_bad_sfd (stat_rx_bad_sfd),
+	.stat_rx_got_signal_os (stat_rx_got_signal_os),
+	.stat_rx_test_pattern_mismatch (stat_rx_test_pattern_mismatch),
+	.stat_rx_truncated (stat_rx_truncated),
+	.stat_rx_local_fault (stat_rx_local_fault),
+	.stat_rx_remote_fault (stat_rx_remote_fault),
+	.stat_rx_internal_local_fault (stat_rx_internal_local_fault),
+	.stat_rx_received_local_fault (stat_rx_received_local_fault),
 
-  .stat_tx_block_lock (rx_block_lock_sync),
-  .rx_reset (rx_reset),
-  .tx_reset (tx_reset),
-  .insert_crc (insert_crc),
-  .tx_packet_count (tx_packet_count),
-  .clear_count (clear_count),
-//// RX LBUS Signals
-  .rx_axis_tvalid (rx_axis_tvalid),
-  .rx_axis_tdata (rx_axis_tdata),
-  .rx_axis_tlast (rx_axis_tlast),
-  .rx_axis_tkeep (rx_axis_tkeep),
-  .rx_axis_tuser (rx_axis_tuser),
-  .rx_preambleout (rx_preambleout),
-
-  .rx_lane_align (rx_block_lock_sync),
-//// TX LBUS Signals
-  .tx_axis_tready (tx_axis_tready),
-  .tx_axis_tvalid (tx_axis_tvalid),
-  .tx_axis_tdata (tx_axis_tdata),
-  .tx_axis_tlast (tx_axis_tlast),
-  .tx_axis_tkeep (tx_axis_tkeep),
-  .tx_axis_tuser (tx_axis_tuser),
-  .tx_unfout (tx_unfout),
-  .tx_preamblein (tx_preamblein),
-  .tx_time_out (tx_time_out),
-  .tx_done (tx_done),
-  .rx_protocol_error (rx_protocol_error),
-  .rx_packet_count (rx_packet_count),
-  .rx_total_bytes (rx_total_bytes),
-  .rx_prot_err_count (rx_prot_err_count),
-  .rx_error_count (rx_error_count),
-  .rx_packet_count_overflow (rx_packet_count_overflow),
-  .rx_total_bytes_overflow (rx_total_bytes_overflow),
-  .rx_prot_err_overflow (rx_prot_err_overflow),
-  .rx_error_overflow (rx_error_overflow),
-  .tx_sent_count (tx_sent_count),
-  .tx_sent_overflow (tx_sent_overflow),
-  .tx_total_bytes (tx_total_bytes),
-  .tx_total_bytes_overflow (tx_total_bytes_overflow),
-  .rx_data_err_count (rx_data_err_count),
-  .rx_data_err_overflow (rx_data_err_overflow),
-  .rx_gt_locked_led (rx_gt_locked_led),
-  .rx_block_lock_led (rx_block_lock_led)
-  );
-
-
-
-
-
-
+	// TX Stats Signals
+	.stat_tx_total_packets (stat_tx_total_packets),
+	.stat_tx_total_bytes (stat_tx_total_bytes),
+	.stat_tx_total_good_packets (stat_tx_total_good_packets),
+	.stat_tx_total_good_bytes (stat_tx_total_good_bytes),
+	.stat_tx_packet_64_bytes (stat_tx_packet_64_bytes),
+	.stat_tx_packet_65_127_bytes (stat_tx_packet_65_127_bytes),
+	.stat_tx_packet_128_255_bytes (stat_tx_packet_128_255_bytes),
+	.stat_tx_packet_256_511_bytes (stat_tx_packet_256_511_bytes),
+	.stat_tx_packet_512_1023_bytes (stat_tx_packet_512_1023_bytes),
+	.stat_tx_packet_1024_1518_bytes (stat_tx_packet_1024_1518_bytes),
+	.stat_tx_packet_1519_1522_bytes (stat_tx_packet_1519_1522_bytes),
+	.stat_tx_packet_1523_1548_bytes (stat_tx_packet_1523_1548_bytes),
+	.stat_tx_packet_small (stat_tx_packet_small),
+	.stat_tx_packet_large (stat_tx_packet_large),
+	.stat_tx_packet_1549_2047_bytes (stat_tx_packet_1549_2047_bytes),
+	.stat_tx_packet_2048_4095_bytes (stat_tx_packet_2048_4095_bytes),
+	.stat_tx_packet_4096_8191_bytes (stat_tx_packet_4096_8191_bytes),
+	.stat_tx_packet_8192_9215_bytes (stat_tx_packet_8192_9215_bytes),
+	.stat_tx_bad_fcs (stat_tx_bad_fcs),
+	.stat_tx_frame_error (stat_tx_frame_error),
+	.stat_tx_local_fault (stat_tx_local_fault),
+	.stat_tx_block_lock (rx_block_lock_sync)
+);
 
 endmodule
+
+
 (* DowngradeIPIdentifiedWarnings="yes" *)
 module xxv_ethernet_0_cdc_sync_2stage
 #(
@@ -815,137 +759,133 @@ module xxv_ethernet_0_axis_traffic_gen_mon (
 assign rx_gt_locked_led = ~tx_resetn & rx_gt_locked_led_int;
 assign  tx_preamblein        = 56'b0;
 
-xxv_ethernet_0_axis_pkt_gen i_xxv_ethernet_0_PKT_GEN  (   // Generator to send 1 packet
+xxv_ethernet_0_axis_pkt_gen i_PKT_GEN  (
+	// Generator to send 1 packet
+	  .clk ( tx_clk ),
+	  .reset ( tx_resetn ),
+	  .enable ( pktgen_enable ),
+	  .tx_rdyout ( tx_rdyout ),
+	  .tx_ovfout ( tx_ovfout ),
+	  .rx_lane_align ( rx_lane_align ),
+	  .packet_count ( tx_packet_count ),
+	  .insert_crc ( insert_crc ),
+	  .tx_reset ( tx_reset ),
 
-  .clk ( tx_clk ),
-  .reset ( tx_resetn ),
-  .enable ( pktgen_enable ),
-  .tx_rdyout ( tx_rdyout ),
-  .tx_ovfout ( tx_ovfout ),
-  .rx_lane_align ( rx_lane_align ),
-  .packet_count ( tx_packet_count ),
-  .insert_crc ( insert_crc ),
-  .tx_reset ( tx_reset ),
-//// TX LBUS Signals
+	  .tx_datain ( tx_datain ),
+	  .tx_enain ( tx_enain ),
+	  .tx_sopin ( tx_sopin ),
+	  .tx_eopin ( tx_eopin ),
+	  .tx_errin ( tx_errin ),
+	  .tx_mtyin ( tx_mtyin ),
+	  .time_out ( tx_time_out ),
+	  .busy ( loc_traf_tx_busy),
+	  .done ( tx_done ),
 
-//// TX Control Signals
-  .ctl_tx_send_lfi (ctl_tx_send_lfi),
-  .ctl_tx_send_rfi (ctl_tx_send_rfi),
-  .ctl_tx_send_idle (ctl_tx_send_idle),
+	//// TX Control Signals
+	  .ctl_tx_send_lfi (ctl_tx_send_lfi),
+	  .ctl_tx_send_rfi (ctl_tx_send_rfi),
+	  .ctl_tx_send_idle (ctl_tx_send_idle),
 
-
-//// TX Stats Signals
-  .stat_tx_total_packets (stat_tx_total_packets),
-  .stat_tx_total_bytes (stat_tx_total_bytes),
-  .stat_tx_total_good_packets (stat_tx_total_good_packets),
-  .stat_tx_total_good_bytes (stat_tx_total_good_bytes),
-  .stat_tx_packet_64_bytes (stat_tx_packet_64_bytes),
-  .stat_tx_packet_65_127_bytes (stat_tx_packet_65_127_bytes),
-  .stat_tx_packet_128_255_bytes (stat_tx_packet_128_255_bytes),
-  .stat_tx_packet_256_511_bytes (stat_tx_packet_256_511_bytes),
-  .stat_tx_packet_512_1023_bytes (stat_tx_packet_512_1023_bytes),
-  .stat_tx_packet_1024_1518_bytes (stat_tx_packet_1024_1518_bytes),
-  .stat_tx_packet_1519_1522_bytes (stat_tx_packet_1519_1522_bytes),
-  .stat_tx_packet_1523_1548_bytes (stat_tx_packet_1523_1548_bytes),
-  .stat_tx_packet_small (stat_tx_packet_small),
-  .stat_tx_packet_large (stat_tx_packet_large),
-  .stat_tx_packet_1549_2047_bytes (stat_tx_packet_1549_2047_bytes),
-  .stat_tx_packet_2048_4095_bytes (stat_tx_packet_2048_4095_bytes),
-  .stat_tx_packet_4096_8191_bytes (stat_tx_packet_4096_8191_bytes),
-  .stat_tx_packet_8192_9215_bytes (stat_tx_packet_8192_9215_bytes),
-  .stat_tx_bad_fcs (stat_tx_bad_fcs),
-  .stat_tx_frame_error (stat_tx_frame_error),
-  .stat_tx_local_fault (stat_tx_local_fault),
-
-
-  .tx_datain ( tx_datain ),
-  .tx_enain ( tx_enain ),
-  .tx_sopin ( tx_sopin ),
-  .tx_eopin ( tx_eopin ),
-  .tx_errin ( tx_errin ),
-  .tx_mtyin ( tx_mtyin ),
-  .time_out ( tx_time_out ),
-  .busy ( loc_traf_tx_busy),
-  .done ( tx_done )
+	//// TX Stats Signals
+	  .stat_tx_total_packets (stat_tx_total_packets),
+	  .stat_tx_total_bytes (stat_tx_total_bytes),
+	  .stat_tx_total_good_packets (stat_tx_total_good_packets),
+	  .stat_tx_total_good_bytes (stat_tx_total_good_bytes),
+	  .stat_tx_packet_64_bytes (stat_tx_packet_64_bytes),
+	  .stat_tx_packet_65_127_bytes (stat_tx_packet_65_127_bytes),
+	  .stat_tx_packet_128_255_bytes (stat_tx_packet_128_255_bytes),
+	  .stat_tx_packet_256_511_bytes (stat_tx_packet_256_511_bytes),
+	  .stat_tx_packet_512_1023_bytes (stat_tx_packet_512_1023_bytes),
+	  .stat_tx_packet_1024_1518_bytes (stat_tx_packet_1024_1518_bytes),
+	  .stat_tx_packet_1519_1522_bytes (stat_tx_packet_1519_1522_bytes),
+	  .stat_tx_packet_1523_1548_bytes (stat_tx_packet_1523_1548_bytes),
+	  .stat_tx_packet_small (stat_tx_packet_small),
+	  .stat_tx_packet_large (stat_tx_packet_large),
+	  .stat_tx_packet_1549_2047_bytes (stat_tx_packet_1549_2047_bytes),
+	  .stat_tx_packet_2048_4095_bytes (stat_tx_packet_2048_4095_bytes),
+	  .stat_tx_packet_4096_8191_bytes (stat_tx_packet_4096_8191_bytes),
+	  .stat_tx_packet_8192_9215_bytes (stat_tx_packet_8192_9215_bytes),
+	  .stat_tx_bad_fcs (stat_tx_bad_fcs),
+	  .stat_tx_frame_error (stat_tx_frame_error),
+	  .stat_tx_local_fault (stat_tx_local_fault)
 );
-
 
 xxv_ethernet_0_axis_pkt_mon  
 #(  .MIN_LENGTH (MIN_LENGTH),
     .MAX_LENGTH (MAX_LENGTH)
-  )i_xxv_ethernet_0_PKT_CHK(
+  )	i_PKT_CHK(
 
-  .clk ( rx_clk ),
-  .reset ( rx_resetn ),
-  .clear_count ( clear_count ),
-  .sys_reset ( sys_reset ),
-//// RX LBUS Signals
+	  .clk ( rx_clk ),
+	  .reset ( rx_resetn ),
+	  .clear_count ( clear_count ),
+	  .sys_reset ( sys_reset ),
+	//// RX LBUS Signals
 
-  .rx_dataout ( rx_dataout ),
-  .rx_enaout ( rx_enaout ),
-  .rx_sopout ( rx_sopout ),
-  .rx_eopout ( rx_eopout ),
-  .rx_errout ( rx_errout ),
-  .rx_mtyout ( rx_mtyout ),
-//// RX Control Signals
-
-
-//// RX Stats Signals
-  .stat_rx_block_lock (stat_rx_block_lock),
-  .stat_rx_framing_err_valid (stat_rx_framing_err_valid),
-  .stat_rx_framing_err (stat_rx_framing_err),
-  .stat_rx_hi_ber (stat_rx_hi_ber),
-  .stat_rx_valid_ctrl_code (stat_rx_valid_ctrl_code),
-  .stat_rx_bad_code (stat_rx_bad_code),
-  .stat_rx_total_packets (stat_rx_total_packets),
-  .stat_rx_total_good_packets (stat_rx_total_good_packets),
-  .stat_rx_total_bytes (stat_rx_total_bytes),
-  .stat_rx_total_good_bytes (stat_rx_total_good_bytes),
-  .stat_rx_packet_small (stat_rx_packet_small),
-  .stat_rx_jabber (stat_rx_jabber),
-  .stat_rx_packet_large (stat_rx_packet_large),
-  .stat_rx_oversize (stat_rx_oversize),
-  .stat_rx_undersize (stat_rx_undersize),
-  .stat_rx_toolong (stat_rx_toolong),
-  .stat_rx_fragment (stat_rx_fragment),
-  .stat_rx_packet_64_bytes (stat_rx_packet_64_bytes),
-  .stat_rx_packet_65_127_bytes (stat_rx_packet_65_127_bytes),
-  .stat_rx_packet_128_255_bytes (stat_rx_packet_128_255_bytes),
-  .stat_rx_packet_256_511_bytes (stat_rx_packet_256_511_bytes),
-  .stat_rx_packet_512_1023_bytes (stat_rx_packet_512_1023_bytes),
-  .stat_rx_packet_1024_1518_bytes (stat_rx_packet_1024_1518_bytes),
-  .stat_rx_packet_1519_1522_bytes (stat_rx_packet_1519_1522_bytes),
-  .stat_rx_packet_1523_1548_bytes (stat_rx_packet_1523_1548_bytes),
-  .stat_rx_bad_fcs (stat_rx_bad_fcs),
-  .stat_rx_packet_bad_fcs (stat_rx_packet_bad_fcs),
-  .stat_rx_stomped_fcs (stat_rx_stomped_fcs),
-  .stat_rx_packet_1549_2047_bytes (stat_rx_packet_1549_2047_bytes),
-  .stat_rx_packet_2048_4095_bytes (stat_rx_packet_2048_4095_bytes),
-  .stat_rx_packet_4096_8191_bytes (stat_rx_packet_4096_8191_bytes),
-  .stat_rx_packet_8192_9215_bytes (stat_rx_packet_8192_9215_bytes),
-  .stat_rx_bad_preamble (stat_rx_bad_preamble),
-  .stat_rx_bad_sfd (stat_rx_bad_sfd),
-  .stat_rx_got_signal_os (stat_rx_got_signal_os),
-  .stat_rx_test_pattern_mismatch (stat_rx_test_pattern_mismatch),
-  .stat_rx_truncated (stat_rx_truncated),
-  .stat_rx_local_fault (stat_rx_local_fault),
-  .stat_rx_remote_fault (stat_rx_remote_fault),
-  .stat_rx_internal_local_fault (stat_rx_internal_local_fault),
-  .stat_rx_received_local_fault (stat_rx_received_local_fault),
+	  .rx_dataout ( rx_dataout ),
+	  .rx_enaout ( rx_enaout ),
+	  .rx_sopout ( rx_sopout ),
+	  .rx_eopout ( rx_eopout ),
+	  .rx_errout ( rx_errout ),
+	  .rx_mtyout ( rx_mtyout ),
+	//// RX Control Signals
 
 
-  .rx_reset ( rx_reset ),
-  .protocol_error ( rx_protocol_error ),
-  .packet_count ( rx_packet_count ),
-  .total_bytes ( rx_total_bytes ),
-  .prot_err_count ( rx_prot_err_count ),
-  .error_count ( rx_error_count ),
-  .packet_count_overflow ( rx_packet_count_overflow ),
-  .total_bytes_overflow ( rx_total_bytes_overflow ),
-  .prot_err_overflow ( rx_prot_err_overflow ),
-  .error_overflow ( rx_error_overflow ),
-  .rx_gt_locked_led (rx_gt_locked_led_int),
-  .rx_block_lock_led (rx_block_lock_led)
+	//// RX Stats Signals
+	  .stat_rx_block_lock (stat_rx_block_lock),
+	  .stat_rx_framing_err_valid (stat_rx_framing_err_valid),
+	  .stat_rx_framing_err (stat_rx_framing_err),
+	  .stat_rx_hi_ber (stat_rx_hi_ber),
+	  .stat_rx_valid_ctrl_code (stat_rx_valid_ctrl_code),
+	  .stat_rx_bad_code (stat_rx_bad_code),
+	  .stat_rx_total_packets (stat_rx_total_packets),
+	  .stat_rx_total_good_packets (stat_rx_total_good_packets),
+	  .stat_rx_total_bytes (stat_rx_total_bytes),
+	  .stat_rx_total_good_bytes (stat_rx_total_good_bytes),
+	  .stat_rx_packet_small (stat_rx_packet_small),
+	  .stat_rx_jabber (stat_rx_jabber),
+	  .stat_rx_packet_large (stat_rx_packet_large),
+	  .stat_rx_oversize (stat_rx_oversize),
+	  .stat_rx_undersize (stat_rx_undersize),
+	  .stat_rx_toolong (stat_rx_toolong),
+	  .stat_rx_fragment (stat_rx_fragment),
+	  .stat_rx_packet_64_bytes (stat_rx_packet_64_bytes),
+	  .stat_rx_packet_65_127_bytes (stat_rx_packet_65_127_bytes),
+	  .stat_rx_packet_128_255_bytes (stat_rx_packet_128_255_bytes),
+	  .stat_rx_packet_256_511_bytes (stat_rx_packet_256_511_bytes),
+	  .stat_rx_packet_512_1023_bytes (stat_rx_packet_512_1023_bytes),
+	  .stat_rx_packet_1024_1518_bytes (stat_rx_packet_1024_1518_bytes),
+	  .stat_rx_packet_1519_1522_bytes (stat_rx_packet_1519_1522_bytes),
+	  .stat_rx_packet_1523_1548_bytes (stat_rx_packet_1523_1548_bytes),
+	  .stat_rx_bad_fcs (stat_rx_bad_fcs),
+	  .stat_rx_packet_bad_fcs (stat_rx_packet_bad_fcs),
+	  .stat_rx_stomped_fcs (stat_rx_stomped_fcs),
+	  .stat_rx_packet_1549_2047_bytes (stat_rx_packet_1549_2047_bytes),
+	  .stat_rx_packet_2048_4095_bytes (stat_rx_packet_2048_4095_bytes),
+	  .stat_rx_packet_4096_8191_bytes (stat_rx_packet_4096_8191_bytes),
+	  .stat_rx_packet_8192_9215_bytes (stat_rx_packet_8192_9215_bytes),
+	  .stat_rx_bad_preamble (stat_rx_bad_preamble),
+	  .stat_rx_bad_sfd (stat_rx_bad_sfd),
+	  .stat_rx_got_signal_os (stat_rx_got_signal_os),
+	  .stat_rx_test_pattern_mismatch (stat_rx_test_pattern_mismatch),
+	  .stat_rx_truncated (stat_rx_truncated),
+	  .stat_rx_local_fault (stat_rx_local_fault),
+	  .stat_rx_remote_fault (stat_rx_remote_fault),
+	  .stat_rx_internal_local_fault (stat_rx_internal_local_fault),
+	  .stat_rx_received_local_fault (stat_rx_received_local_fault),
+
+
+	  .rx_reset ( rx_reset ),
+	  .protocol_error ( rx_protocol_error ),
+	  .packet_count ( rx_packet_count ),
+	  .total_bytes ( rx_total_bytes ),
+	  .prot_err_count ( rx_prot_err_count ),
+	  .error_count ( rx_error_count ),
+	  .packet_count_overflow ( rx_packet_count_overflow ),
+	  .total_bytes_overflow ( rx_total_bytes_overflow ),
+	  .prot_err_overflow ( rx_prot_err_overflow ),
+	  .error_overflow ( rx_error_overflow ),
+	  .rx_gt_locked_led (rx_gt_locked_led_int),
+	  .rx_block_lock_led (rx_block_lock_led)
 );
 
   always @( posedge rx_clk  )
@@ -2895,4 +2835,3 @@ cvt_us = ( ( d * 300 ) + 3 ) / 4 ;
 endfunction
 
 endmodule
-

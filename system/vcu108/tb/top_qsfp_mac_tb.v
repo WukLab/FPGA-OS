@@ -1,3 +1,11 @@
+/*
+ * YS:
+ * -  The original tb is not doing too much work.
+ *    Majority of the work is done by the pkt_mon module.
+ * -  This tb is not using gt to send any data, it will
+ *    loopback whatever sent out from MAC. Shame.
+ */
+
 `define SIM_SPEED_UP
 
 `timescale 1fs/1fs
@@ -46,41 +54,38 @@ module legofpga_mac_qsfp_tb
     endtask
 
 
+	reg             dclk;
+	reg             gt_refclk_p;
+	reg             gt_refclk_n;
+	reg             sys_reset;
+	wire [1-1:0] gt_txp_out;
+	wire [1-1:0] gt_txn_out;
+	reg             restart_tx_rx_0;
+	reg             send_continous_pkts_0;
+	wire            rx_gt_locked_led_0;
+	wire            rx_block_lock_led_0;
+	reg             timed_out;
+	reg             time_out_cntr_en;
+	reg  [24 :0]    time_out_cntr;
+	wire [4:0]      completion_status;
 
-    reg             dclk;
-    reg             gt_refclk_p;
-    reg             gt_refclk_n;
-    reg             sys_reset;
-    wire [1-1:0] gt_txp_out;
-    wire [1-1:0] gt_txn_out;
-    reg             restart_tx_rx_0;
-    reg             send_continous_pkts_0;
-    wire            rx_gt_locked_led_0;
-    wire            rx_block_lock_led_0;
-    wire       stat_reg_compare;
-    reg             timed_out;
-    reg             time_out_cntr_en;
-    reg  [24 :0]    time_out_cntr;
-    wire [4:0]      completion_status;
+	legofpga_mac_qsfp	DUT (
+		.gt_refclk_p		(gt_refclk_p),
+		.gt_refclk_n		(gt_refclk_n),
+		.gt_rxp_in		(gt_txp_out),
+		.gt_rxn_in		(gt_txn_out),
+		.gt_txp_out		(gt_txp_out),
+		.gt_txn_out		(gt_txn_out),
 
-legofpga_mac_qsfp dut
-(
-  .gt_rxp_in    (gt_txp_out),
-  .gt_rxn_in    (gt_txn_out),
-  .gt_txp_out   (gt_txp_out),
-  .gt_txn_out   (gt_txn_out),
-  .restart_tx_rx_0(restart_tx_rx_0),
-  .send_continous_pkts_0 (send_continous_pkts_0),
-  .rx_gt_locked_led_0  (rx_gt_locked_led_0),
-  .rx_block_lock_led_0 (rx_block_lock_led_0),
-  .stat_reg_compare (stat_reg_compare),
-  .completion_status    (completion_status),
-  .gt_refclk_p          (gt_refclk_p),
-  .gt_refclk_n          (gt_refclk_n),
-  .sys_reset            (sys_reset),
-  .dclk                 (dclk)
-);
+		.sys_reset		(sys_reset),
+		.dclk			(dclk),
 
+		.rx_gt_locked_led_0	(rx_gt_locked_led_0),
+		.rx_block_lock_led_0	(rx_block_lock_led_0),
+		.completion_status	(completion_status),
+		.restart_tx_rx_0	(restart_tx_rx_0),
+		.send_continous_pkts_0	(send_continous_pkts_0)
+	);
 
     initial
     begin
@@ -97,16 +102,18 @@ legofpga_mac_qsfp dut
       sys_reset  = 1; 
       restart_tx_rx_0 = 0;
       send_continous_pkts_0 = 0;
+
       repeat (20) @(posedge dclk);
       sys_reset = 0;
-      $display("INFO : SYS_RESET RELEASED TO CORE");
+      $display("INFO : sys_reset sent");
 
+      // One lock
       $display("INFO : WAITING FOR THE GT LOCK..........");
       time_out_cntr_en = 1;
-
       wait(rx_gt_locked_led_0 || timed_out);
+
       if (rx_gt_locked_led_0)
-      $display("INFO : GT LOCKED");
+          $display("INFO : GT LOCKED");
       else 
       begin
           $display("ERROR: GT LOCK FAILED - Timed Out");
@@ -114,13 +121,14 @@ legofpga_mac_qsfp dut
       end
       time_out_cntr_en = 0;
 
-      $display("INFO : WAITING FOR RX_BLOCK_LOCK..........");
+      // One lock
+      $display("INFO : WAITING FOR rx_block_lock..........");
       repeat (1) @(posedge dclk);
-     
       time_out_cntr_en = 1;
       wait(rx_block_lock_led_0 || timed_out);
+   
       if(rx_block_lock_led_0) 
-      $display("INFO : CORE 25GE RX BLOCK LOCKED");
+         $display("INFO : CORE 25GE rx block locked");
       else 
       begin
           $display("ERROR: CORE 25GE RX BLOCK LOCK FAILED - Timed Out");
@@ -131,7 +139,7 @@ legofpga_mac_qsfp dut
       $display("INFO : WAITING FOR COMPLETION STATUS..........");
       wait ( ( completion_status != 5'h1F ) && ( completion_status != 5'h0 ) ) ;
       if (completion_status == 5'h01)
-      $display("INFO : COMPLETION_STATUS = 5'b00001");
+          $display("INFO : COMPLETION_STATUS = 5'b00001");
 
       repeat(100) #1_000_000_000;         // wait for 100 more us
       display_result(completion_status);
