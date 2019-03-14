@@ -61,7 +61,7 @@ module legofpga_mac_axi (
   wire clk_300, clk_125, clk_100, clk_166, clk_50;
   wire mmcm_lock_i, mmcm_lock_i_2;
 
-  clock_axi_eth u_legofpga_clk (
+  clock_mac_axi u_legofpga_clk (
         .clk_in1_p_0(sysclk_125_clk_p),
         .clk_in1_n_0(sysclk_125_clk_n),
         

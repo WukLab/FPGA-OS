@@ -429,11 +429,11 @@ set_property SYNTH_CHECKPOINT_MODE "Hierarchical" [get_files LegoFPGA_1.bd ]
 
 
 
-# Proc to create BD clock_axi_eth
-proc cr_bd_clock_axi_eth { parentCell } {
+# Proc to create BD clock_mac_axi
+proc cr_bd_clock_mac_axi { parentCell } {
 
   # CHANGE DESIGN NAME HERE
-  set design_name clock_axi_eth
+  set design_name clock_mac_axi
 
   common::send_msg_id "BD_TCL-003" "INFO" "Currently there is no design <$design_name> in project, so creating one..."
 
@@ -618,11 +618,11 @@ proc cr_bd_clock_axi_eth { parentCell } {
   save_bd_design
   close_bd_design $design_name 
 }
-# End of cr_bd_clock_axi_eth()
-cr_bd_clock_axi_eth ""
-set_property IS_MANAGED "0" [get_files clock_axi_eth.bd ] 
-set_property REGISTERED_WITH_MANAGER "1" [get_files clock_axi_eth.bd ] 
-set_property SYNTH_CHECKPOINT_MODE "Hierarchical" [get_files clock_axi_eth.bd ] 
+# End of cr_bd_clock_mac_axi()
+cr_bd_clock_mac_axi ""
+set_property IS_MANAGED "0" [get_files clock_mac_axi.bd ] 
+set_property REGISTERED_WITH_MANAGER "1" [get_files clock_mac_axi.bd ] 
+set_property SYNTH_CHECKPOINT_MODE "Hierarchical" [get_files clock_mac_axi.bd ] 
 
 
 # Proc to create BD LegoFPGA_axis64
