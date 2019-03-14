@@ -54,30 +54,28 @@ module legofpga_mac_qsfp_tb
     endtask
 
 
-	reg             dclk;
-	reg             gt_refclk_p;
-	reg             gt_refclk_n;
 	reg             sys_reset;
 	wire [1-1:0] gt_txp_out;
 	wire [1-1:0] gt_txn_out;
 	wire            rx_gt_locked_led_0;
 	wire            rx_block_lock_led_0;
-	reg             timed_out;
-	reg             time_out_cntr_en;
-	reg  [24 :0]    time_out_cntr;
 	wire [4:0]      completion_status;
 
+	reg             sysclk_125_clk_n;
+	reg             sysclk_125_clk_p;
+	reg             sysclk_300_clk_n;
+	reg             sysclk_300_clk_p;
+
 	legofpga_mac_qsfp	DUT (
+		.sysclk_125_clk_n	(sysclk_125_clk_n),
+		.sysclk_125_clk_p	(sysclk_125_clk_p),
+		.sysclk_300_clk_n	(sysclk_300_clk_n),
+		.sysclk_300_clk_p	(sysclk_300_clk_p),
+
 		.gt_rxp_in		(gt_txp_out),
 		.gt_rxn_in		(gt_txn_out),
 		.gt_txp_out		(gt_txp_out),
 		.gt_txn_out		(gt_txn_out),
-
-		.gt_refclk_p		(gt_refclk_p),
-		.gt_refclk_n		(gt_refclk_n),
-
-		.sys_reset		(sys_reset),
-		.dclk			(dclk),
 
 		.rx_gt_locked_led_0	(rx_gt_locked_led_0),
 		.rx_block_lock_led_0	(rx_block_lock_led_0),
@@ -93,89 +91,51 @@ module legofpga_mac_qsfp_tb
       $display("****************");
     `endif
 
-      gt_refclk_p = 0;
-      gt_refclk_n = 1;
-      dclk   = 0;
-      sys_reset  = 1; 
-
-      repeat (20) @(posedge dclk);
-      sys_reset = 0;
-      $display("INFO : sys_reset sent");
+      sysclk_125_clk_p = 0;
+      sysclk_300_clk_p = 0;
+      sysclk_125_clk_n = 1;
+      sysclk_300_clk_n = 1;
 
       // One lock
-      $display("INFO : WAITING FOR THE GT LOCK..........");
-      time_out_cntr_en = 1;
-      wait(rx_gt_locked_led_0 || timed_out);
-
-      if (rx_gt_locked_led_0)
-          $display("INFO : GT LOCKED");
-      else 
-      begin
-          $display("ERROR: GT LOCK FAILED - Timed Out");
-          $finish; 
-      end
-      time_out_cntr_en = 0;
+      $display("INFO : waiting for the gt lock..........");
+      wait(rx_gt_locked_led_0);
+      $display("INFO : GT LOCKED");
 
       // One lock
       $display("INFO : WAITING FOR rx_block_lock..........");
-      repeat (1) @(posedge dclk);
-      time_out_cntr_en = 1;
-      wait(rx_block_lock_led_0 || timed_out);
-   
-      if(rx_block_lock_led_0) 
-         $display("INFO : CORE 25GE rx block locked");
-      else 
-      begin
-          $display("ERROR: CORE 25GE RX BLOCK LOCK FAILED - Timed Out");
-          $finish; 
-      end
-      time_out_cntr_en = 0;
+      wait(rx_block_lock_led_0);
+      $display("INFO : CORE 25GE rx block locked");
 
       $display("INFO : Waiting for completion status..........");
       wait ( ( completion_status != 5'h1F ) && ( completion_status != 5'h0 ) ) ;
       display_result(completion_status);
 
-  $finish; 
+    $finish; 
 
-    end
-
-    //////////////////////////////////////////////////
-    ////time_out_cntr signal generation Max 26ms
-    //////////////////////////////////////////////////
-    always @( posedge dclk or negedge sys_reset )
-    begin
-        if ( sys_reset == 1'b1 )
-        begin
-            timed_out     <= 1'b0;
-            time_out_cntr <= 24'd0;
-        end
-        else
-        begin
-            timed_out <= time_out_cntr[20];
-            if (time_out_cntr_en == 1'b1)
-                time_out_cntr <= time_out_cntr + 24'd1;
-            else
-                time_out_cntr <= 24'd0;
-        end
-    end
-
-
-    initial
-    begin
-        gt_refclk_p =1;
-        forever #3103030.303   gt_refclk_p = ~ gt_refclk_p;
     end
 
     initial
     begin
-        gt_refclk_n =0;
-        forever #3103030.303   gt_refclk_n = ~ gt_refclk_n;
+        sysclk_300_clk_p =1;
+        forever #1666666.666   sysclk_300_clk_p = ~ sysclk_300_clk_p;
     end
 
     initial
     begin
-        dclk =1;
-        forever #5000000.000   dclk = ~ dclk;
+        sysclk_300_clk_n =0;
+        forever #1666666.666   sysclk_300_clk_n = ~ sysclk_300_clk_n;
+    end
+
+    initial
+    begin
+        sysclk_125_clk_p =1;
+        forever #4000000.000 sysclk_125_clk_p = ~ sysclk_125_clk_p;
+    end
+
+    initial
+    begin
+        sysclk_125_clk_n =0;
+        forever #4000000.000  sysclk_125_clk_n = ~ sysclk_125_clk_n;
     end
 
 endmodule

@@ -15,6 +15,9 @@
  * 	- Misc
  * 	- GT
  * 	- DDR4
+ *
+ * Reference:
+ * 	- PG210: 10G/25G High Speed Ethernet Subsystem.
  */
 
 `timescale 1fs/1fs
@@ -22,20 +25,21 @@
 (* DowngradeIPIdentifiedWarnings="yes" *)
 module legofpga_mac_qsfp
 (
-	input  wire [1-1:0] gt_rxp_in,
-	input  wire [1-1:0] gt_rxn_in,
-	output wire [1-1:0] gt_txp_out,
-	output wire [1-1:0] gt_txn_out,
+	/* Board Clock */
+	input			sysclk_125_clk_n,
+	input			sysclk_125_clk_p,
+	input			sysclk_300_clk_n,
+	input			sysclk_300_clk_p,
 
-	input             gt_refclk_p,
-	input             gt_refclk_n,
+	/* QSFP PHY Interface */
+	input  wire [1-1:0]	gt_rxp_in,
+	input  wire [1-1:0]	gt_rxn_in,
+	output wire [1-1:0]	gt_txp_out,
+	output wire [1-1:0]	gt_txn_out,
 
-	input             sys_reset,
-	input             dclk,
-
-	output wire	rx_gt_locked_led_0,
-	output wire	rx_block_lock_led_0,
-	output wire [4:0]completion_status
+	output wire		rx_gt_locked_led_0,
+	output wire		rx_block_lock_led_0,
+	output wire [4:0]	completion_status
 );
 
 	// AXI4 Lite
@@ -185,16 +189,83 @@ module legofpga_mac_qsfp
 
 	assign rx_block_lock_led_0 = block_lock_led_0 & stat_rx_status_0;
 
+	wire dclk;
+	wire clk_100, clk_125, clk_161_n, clk_161_p, locked_0, locked_1;
+
+	/* 100MHZ is used in the reference design */
+	assign dclk = clk_100;
+
+	wire sys_reset;
+
+	assign sys_reset = ~(locked_0 & locked_1);
+
+	clock_mac_qsfp	u_clock_gen (
+		/* Input: Board Clock */
+		.sysclk_125_clk_n	(sysclk_125_clk_n),
+		.sysclk_125_clk_p	(sysclk_125_clk_p),
+		.sysclk_300_clk_n	(sysclk_300_clk_n),
+		.sysclk_300_clk_p	(sysclk_300_clk_p),
+
+		/* Ouputs */
+		.clk_100		(clk_100),
+		.clk_125		(clk_125),
+		.clk_161_n		(clk_161_n),
+		.clk_161_p		(clk_161_p),
+		.locked_0		(locked_0),
+		.locked_1		(locked_1)
+	);
+
 	/*
 	 * mac_ready indicate the the MAC layer is ready
-	 * to be used by LegoFPGA layer.
-	 *
-	 * The *_led signals are legacy code from reference
-	 * design. the pktgen_enable is from FSM output.
+	 * to be used by LegoFPGA layer. We got these
+	 * final passes from the SM output.
 	 */
 	assign mac_ready = fsm_out_pktgen_enable &
 			   rx_gt_locked_led_0 &
 			   rx_block_lock_led_0;
+
+	/*
+	 * NOTE:
+	 * MAC is not taking this tready.
+	 * This means MAC will just send data unconditionally.
+	 * We have to detect and take care of buffer overflow.
+	 */
+	wire from_net_tready;
+
+	/* Those rst_n must sync to their clocks */
+	wire clk_125_rst_n;
+	wire from_net_clk_390_rst_n, to_net_clk_390_rst_n;
+
+	assign clk_125_rst_n = 1'b1;
+	assign from_net_clk_390_rst_n	= ~user_rx_reset_0;
+	assign to_net_clk_390_rst_n	= ~user_tx_reset_0;
+
+	LegoFPGA_axis64 u_LegoFPGA (
+		.clk_125		(clk_125),
+		.clk_125_rst_n		(clk_125_rst_n),
+
+		.mac_ready		(mac_ready),
+
+		.from_net_clk_390	(rx_clk_out_0),
+		.from_net_clk_390_rst_n	(from_net_clk_390_rst_n),
+
+		.from_net_tvalid	(rx_axis_tvalid_0),
+		.from_net_tready	(from_net_tready),
+		.from_net_tdata		(rx_axis_tdata_0),
+		.from_net_tkeep		(rx_axis_tkeep_0),
+		.from_net_tuser		(rx_axis_tuser_0),
+		.from_net_tlast		(rx_axis_tlast_0),
+
+		.to_net_clk_390		(tx_clk_out_0),
+		.to_net_clk_390_rst_n	(to_net_clk_390_rst_n),
+
+		.to_net_tvalid		(tx_axis_tvalid_0),
+		.to_net_tready		(tx_axis_tready_0),
+		.to_net_tdata		(tx_axis_tdata_0),
+		.to_net_tuser		(tx_axis_tuser_0),
+		.to_net_tlast		(tx_axis_tlast_0),
+		.to_net_tkeep		(tx_axis_tkeep_0)
+	);
 
 	/*
 	 * This is a block diagram, which only has the xxv IP.
@@ -206,11 +277,18 @@ module legofpga_mac_qsfp
 		.gt_serial_port_0_gtx_p	(gt_txp_out),
 		.gt_serial_port_0_gtx_n	(gt_txn_out),
 
-		.gt_ref_clk_0_clk_p	(gt_refclk_p),
-		.gt_ref_clk_0_clk_n	(gt_refclk_n),
+		/*
+		 * According to PG210, for 25G configuration,
+		 * it supports gt_refclk frequency 161.1328125 MHz only
+		 */
+		.gt_ref_clk_0_clk_p	(clk_161_p),
+		.gt_ref_clk_0_clk_n	(clk_161_n),
 		.gt_refclk_out_0	(gt_refclk_out),
 
-		// RX User Interface Signals
+		.dclk			(dclk),
+		.sys_reset		(sys_reset),
+
+		/* RX User Interface Signals */
 		.rx_clk_out_0		(rx_clk_out_0),
 		.rx_axis_tdata		(rx_axis_tdata_0),
 		.rx_axis_tkeep		(rx_axis_tkeep_0),
@@ -221,7 +299,7 @@ module legofpga_mac_qsfp
 
 		.rx_core_clk_0		(rx_core_clk_0),
 
-		// TX User Interface Signals
+		/* TX User Interface Signals */
 		.tx_clk_out_0		(tx_clk_out_0),
 		.tx_axis_tdata		(tx_axis_tdata_0),
 		.tx_axis_tkeep		(tx_axis_tkeep_0),
@@ -232,7 +310,7 @@ module legofpga_mac_qsfp
 		.tx_unfout_0		(tx_unfout_0),
 		.tx_preamblein_0	(tx_preamblein_0),
 
-		// AXI Lite Slave
+		/* AXI Lite Slave */
 		.s_axi_aclk_0		(s_axi_aclk_0),
 		.s_axi_aresetn_0	(s_axi_aresetn_0),
 		.s_axi_awaddr		(s_axi_awaddr_0),
@@ -262,7 +340,7 @@ module legofpga_mac_qsfp
 		.pm_tick_0		(pm_tick_0),
 		.user_reg0_0		(user_reg0_0),
 
-		// TX Control Signals
+		/* TX Control Signals */
 		.ctl_tx_ctl_tx_send_lfi		(ctl_tx_send_lfi_0),
 		.ctl_tx_ctl_tx_send_rfi		(ctl_tx_send_rfi_0),
 		.ctl_tx_ctl_tx_send_idle	(ctl_tx_send_idle_0),
@@ -272,10 +350,7 @@ module legofpga_mac_qsfp
 		.gtpowergood_out_0		(gtpowergood_out_0),
 		.txoutclksel_in_0		(txoutclksel_in_0),
 		.rxoutclksel_in_0		(rxoutclksel_in_0),
-		.sys_reset			(sys_reset),
-		.dclk				(dclk),
 
-		// RX Stats Signals
 		.stat_rx_stat_rx_block_lock		(stat_rx_block_lock_0),
 		.stat_rx_stat_rx_framing_err_valid	(stat_rx_framing_err_valid_0),
 		.stat_rx_stat_rx_framing_err		(stat_rx_framing_err_0),
@@ -320,7 +395,6 @@ module legofpga_mac_qsfp
 
 		.stat_rx_status_0			(stat_rx_status_0),
 
-		// TX Stats Signals
 		.stat_tx_stat_tx_total_packets		(stat_tx_total_packets_0),
 		.stat_tx_stat_tx_total_bytes		(stat_tx_total_bytes_0),
 		.stat_tx_stat_tx_total_good_packets	(stat_tx_total_good_packets_0),
@@ -342,37 +416,6 @@ module legofpga_mac_qsfp
 		.stat_tx_stat_tx_bad_fcs		(stat_tx_bad_fcs_0),
 		.stat_tx_stat_tx_frame_error		(stat_tx_frame_error_0),
 		.stat_tx_stat_tx_local_fault		(stat_tx_local_fault_0)
-	);
-
-	// MAC is not taking this tready.
-	// This means MAC will just send data unconditionally.
-	wire legofpga_from_net_tready;
-
-	LegoFPGA_axis64 u_legofpag (
-		.clk_125		(),
-		.clk_125_rst_n		(),
-
-		.mac_ready		(mac_ready),
-
-		.from_net_clk_390	(rx_clk_out_0),
-		.from_net_clk_390_rst_n	(~user_rx_reset_0),
-
-		.from_net_tvalid	(rx_axis_tvalid_0),
-		.from_net_tready	(legofpga_from_net_tready),
-		.from_net_tdata		(rx_axis_tdata_0),
-		.from_net_tkeep		(rx_axis_tkeep_0),
-		.from_net_tuser		(rx_axis_tuser_0),
-		.from_net_tlast		(rx_axis_tlast_0),
-
-		.to_net_clk_390		(tx_clk_out_0),
-		.to_net_clk_390_rst_n	(~user_tx_reset_0),
-
-		.to_net_tvalid		(tx_axis_tvalid_0),
-		.to_net_tready		(tx_axis_tready_0),
-		.to_net_tdata		(tx_axis_tdata_0),
-		.to_net_tuser		(tx_axis_tuser_0),
-		.to_net_tlast		(tx_axis_tlast_0),
-		.to_net_tkeep		(tx_axis_tkeep_0)
 	);
 
 	/*

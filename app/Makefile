@@ -1,4 +1,5 @@
 all:
+	$(Q)make -C dummy_net_blackhole
 	$(Q)make -C dummy_net_dram
 	$(Q)make -C dummy_net_pktgen
 	$(Q)make -C dummy_net_loopback
