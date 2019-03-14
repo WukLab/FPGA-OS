@@ -344,6 +344,37 @@ module legofpga_mac_qsfp
 		.stat_tx_stat_tx_local_fault		(stat_tx_local_fault_0)
 	);
 
+	// MAC is not taking this tready.
+	// This means MAC will just send data unconditionally.
+	wire legofpga_from_net_tready;
+
+	LegoFPGA_axis64 u_legofpag (
+		.clk_125		(),
+		.clk_125_rst_n		(),
+
+		.mac_ready		(mac_ready),
+
+		.from_net_clk_390	(rx_clk_out_0),
+		.from_net_clk_390_rst_n	(~user_rx_reset_0),
+
+		.from_net_tvalid	(rx_axis_tvalid_0),
+		.from_net_tready	(legofpga_from_net_tready),
+		.from_net_tdata		(rx_axis_tdata_0),
+		.from_net_tkeep		(rx_axis_tkeep_0),
+		.from_net_tuser		(rx_axis_tuser_0),
+		.from_net_tlast		(rx_axis_tlast_0),
+
+		.to_net_clk_390		(tx_clk_out_0),
+		.to_net_clk_390_rst_n	(~user_tx_reset_0),
+
+		.to_net_tvalid		(tx_axis_tvalid_0),
+		.to_net_tready		(tx_axis_tready_0),
+		.to_net_tdata		(tx_axis_tdata_0),
+		.to_net_tuser		(tx_axis_tuser_0),
+		.to_net_tlast		(tx_axis_tlast_0),
+		.to_net_tkeep		(tx_axis_tkeep_0)
+	);
+
 	/*
 	 * State machine and AXI4 Lite controller
 	 * Prepare the MAC for data transmitting.
@@ -360,29 +391,18 @@ module legofpga_mac_qsfp
 		.rx_gt_locked_led	(rx_gt_locked_led_0),
 		.rx_block_lock_led	(block_lock_led_0),
 
-		// RX AXIS
+		// RX AXIS Related
 		.mon_clk		(rx_clk_out_0),
-		.rx_axis_tvalid		(rx_axis_tvalid_0),
-		.rx_axis_tdata		(rx_axis_tdata_0),
-		.rx_axis_tlast		(rx_axis_tlast_0),
-		.rx_axis_tkeep		(rx_axis_tkeep_0),
-		.rx_axis_tuser		(rx_axis_tuser_0),
 		.rx_preambleout		(rx_preambleout_0),
 		.rx_reset		(rx_reset_0),
 		.user_rx_reset		(user_rx_reset_0),
 
 		// TX AXIS
 		.gen_clk		(tx_clk_out_0),
-		.tx_axis_tready		(tx_axis_tready_0),
-		.tx_axis_tvalid		(tx_axis_tvalid_0),
-		.tx_axis_tdata		(tx_axis_tdata_0),
-		.tx_axis_tlast		(tx_axis_tlast_0),
-		.tx_axis_tkeep		(tx_axis_tkeep_0),
-		.tx_axis_tuser		(tx_axis_tuser_0),
-		.tx_unfout		(tx_unfout_0),
 		.tx_preamblein		(tx_preamblein_0),
-		.tx_reset		(tx_reset_0),
 		.user_tx_reset		(user_tx_reset_0),
+		.tx_reset		(tx_reset_0),
+		.tx_unfout		(tx_unfout_0),
 
 		// TX Control Signals
 		.ctl_tx_send_lfi	(ctl_tx_send_lfi_0),

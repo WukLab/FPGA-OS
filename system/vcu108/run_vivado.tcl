@@ -259,7 +259,7 @@ proc cr_bd_LegoFPGA_1 { parentCell } {
      set list_check_ips "\ 
   xilinx.com:ip:axis_data_fifo:1.1\
   xilinx.com:ip:ddr4:2.2\
-  wuklab:hls:top_func:1.0\
+  wuklab:hls:dummy_net_dram:1.0\
   xilinx.com:ip:util_vector_logic:2.0\
   "
 
@@ -363,6 +363,9 @@ proc cr_bd_LegoFPGA_1 { parentCell } {
    CONFIG.C0_DDR4_BOARD_INTERFACE {ddr4_sdram_c1} \
  ] $ddr4_0
 
+  # Create instance: dummy_net_dram_0, and set properties
+  set dummy_net_dram_0 [ create_bd_cell -type ip -vlnv wuklab:hls:dummy_net_dram:1.0 dummy_net_dram_0 ]
+
   # Create instance: rx_8to512, and set properties
   set rx_8to512 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect:2.1 rx_8to512 ]
   set_property -dict [ list \
@@ -370,9 +373,6 @@ proc cr_bd_LegoFPGA_1 { parentCell } {
    CONFIG.NUM_MI {1} \
    CONFIG.S00_FIFO_DEPTH {1024} \
  ] $rx_8to512
-
-  # Create instance: top_func_0, and set properties
-  set top_func_0 [ create_bd_cell -type ip -vlnv wuklab:hls:top_func:1.0 top_func_0 ]
 
   # Create instance: tx_512to8, and set properties
   set tx_512to8 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect:2.1 tx_512to8 ]
@@ -394,16 +394,16 @@ proc cr_bd_LegoFPGA_1 { parentCell } {
   connect_bd_intf_net -intf_net axi_interconnect_0_M00_AXI [get_bd_intf_pins axi_interconnect_0/M00_AXI] [get_bd_intf_pins ddr4_0/C0_DDR4_S_AXI]
   connect_bd_intf_net -intf_net axis_data_fifo_0_M_AXIS [get_bd_intf_ports to_mac] [get_bd_intf_pins axis_data_fifo_0/M_AXIS]
   connect_bd_intf_net -intf_net ddr4_0_C0_DDR4 [get_bd_intf_ports ddr4_sdram_c1] [get_bd_intf_pins ddr4_0/C0_DDR4]
+  connect_bd_intf_net -intf_net dummy_net_dram_0_m_axi_dram_V [get_bd_intf_pins axi_interconnect_0/S00_AXI] [get_bd_intf_pins dummy_net_dram_0/m_axi_dram_V]
+  connect_bd_intf_net -intf_net dummy_net_dram_0_to_net [get_bd_intf_pins dummy_net_dram_0/to_net] [get_bd_intf_pins tx_512to8/S00_AXIS]
   connect_bd_intf_net -intf_net from_mac_1 [get_bd_intf_ports from_mac] [get_bd_intf_pins rx_8to512/S00_AXIS]
-  connect_bd_intf_net -intf_net rx_8to512_M00_AXIS [get_bd_intf_pins rx_8to512/M00_AXIS] [get_bd_intf_pins top_func_0/from_net]
-  connect_bd_intf_net -intf_net top_func_0_m_axi_dram_V [get_bd_intf_pins axi_interconnect_0/S00_AXI] [get_bd_intf_pins top_func_0/m_axi_dram_V]
-  connect_bd_intf_net -intf_net top_func_0_to_net [get_bd_intf_pins top_func_0/to_net] [get_bd_intf_pins tx_512to8/S00_AXIS]
+  connect_bd_intf_net -intf_net rx_8to512_M00_AXIS [get_bd_intf_pins dummy_net_dram_0/from_net] [get_bd_intf_pins rx_8to512/M00_AXIS]
   connect_bd_intf_net -intf_net tx_512to8_M00_AXIS [get_bd_intf_pins axis_data_fifo_0/S_AXIS] [get_bd_intf_pins tx_512to8/M00_AXIS]
 
   # Create port connections
   connect_bd_net -net M00_ACLK_1 [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins ddr4_0/c0_ddr4_ui_clk]
-  connect_bd_net -net ap_clk_0_1 [get_bd_ports clk_125] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axis_data_fifo_0/s_axis_aclk] [get_bd_pins rx_8to512/ACLK] [get_bd_pins rx_8to512/M00_AXIS_ACLK] [get_bd_pins rx_8to512/S00_AXIS_ACLK] [get_bd_pins top_func_0/ap_clk] [get_bd_pins tx_512to8/ACLK] [get_bd_pins tx_512to8/M00_AXIS_ACLK] [get_bd_pins tx_512to8/S00_AXIS_ACLK]
-  connect_bd_net -net ap_rst_n_0_1 [get_bd_ports clk_125_rstn] [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axis_data_fifo_0/s_axis_aresetn] [get_bd_pins rx_8to512/ARESETN] [get_bd_pins rx_8to512/M00_AXIS_ARESETN] [get_bd_pins rx_8to512/S00_AXIS_ARESETN] [get_bd_pins top_func_0/ap_rst_n] [get_bd_pins tx_512to8/ARESETN] [get_bd_pins tx_512to8/M00_AXIS_ARESETN] [get_bd_pins tx_512to8/S00_AXIS_ARESETN]
+  connect_bd_net -net ap_clk_0_1 [get_bd_ports clk_125] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axis_data_fifo_0/s_axis_aclk] [get_bd_pins dummy_net_dram_0/ap_clk] [get_bd_pins rx_8to512/ACLK] [get_bd_pins rx_8to512/M00_AXIS_ACLK] [get_bd_pins rx_8to512/S00_AXIS_ACLK] [get_bd_pins tx_512to8/ACLK] [get_bd_pins tx_512to8/M00_AXIS_ACLK] [get_bd_pins tx_512to8/S00_AXIS_ACLK]
+  connect_bd_net -net ap_rst_n_0_1 [get_bd_ports clk_125_rstn] [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axis_data_fifo_0/s_axis_aresetn] [get_bd_pins dummy_net_dram_0/ap_rst_n] [get_bd_pins rx_8to512/ARESETN] [get_bd_pins rx_8to512/M00_AXIS_ARESETN] [get_bd_pins rx_8to512/S00_AXIS_ARESETN] [get_bd_pins tx_512to8/ARESETN] [get_bd_pins tx_512to8/M00_AXIS_ARESETN] [get_bd_pins tx_512to8/S00_AXIS_ARESETN]
   connect_bd_net -net c0_ddr4_aresetn_0_1 [get_bd_ports clk_300_rstn] [get_bd_pins ddr4_0/c0_ddr4_aresetn]
   connect_bd_net -net c0_sys_clk_i_0_1 [get_bd_ports clk_300] [get_bd_pins ddr4_0/c0_sys_clk_i]
   connect_bd_net -net ddr4_0_c0_ddr4_ui_clk_sync_rst [get_bd_pins ddr4_0/c0_ddr4_ui_clk_sync_rst] [get_bd_pins util_vector_logic_0/Op1]
@@ -411,13 +411,14 @@ proc cr_bd_LegoFPGA_1 { parentCell } {
   connect_bd_net -net util_vector_logic_0_Res [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins util_vector_logic_0/Res]
 
   # Create address segments
-  create_bd_addr_seg -range 0x000100000000 -offset 0x00000000 [get_bd_addr_spaces top_func_0/Data_m_axi_dram_V] [get_bd_addr_segs ddr4_0/C0_DDR4_MEMORY_MAP/C0_DDR4_ADDRESS_BLOCK] SEG_ddr4_0_C0_DDR4_ADDRESS_BLOCK
 
 
   # Restore current instance
   current_bd_instance $oldCurInst
 
   save_bd_design
+common::send_msg_id "BD_TCL-1000" "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
+
   close_bd_design $design_name 
 }
 # End of cr_bd_LegoFPGA_1()
@@ -622,6 +623,173 @@ cr_bd_clock_axi_eth ""
 set_property IS_MANAGED "0" [get_files clock_axi_eth.bd ] 
 set_property REGISTERED_WITH_MANAGER "1" [get_files clock_axi_eth.bd ] 
 set_property SYNTH_CHECKPOINT_MODE "Hierarchical" [get_files clock_axi_eth.bd ] 
+
+
+# Proc to create BD LegoFPGA_axis64
+proc cr_bd_LegoFPGA_axis64 { parentCell } {
+
+  # CHANGE DESIGN NAME HERE
+  set design_name LegoFPGA_axis64
+
+  common::send_msg_id "BD_TCL-003" "INFO" "Currently there is no design <$design_name> in project, so creating one..."
+
+  create_bd_design $design_name
+
+  set bCheckIPsPassed 1
+  ##################################################################
+  # CHECK IPs
+  ##################################################################
+  set bCheckIPs 1
+  if { $bCheckIPs == 1 } {
+     set list_check_ips "\ 
+  xilinx.com:ip:axis_data_fifo:1.1\
+  wuklab:hls:dummy_net_blackhole:1.0\
+  wuklab:hls:dummy_net_pktgen:1.0\
+  "
+
+   set list_ips_missing ""
+   common::send_msg_id "BD_TCL-006" "INFO" "Checking if the following IPs exist in the project's IP catalog: $list_check_ips ."
+
+   foreach ip_vlnv $list_check_ips {
+      set ip_obj [get_ipdefs -all $ip_vlnv]
+      if { $ip_obj eq "" } {
+         lappend list_ips_missing $ip_vlnv
+      }
+   }
+
+   if { $list_ips_missing ne "" } {
+      catch {common::send_msg_id "BD_TCL-115" "ERROR" "The following IPs are not found in the IP Catalog:\n  $list_ips_missing\n\nResolution: Please add the repository containing the IP(s) to the project." }
+      set bCheckIPsPassed 0
+   }
+
+  }
+
+  if { $bCheckIPsPassed != 1 } {
+    common::send_msg_id "BD_TCL-1003" "WARNING" "Will not continue with creation of design due to the error(s) above."
+    return 3
+  }
+
+  variable script_folder
+
+  if { $parentCell eq "" } {
+     set parentCell [get_bd_cells /]
+  }
+
+  # Get object for parentCell
+  set parentObj [get_bd_cells $parentCell]
+  if { $parentObj == "" } {
+     catch {common::send_msg_id "BD_TCL-100" "ERROR" "Unable to find parent cell <$parentCell>!"}
+     return
+  }
+
+  # Make sure parentObj is hier blk
+  set parentType [get_property TYPE $parentObj]
+  if { $parentType ne "hier" } {
+     catch {common::send_msg_id "BD_TCL-101" "ERROR" "Parent <$parentObj> has TYPE = <$parentType>. Expected to be <hier>."}
+     return
+  }
+
+  # Save current instance; Restore later
+  set oldCurInst [current_bd_instance .]
+
+  # Set parent object as current
+  current_bd_instance $parentObj
+
+
+  # Create interface ports
+  set from_net [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 from_net ]
+  set_property -dict [ list \
+   CONFIG.HAS_TKEEP {1} \
+   CONFIG.HAS_TLAST {1} \
+   CONFIG.HAS_TREADY {1} \
+   CONFIG.HAS_TSTRB {0} \
+   CONFIG.LAYERED_METADATA {undef} \
+   CONFIG.TDATA_NUM_BYTES {1} \
+   CONFIG.TDEST_WIDTH {0} \
+   CONFIG.TID_WIDTH {0} \
+   CONFIG.TUSER_WIDTH {1} \
+   ] $from_net
+  set to_net [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 to_net ]
+
+  # Create ports
+  set clk_125 [ create_bd_port -dir I -type clk clk_125 ]
+  set_property -dict [ list \
+   CONFIG.ASSOCIATED_RESET {clk_125_rst_n} \
+   CONFIG.FREQ_HZ {125000000} \
+ ] $clk_125
+  set clk_125_rst_n [ create_bd_port -dir I -type rst clk_125_rst_n ]
+  set from_net_clk_390 [ create_bd_port -dir I -type clk from_net_clk_390 ]
+  set_property -dict [ list \
+   CONFIG.ASSOCIATED_BUSIF {from_net} \
+   CONFIG.ASSOCIATED_RESET {from_net_clk_390_rst_n} \
+ ] $from_net_clk_390
+  set from_net_clk_390_rst_n [ create_bd_port -dir I -type rst from_net_clk_390_rst_n ]
+  set mac_ready [ create_bd_port -dir I -from 0 -to 0 -type data mac_ready ]
+  set_property -dict [ list \
+   CONFIG.LAYERED_METADATA {xilinx.com:interface:datatypes:1.0 {DATA {datatype {name {attribs {resolve_type immediate dependency {} format string minimum {} maximum {}} value {}} bitwidth {attribs {resolve_type immediate dependency {} format long minimum {} maximum {}} value 1} bitoffset {attribs {resolve_type immediate dependency {} format long minimum {} maximum {}} value 0} integer {signed {attribs {resolve_type immediate dependency {} format bool minimum {} maximum {}} value false}}}}}} \
+ ] $mac_ready
+  set to_net_clk_390 [ create_bd_port -dir I -type clk to_net_clk_390 ]
+  set to_net_clk_390_rst_n [ create_bd_port -dir I -type rst to_net_clk_390_rst_n ]
+
+  # Create instance: axis_512_to_64, and set properties
+  set axis_512_to_64 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect:2.1 axis_512_to_64 ]
+  set_property -dict [ list \
+   CONFIG.M00_FIFO_DEPTH {1024} \
+   CONFIG.NUM_MI {1} \
+   CONFIG.S00_FIFO_DEPTH {1024} \
+ ] $axis_512_to_64
+
+  # Create instance: axis_64_to_512, and set properties
+  set axis_64_to_512 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect:2.1 axis_64_to_512 ]
+  set_property -dict [ list \
+   CONFIG.M00_FIFO_DEPTH {1024} \
+   CONFIG.NUM_MI {1} \
+   CONFIG.S00_FIFO_DEPTH {1024} \
+ ] $axis_64_to_512
+
+  # Create instance: axis_data_fifo_0, and set properties
+  set axis_data_fifo_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_data_fifo:1.1 axis_data_fifo_0 ]
+  set_property -dict [ list \
+   CONFIG.IS_ACLK_ASYNC {0} \
+   CONFIG.TDATA_NUM_BYTES {8} \
+ ] $axis_data_fifo_0
+
+  # Create instance: dummy_net_blackhole_0, and set properties
+  set dummy_net_blackhole_0 [ create_bd_cell -type ip -vlnv wuklab:hls:dummy_net_blackhole:1.0 dummy_net_blackhole_0 ]
+
+  # Create instance: dummy_net_pktgen_0, and set properties
+  set dummy_net_pktgen_0 [ create_bd_cell -type ip -vlnv wuklab:hls:dummy_net_pktgen:1.0 dummy_net_pktgen_0 ]
+
+  # Create interface connections
+  connect_bd_intf_net -intf_net S00_AXIS_0_1 [get_bd_intf_ports from_net] [get_bd_intf_pins axis_64_to_512/S00_AXIS]
+  connect_bd_intf_net -intf_net axis_512_to_64_M00_AXIS [get_bd_intf_pins axis_512_to_64/M00_AXIS] [get_bd_intf_pins axis_data_fifo_0/S_AXIS]
+  connect_bd_intf_net -intf_net axis_64_to_512_M00_AXIS [get_bd_intf_pins axis_64_to_512/M00_AXIS] [get_bd_intf_pins dummy_net_blackhole_0/from_net]
+  connect_bd_intf_net -intf_net axis_data_fifo_0_M_AXIS [get_bd_intf_ports to_net] [get_bd_intf_pins axis_data_fifo_0/M_AXIS]
+  connect_bd_intf_net -intf_net dummy_net_pktgen_0_to_net [get_bd_intf_pins axis_512_to_64/S00_AXIS] [get_bd_intf_pins dummy_net_pktgen_0/to_net]
+
+  # Create port connections
+  connect_bd_net -net ACLK_0_1 [get_bd_ports clk_125] [get_bd_pins axis_512_to_64/ACLK] [get_bd_pins axis_512_to_64/S00_AXIS_ACLK] [get_bd_pins axis_64_to_512/ACLK] [get_bd_pins axis_64_to_512/M00_AXIS_ACLK] [get_bd_pins dummy_net_blackhole_0/ap_clk] [get_bd_pins dummy_net_pktgen_0/ap_clk]
+  connect_bd_net -net ARESETN_0_1 [get_bd_ports clk_125_rst_n] [get_bd_pins axis_512_to_64/ARESETN] [get_bd_pins axis_512_to_64/S00_AXIS_ARESETN] [get_bd_pins axis_64_to_512/ARESETN] [get_bd_pins axis_64_to_512/M00_AXIS_ARESETN] [get_bd_pins dummy_net_blackhole_0/ap_rst_n] [get_bd_pins dummy_net_pktgen_0/ap_rst_n]
+  connect_bd_net -net S00_AXIS_ACLK_0_1 [get_bd_ports from_net_clk_390] [get_bd_pins axis_64_to_512/S00_AXIS_ACLK]
+  connect_bd_net -net S00_AXIS_ARESETN_0_1 [get_bd_ports from_net_clk_390_rst_n] [get_bd_pins axis_64_to_512/S00_AXIS_ARESETN]
+  connect_bd_net -net enabled_V_0_1 [get_bd_ports mac_ready] [get_bd_pins dummy_net_pktgen_0/enabled_V]
+  connect_bd_net -net to_net_clk_390_1 [get_bd_ports to_net_clk_390] [get_bd_pins axis_512_to_64/M00_AXIS_ACLK] [get_bd_pins axis_data_fifo_0/s_axis_aclk]
+  connect_bd_net -net to_net_clk_390_rst_n_1 [get_bd_ports to_net_clk_390_rst_n] [get_bd_pins axis_512_to_64/M00_AXIS_ARESETN] [get_bd_pins axis_data_fifo_0/s_axis_aresetn]
+
+  # Create address segments
+
+
+  # Restore current instance
+  current_bd_instance $oldCurInst
+
+  save_bd_design
+  close_bd_design $design_name 
+}
+# End of cr_bd_LegoFPGA_axis64()
+cr_bd_LegoFPGA_axis64 ""
+set_property IS_MANAGED "0" [get_files LegoFPGA_axis64.bd ] 
+set_property REGISTERED_WITH_MANAGER "1" [get_files LegoFPGA_axis64.bd ] 
+set_property SYNTH_CHECKPOINT_MODE "Hierarchical" [get_files LegoFPGA_axis64.bd ] 
 
 
 # Proc to create BD mac_qsfp

@@ -25,8 +25,8 @@ module mac_qsfp_sm
 	// RX AXIS Related
 	input		mon_clk,
 	input  wire	[55:0] rx_preambleout,
-	input  wire	user_rx_reset,
 	output wire	rx_reset,
+	input  wire	user_rx_reset,
 
 	// TX AXIS Related
 	input		gen_clk,
@@ -34,20 +34,6 @@ module mac_qsfp_sm
 	input  wire	user_tx_reset,
 	output wire	tx_reset,
 	input  wire	tx_unfout,
-
-  // REMOVE ME
-  input  wire tx_axis_tready,
-  output wire tx_axis_tvalid,
-  output wire [63:0] tx_axis_tdata,
-  output wire tx_axis_tlast,
-  output wire [7:0] tx_axis_tkeep,
-  output wire tx_axis_tuser,
-
-  input  wire rx_axis_tvalid,
-  input  wire [63:0] rx_axis_tdata,
-  input  wire rx_axis_tlast,
-  input  wire [7:0] rx_axis_tkeep,
-  input  wire rx_axis_tuser,
 
 	// TX Control
 	output wire	ctl_tx_send_lfi,
