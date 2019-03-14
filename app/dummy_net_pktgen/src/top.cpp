@@ -11,24 +11,30 @@
 
 using namespace hls;
 
-void dummy_net_dram(hls::stream<struct net_axis_512> *from_net,
-	      hls::stream<struct net_axis_512> *to_net, ap_uint<512> *dram)
+void dummy_net_pktgen(hls::stream<struct net_axis_512> *to_net,
+		      ap_uint<1> enabled)
 {
 #pragma HLS PIPELINE
 #pragma HLS INTERFACE ap_ctrl_none port=return
 
-#pragma HLS INTERFACE axis both port=from_net
 #pragma HLS INTERFACE axis both port=to_net
-#pragma HLS INTERFACE m_axi depth=64 port=dram offset=off
+#pragma HLS INTERFACE ap_none port=enabled
 
 	struct net_axis_512 current;
+	static ap_uint<512> data = 0;
 
-	if (from_net->empty())
+	if (!enabled)
 		return;
 
-	current = from_net->read();
-	to_net->write(current);
+	current.keep = 0xffffffffffffffff;
+	current.user = 0;
+	current.data = data;
+	data++;
 
-	/* Just to use the dram interface */
-	dram[0] = current.data;
+	if (data.to_int() == 16) {
+		current.last = 1;
+		data = 0;
+	} else
+		current.last = 0;
+	to_net->write(current);
 }

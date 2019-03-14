@@ -10,7 +10,7 @@ add_files	top.cpp -cflags -I../../../include/
 add_files -tb	tb.cpp  -cflags -I../../../include/
 
 # Specify the top-level function for synthesis
-set_top		dummy_net_dram
+set_top		net_loopback
 
 ###########################
 # Solution settings
@@ -23,7 +23,10 @@ open_solution -reset solution1
 # VCU108:	xcvu095-ffva2104-2-e
 # ArtyA7:	xc7a100tcsg324-1
 #
-set_part {xcvu095-ffva2104-2-e}
+#set_part {xcvu095-ffva2104-2-e}
+set_part {xc7a100tcsg324-1}
+
+# 125MHz -> 8us
 create_clock -period 8 -name default
 set_clock_uncertainty 1.25
 
@@ -34,7 +37,7 @@ csim_design
 csynth_design
 
 # Export IP block
-export_design -format ip_catalog -display_name "dummy_net_dram" -description "Dummy network and dram IP" -vendor "wuklab" -version "1.0"
+export_design -format ip_catalog -display_name "net_loopback" -description "Network Loopback IP" -vendor "wuklab" -version "1.0"
 
 # Do not perform any other steps
 # - The basic project will be opened in the GUI 
