@@ -145,7 +145,7 @@ axi_ethernet_0_reset_sync rst_gen_clk_300(
     .reset_out (clk_300_rst)
 );
 
-LegoFPGA_1  u_legofpga_sys
+LegoFPGA_axis8  u_legofpga_sys
 (
     .sys_rst         (sys_rst),
     .clk_125         (tx_mac_aclk),

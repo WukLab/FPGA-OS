@@ -164,6 +164,12 @@ set obj [get_filesets sources_1]
 set_property -name "top" -value "top" -objects $obj
 set_property -name "top_auto_set" -value "0" -objects $obj
 
+#
+# Create Constraints Fileset
+# - constrs_1: for mac_qsfp
+# - constrs_2: for mac_axi
+#
+
 # Create 'constrs_1' fileset (if not found)
 if {[string equal [get_filesets -quiet constrs_1] ""]} {
   create_fileset -constrset constrs_1
@@ -180,11 +186,22 @@ set file_obj [get_files -of_objects [get_filesets constrs_1] [list "*$file"]]
 set_property -name "file_type" -value "XDC" -objects $file_obj
 set_property -name "processing_order" -value "EARLY" -objects $file_obj
 
+# Set 'constrs_1' fileset properties
+set obj [get_filesets constrs_1]
+
+# Create 'constrs_2' fileset (if not found)
+if {[string equal [get_filesets -quiet constrs_2] ""]} {
+  create_fileset -constrset constrs_2
+}
+
+# Set 'constrs_2' fileset object
+set obj [get_filesets constrs_2]
+
 # Add/Import constrs file and set constrs file properties
 set file "[file normalize "$origin_dir/rtl/axi_mac/axi_ethernet_0_example_design.xdc"]"
 set file_added [add_files -norecurse -fileset $obj [list $file]]
 set file "rtl/axi_mac/axi_ethernet_0_example_design.xdc"
-set file_obj [get_files -of_objects [get_filesets constrs_1] [list "*$file"]]
+set file_obj [get_files -of_objects [get_filesets constrs_2] [list "*$file"]]
 set_property -name "file_type" -value "XDC" -objects $file_obj
 set_property -name "processing_order" -value "EARLY" -objects $file_obj
 
@@ -192,12 +209,18 @@ set_property -name "processing_order" -value "EARLY" -objects $file_obj
 set file "[file normalize "$origin_dir/rtl/axi_mac/axi_ethernet_0_ex_des_loc.xdc"]"
 set file_added [add_files -norecurse -fileset $obj [list $file]]
 set file "rtl/axi_mac/axi_ethernet_0_ex_des_loc.xdc"
-set file_obj [get_files -of_objects [get_filesets constrs_1] [list "*$file"]]
+set file_obj [get_files -of_objects [get_filesets constrs_2] [list "*$file"]]
 set_property -name "file_type" -value "XDC" -objects $file_obj
 set_property -name "processing_order" -value "LATE" -objects $file_obj
 
-# Set 'constrs_1' fileset properties
-set obj [get_filesets constrs_1]
+# Set 'constrs_2' fileset properties
+set obj [get_filesets constrs_2]
+
+#
+# Create Simulation Filesets
+# - sim_1: for mac_qsfp
+# - sim_2: for mac_axi
+#
 
 # Create 'sim_1' fileset (if not found)
 if {[string equal [get_filesets -quiet sim_1] ""]} {
@@ -208,28 +231,9 @@ if {[string equal [get_filesets -quiet sim_1] ""]} {
 set obj [get_filesets sim_1]
 # Import local files from the original project
 set files [list \
- [file normalize "${origin_dir}/tb/axi_ethernet_0_frame_typ.v" ]\
- [file normalize "${origin_dir}/tb/top_axi_mac_tb.v" ]\
  [file normalize "${origin_dir}/tb/top_qsfp_mac_tb.v" ]\
 ]
 add_files -norecurse -fileset $obj $files
-
-# Set 'sim_1' fileset file properties for remote files
-# None
-
-# Set 'sim_1' fileset file properties for local files
-set file "$origin_dir/tb/axi_ethernet_0_frame_typ.v"
-set file [file normalize $file]
-set file_obj [get_files -of_objects [get_filesets sim_1] [list "*$file"]]
-set_property -name "used_in" -value "implementation simulation" -objects $file_obj
-set_property -name "used_in_synthesis" -value "0" -objects $file_obj
-
-set file "$origin_dir/tb/top_axi_mac_tb.v"
-set file [file normalize $file]
-set file_obj [get_files -of_objects [get_filesets sim_1] [list "*$file"]]
-set_property -name "used_in" -value "implementation simulation" -objects $file_obj
-set_property -name "used_in_synthesis" -value "0" -objects $file_obj
-
 
 # Set 'sim_1' fileset properties
 set obj [get_filesets sim_1]
@@ -238,14 +242,45 @@ set_property -name "top_auto_set" -value "0" -objects $obj
 set_property -name "top_lib" -value "xil_defaultlib" -objects $obj
 
 
-# Adding sources referenced in BDs, if not already added
+# Create 'sim_2' fileset (if not found)
+if {[string equal [get_filesets -quiet sim_2] ""]} {
+  create_fileset -simset sim_2
+}
 
+# Set 'sim_2' fileset object
+set obj [get_filesets sim_2]
+# Import local files from the original project
+set files [list \
+ [file normalize "${origin_dir}/tb/axi_ethernet_0_frame_typ.v" ]\
+ [file normalize "${origin_dir}/tb/top_axi_mac_tb.v" ]\
+]
+add_files -norecurse -fileset $obj $files
 
-# Proc to create BD LegoFPGA_1
-proc cr_bd_LegoFPGA_1 { parentCell } {
+# Set 'sim_2' fileset file properties for local files
+set file "$origin_dir/tb/axi_ethernet_0_frame_typ.v"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sim_2] [list "*$file"]]
+set_property -name "used_in" -value "implementation simulation" -objects $file_obj
+set_property -name "used_in_synthesis" -value "0" -objects $file_obj
+
+set file "$origin_dir/tb/top_axi_mac_tb.v"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sim_2] [list "*$file"]]
+set_property -name "used_in" -value "implementation simulation" -objects $file_obj
+set_property -name "used_in_synthesis" -value "0" -objects $file_obj
+
+# Set 'sim_2' fileset properties
+set obj [get_filesets sim_2]
+
+#
+# Create Block Diagrams
+#
+
+# Proc to create BD LegoFPGA_axis8
+proc cr_bd_LegoFPGA_axis8 { parentCell } {
 
   # CHANGE DESIGN NAME HERE
-  set design_name LegoFPGA_1
+  set design_name LegoFPGA_axis8
 
   common::send_msg_id "BD_TCL-003" "INFO" "Currently there is no design <$design_name> in project, so creating one..."
 
@@ -422,11 +457,11 @@ common::send_msg_id "BD_TCL-1000" "WARNING" "This Tcl script was generated from 
 
   close_bd_design $design_name 
 }
-# End of cr_bd_LegoFPGA_1()
-cr_bd_LegoFPGA_1 ""
-set_property IS_MANAGED "0" [get_files LegoFPGA_1.bd ] 
-set_property REGISTERED_WITH_MANAGER "1" [get_files LegoFPGA_1.bd ] 
-set_property SYNTH_CHECKPOINT_MODE "Hierarchical" [get_files LegoFPGA_1.bd ] 
+# End of cr_bd_LegoFPGA_axis8()
+cr_bd_LegoFPGA_axis8 ""
+set_property IS_MANAGED "0" [get_files LegoFPGA_axis8.bd ] 
+set_property REGISTERED_WITH_MANAGER "1" [get_files LegoFPGA_axis8.bd ] 
+set_property SYNTH_CHECKPOINT_MODE "Hierarchical" [get_files LegoFPGA_axis8.bd ] 
 
 
 
