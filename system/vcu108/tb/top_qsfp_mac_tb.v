@@ -63,23 +63,23 @@ module legofpga_mac_qsfp_tb
 
 	reg             sysclk_125_clk_n;
 	reg             sysclk_125_clk_p;
-	reg             sysclk_300_clk_n;
-	reg             sysclk_300_clk_p;
+	reg             sysclk_161_clk_n;
+	reg             sysclk_161_clk_p;
 
 	legofpga_mac_qsfp	DUT (
-		.sysclk_125_clk_n	(sysclk_125_clk_n),
-		.sysclk_125_clk_p	(sysclk_125_clk_p),
-		.sysclk_300_clk_n	(sysclk_300_clk_n),
-		.sysclk_300_clk_p	(sysclk_300_clk_p),
+		.default_sysclk_125_clk_n	(sysclk_125_clk_n),
+		.default_sysclk_125_clk_p	(sysclk_125_clk_p),
+		.default_sysclk_161_clk_n	(sysclk_161_clk_n),
+		.default_sysclk_161_clk_p	(sysclk_161_clk_p),
 
-		.gt_rxp_in		(gt_txp_out),
-		.gt_rxn_in		(gt_txn_out),
-		.gt_txp_out		(gt_txp_out),
-		.gt_txn_out		(gt_txn_out),
+		.gt_rxp_in			(gt_txp_out),
+		.gt_rxn_in			(gt_txn_out),
+		.gt_txp_out			(gt_txp_out),
+		.gt_txn_out			(gt_txn_out),
 
-		.rx_gt_locked_led_0	(rx_gt_locked_led_0),
-		.rx_block_lock_led_0	(rx_block_lock_led_0),
-		.completion_status	(completion_status)
+		.rx_gt_locked_led_0		(rx_gt_locked_led_0),
+		.rx_block_lock_led_0		(rx_block_lock_led_0),
+		.completion_status		(completion_status)
 	);
 
     initial
@@ -91,10 +91,11 @@ module legofpga_mac_qsfp_tb
       $display("****************");
     `endif
 
-      sysclk_125_clk_p = 0;
-      sysclk_300_clk_p = 0;
       sysclk_125_clk_n = 1;
-      sysclk_300_clk_n = 1;
+      sysclk_125_clk_p = 0;
+
+      sysclk_161_clk_n = 1;
+      sysclk_161_clk_p = 0;
 
       // One lock
       $display("INFO : waiting for the gt lock..........");
@@ -106,6 +107,15 @@ module legofpga_mac_qsfp_tb
       wait(rx_block_lock_led_0);
       $display("INFO : CORE 25GE rx block locked");
 
+      //
+      // Having above two signals asserted is not enough.
+      // We should use the `mac_ready` as the green light.
+      // Once `mac_ready` is asserted, this TB can send stuff.
+      // `mac_ready` is in top_mac_qsfp.c, not exported now.
+      //
+
+      // Completion status does not matter for us.
+      // It's here just for skip the time. Can be removed.
       $display("INFO : Waiting for completion status..........");
       wait ( ( completion_status != 5'h1F ) && ( completion_status != 5'h0 ) ) ;
       display_result(completion_status);
@@ -116,14 +126,14 @@ module legofpga_mac_qsfp_tb
 
     initial
     begin
-        sysclk_300_clk_p =1;
-        forever #1666666.666   sysclk_300_clk_p = ~ sysclk_300_clk_p;
+        sysclk_161_clk_p = 1;
+        forever #3103030.303   sysclk_161_clk_p = ~ sysclk_161_clk_p;
     end
 
     initial
     begin
-        sysclk_300_clk_n =0;
-        forever #1666666.666   sysclk_300_clk_n = ~ sysclk_300_clk_n;
+        sysclk_161_clk_n = 0;
+        forever #3103030.303   sysclk_161_clk_n = ~ sysclk_161_clk_n;
     end
 
     initial

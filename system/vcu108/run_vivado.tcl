@@ -233,7 +233,8 @@ set_property -name "used_in_synthesis" -value "0" -objects $file_obj
 
 # Set 'sim_1' fileset properties
 set obj [get_filesets sim_1]
-set_property -name "top" -value "top_axi_mac" -objects $obj
+set_property -name "top" -value "legofpga_mac_qsfp_tb" -objects $obj
+set_property -name "top_auto_set" -value "0" -objects $obj
 set_property -name "top_lib" -value "xil_defaultlib" -objects $obj
 
 
@@ -695,31 +696,15 @@ proc cr_bd_clock_mac_qsfp { parentCell } {
 
 
   # Create interface ports
-  set sysclk_125 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 sysclk_125 ]
+  set default_sysclk_125 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 default_sysclk_125 ]
   set_property -dict [ list \
    CONFIG.FREQ_HZ {125000000} \
-   ] $sysclk_125
-  set sysclk_300 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 sysclk_300 ]
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {300000000} \
-   ] $sysclk_300
+   ] $default_sysclk_125
 
   # Create ports
   set clk_100 [ create_bd_port -dir O -type clk clk_100 ]
   set clk_125 [ create_bd_port -dir O -type clk clk_125 ]
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {125000000} \
- ] $clk_125
-  set clk_161_n [ create_bd_port -dir O -type clk clk_161_n ]
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {161132812} \
- ] $clk_161_n
-  set clk_161_p [ create_bd_port -dir O -type clk clk_161_p ]
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {161132812} \
- ] $clk_161_p
-  set locked_0 [ create_bd_port -dir O locked_0 ]
-  set locked_1 [ create_bd_port -dir O locked_1 ]
+  set clk_locked [ create_bd_port -dir O clk_locked ]
 
   # Create instance: sys_clkwiz_125, and set properties
   set sys_clkwiz_125 [ create_bd_cell -type ip -vlnv xilinx.com:ip:clk_wiz:6.0 sys_clkwiz_125 ]
@@ -736,39 +721,13 @@ proc cr_bd_clock_mac_qsfp { parentCell } {
    CONFIG.USE_RESET {false} \
  ] $sys_clkwiz_125
 
-  # Create instance: sys_clkwiz_300, and set properties
-  set sys_clkwiz_300 [ create_bd_cell -type ip -vlnv xilinx.com:ip:clk_wiz:6.0 sys_clkwiz_300 ]
-  set_property -dict [ list \
-   CONFIG.CLKOUT1_JITTER {127.940} \
-   CONFIG.CLKOUT1_PHASE_ERROR {158.134} \
-   CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {161.1328125} \
-   CONFIG.CLKOUT2_JITTER {127.940} \
-   CONFIG.CLKOUT2_PHASE_ERROR {158.134} \
-   CONFIG.CLKOUT2_REQUESTED_OUT_FREQ {161.1328125} \
-   CONFIG.CLKOUT2_REQUESTED_PHASE {180} \
-   CONFIG.CLKOUT2_USED {true} \
-   CONFIG.CLK_IN1_BOARD_INTERFACE {default_sysclk1_300} \
-   CONFIG.MMCM_CLKFBOUT_MULT_F {34.375} \
-   CONFIG.MMCM_CLKOUT0_DIVIDE_F {8.000} \
-   CONFIG.MMCM_CLKOUT1_DIVIDE {8} \
-   CONFIG.MMCM_CLKOUT1_PHASE {180.000} \
-   CONFIG.MMCM_DIVCLK_DIVIDE {8} \
-   CONFIG.NUM_OUT_CLKS {2} \
-   CONFIG.USE_BOARD_FLOW {true} \
-   CONFIG.USE_RESET {false} \
- ] $sys_clkwiz_300
-
   # Create interface connections
-  connect_bd_intf_net -intf_net default_sysclk1_300_1 [get_bd_intf_ports sysclk_300] [get_bd_intf_pins sys_clkwiz_300/CLK_IN1_D]
-  connect_bd_intf_net -intf_net sysclk_125_1 [get_bd_intf_ports sysclk_125] [get_bd_intf_pins sys_clkwiz_125/CLK_IN1_D]
+  connect_bd_intf_net -intf_net sysclk_125_1 [get_bd_intf_ports default_sysclk_125] [get_bd_intf_pins sys_clkwiz_125/CLK_IN1_D]
 
   # Create port connections
-  connect_bd_net -net clk_wiz_0_clk_out1 [get_bd_ports clk_161_p] [get_bd_pins sys_clkwiz_300/clk_out1]
-  connect_bd_net -net clk_wiz_0_clk_out2 [get_bd_ports clk_161_n] [get_bd_pins sys_clkwiz_300/clk_out2]
   connect_bd_net -net clk_wiz_0_clk_out3 [get_bd_ports clk_100] [get_bd_pins sys_clkwiz_125/clk_out1]
   connect_bd_net -net clk_wiz_0_clk_out4 [get_bd_ports clk_125] [get_bd_pins sys_clkwiz_125/clk_out2]
-  connect_bd_net -net clk_wiz_0_locked [get_bd_ports locked_0] [get_bd_pins sys_clkwiz_300/locked]
-  connect_bd_net -net clk_wiz_0_locked1 [get_bd_ports locked_1] [get_bd_pins sys_clkwiz_125/locked]
+  connect_bd_net -net clk_wiz_0_locked1 [get_bd_ports clk_locked] [get_bd_pins sys_clkwiz_125/locked]
 
   # Create address segments
 

@@ -26,10 +26,10 @@
 module legofpga_mac_qsfp
 (
 	/* Board Clock */
-	input			sysclk_125_clk_n,
-	input			sysclk_125_clk_p,
-	input			sysclk_300_clk_n,
-	input			sysclk_300_clk_p,
+	input			default_sysclk_125_clk_n,
+	input			default_sysclk_125_clk_p,
+	input			default_sysclk_161_clk_n,
+	input			default_sysclk_161_clk_p,
 
 	/* QSFP PHY Interface */
 	input  wire [1-1:0]	gt_rxp_in,
@@ -189,30 +189,29 @@ module legofpga_mac_qsfp
 
 	assign rx_block_lock_led_0 = block_lock_led_0 & stat_rx_status_0;
 
-	wire dclk;
-	wire clk_100, clk_125, clk_161_n, clk_161_p, locked_0, locked_1;
+	wire dclk, clk_100, clk_125, clk_locked;
 
 	/* 100MHZ is used in the reference design */
 	assign dclk = clk_100;
 
-	wire sys_reset;
+	wire _sys_reset, sys_reset;
+	assign _sys_reset = ~clk_locked;
 
-	assign sys_reset = ~(locked_0 & locked_1);
+	user_cdc_sync u_sync_reset (
+		.clk                 (dclk),
+		.signal_in           (_sys_reset),
+		.signal_out          (sys_reset)
+	);
 
 	clock_mac_qsfp	u_clock_gen (
 		/* Input: Board Clock */
-		.sysclk_125_clk_n	(sysclk_125_clk_n),
-		.sysclk_125_clk_p	(sysclk_125_clk_p),
-		.sysclk_300_clk_n	(sysclk_300_clk_n),
-		.sysclk_300_clk_p	(sysclk_300_clk_p),
+		.default_sysclk_125_clk_n	(default_sysclk_125_clk_n),
+		.default_sysclk_125_clk_p	(default_sysclk_125_clk_p),
 
 		/* Ouputs */
 		.clk_100		(clk_100),
 		.clk_125		(clk_125),
-		.clk_161_n		(clk_161_n),
-		.clk_161_p		(clk_161_p),
-		.locked_0		(locked_0),
-		.locked_1		(locked_1)
+		.clk_locked		(clk_locked)
 	);
 
 	/*
@@ -281,8 +280,8 @@ module legofpga_mac_qsfp
 		 * According to PG210, for 25G configuration,
 		 * it supports gt_refclk frequency 161.1328125 MHz only
 		 */
-		.gt_ref_clk_0_clk_p	(clk_161_p),
-		.gt_ref_clk_0_clk_n	(clk_161_n),
+		.gt_ref_clk_0_clk_n	(default_sysclk_161_clk_n),
+		.gt_ref_clk_0_clk_p	(default_sysclk_161_clk_p),
 		.gt_refclk_out_0	(gt_refclk_out),
 
 		.dclk			(dclk),
