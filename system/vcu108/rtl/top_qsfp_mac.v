@@ -38,8 +38,7 @@ module legofpga_mac_qsfp
 	output wire [1-1:0]	gt_txn_out,
 
 	output wire		rx_gt_locked_led_0,
-	output wire		rx_block_lock_led_0,
-	output wire [4:0]	completion_status
+	output wire		rx_block_lock_led_0
 );
 
 	// AXI4 Lite
@@ -181,6 +180,7 @@ module legofpga_mac_qsfp
 	assign rxoutclksel_in_0 = 3'b101;    // this value should not be changed as per gtwizard
 	wire [31:0] user_reg0_0;
 
+	wire [4:0] completion_status;
 	wire gt_refclk_out;
 
 	wire mac_ready;
