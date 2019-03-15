@@ -184,7 +184,6 @@ set file_added [add_files -norecurse -fileset $obj [list $file]]
 set file "rtl/top_qsfp_mac.xdc"
 set file_obj [get_files -of_objects [get_filesets constrs_1] [list "*$file"]]
 set_property -name "file_type" -value "XDC" -objects $file_obj
-set_property -name "processing_order" -value "EARLY" -objects $file_obj
 
 # Set 'constrs_1' fileset properties
 set obj [get_filesets constrs_1]
