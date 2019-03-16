@@ -197,6 +197,10 @@ module legofpga_mac_qsfp
 	wire _sys_reset, sys_reset;
 	assign _sys_reset = ~clk_locked;
 
+	/*
+	 * sys_reset is issued when clock is ready.
+	 * sys_reset is sent to MAC layer only.
+	 */
 	user_cdc_sync u_sync_reset (
 		.clk                 (dclk),
 		.signal_in           (_sys_reset),
@@ -231,13 +235,20 @@ module legofpga_mac_qsfp
 	 */
 	wire from_net_tready;
 
-	/* Those rst_n must sync to their clocks */
-	wire clk_125_rst_n;
-	wire from_net_clk_390_rst_n, to_net_clk_390_rst_n;
+	wire clk_125_rst_n, from_net_clk_390_rst_n, to_net_clk_390_rst_n;
 
-	assign clk_125_rst_n = 1'b1;
+	/*
+	 * Those output reset from MAC are already synced to
+	 * their corresponding clock domains.
+	 */
 	assign from_net_clk_390_rst_n	= ~user_rx_reset_0;
 	assign to_net_clk_390_rst_n	= ~user_tx_reset_0;
+
+	user_cdc_sync u_sync_clk_125_rst_N (
+		.clk                 (clk_125),
+		.signal_in           (from_net_clk_390_rst_n),
+		.signal_out          (clk_125_rst_n)
+	);
 
 	LegoFPGA_axis64 u_LegoFPGA (
 		.clk_125		(clk_125),
