@@ -176,6 +176,81 @@ module legofpga_mac_qsfp
 	wire [2:0] txoutclksel_in_0;
 	wire [2:0] rxoutclksel_in_0;
 
+	/* AN/LT Stats Signals */
+	wire [1:0] stat_an_link_cntl_1000base_kx_0;
+	wire [1:0] stat_an_link_cntl_10gbase_kx4_0;
+	wire [1:0] stat_an_link_cntl_10gbase_kr_0;
+	wire [1:0] stat_an_link_cntl_40gbase_kr4_0;
+	wire [1:0] stat_an_link_cntl_40gbase_cr4_0;
+	wire [1:0] stat_an_link_cntl_100gbase_cr10_0;
+	wire [1:0] stat_an_link_cntl_100gbase_kp4_0;
+	wire [1:0] stat_an_link_cntl_100gbase_kr4_0;
+	wire [1:0] stat_an_link_cntl_100gbase_cr4_0;
+	wire [1:0] stat_an_link_cntl_25gbase_krcr_s_0;
+	wire [1:0] stat_an_link_cntl_25gbase_krcr_0;
+	wire stat_an_fec_enable_0;
+	wire stat_an_tx_pause_enable_0;
+	wire stat_an_rx_pause_enable_0;
+	wire stat_an_autoneg_complete_0;
+	wire stat_an_parallel_detection_fault_0;
+	wire stat_an_start_tx_disable_0;
+	wire stat_an_start_an_good_check_0;
+	wire stat_an_lp_ability_1000base_kx_0;
+	wire stat_an_lp_ability_10gbase_kx4_0;
+	wire stat_an_lp_ability_10gbase_kr_0;
+	wire stat_an_lp_ability_40gbase_kr4_0;
+	wire stat_an_lp_ability_40gbase_cr4_0;
+	wire stat_an_lp_ability_100gbase_cr10_0;
+	wire stat_an_lp_ability_100gbase_kp4_0;
+	wire stat_an_lp_ability_100gbase_kr4_0;
+	wire stat_an_lp_ability_100gbase_cr4_0;
+	wire stat_an_lp_ability_25gbase_krcr_s_0;
+	wire stat_an_lp_ability_25gbase_krcr_0;
+	wire stat_an_lp_pause_0;
+	wire stat_an_lp_asm_dir_0;
+	wire stat_an_lp_rf_0;
+	wire stat_an_lp_fec_10g_ability_0;
+	wire stat_an_lp_fec_10g_request_0;
+	wire stat_an_lp_fec_25g_rs_request_0;
+	wire stat_an_lp_fec_25g_baser_request_0;
+	wire stat_an_lp_autoneg_able_0;
+	wire stat_an_lp_ability_valid_0;
+	wire stat_an_loc_np_ack_0;
+	wire stat_an_lp_np_0;
+	wire stat_an_rxcdrhold_0;
+	wire [1:0] stat_an_link_cntl_25gbase_kr1_0;
+	wire stat_an_lp_ability_25gbase_kr1_0;
+	wire [1:0] stat_an_link_cntl_25gbase_cr1_0;
+	wire stat_an_lp_ability_25gbase_cr1_0;
+	wire [1:0] stat_an_link_cntl_50gbase_kr2_0;
+	wire stat_an_lp_ability_50gbase_kr2_0;
+	wire [1:0] stat_an_link_cntl_50gbase_cr2_0;
+	wire stat_an_lp_ability_50gbase_cr2_0;
+	wire [3:0] stat_an_lp_ability_extended_fec_0;
+	wire stat_an_rs_fec_enable_0;
+	wire stat_an_lp_extended_ability_valid_0;
+	wire stat_lt_signal_detect_0;
+	wire stat_lt_training_0;
+	wire stat_lt_training_fail_0;
+	wire stat_lt_rx_sof_0;
+	wire stat_lt_frame_lock_0;
+	wire stat_lt_preset_from_rx_0;
+	wire stat_lt_initialize_from_rx_0;
+	wire [1:0] stat_lt_k_p1_from_rx0_0;
+	wire [1:0] stat_lt_k0_from_rx0_0;
+	wire [1:0] stat_lt_k_m1_from_rx0_0;
+	wire [1:0] stat_lt_stat_p1_from_rx0_0;
+	wire [1:0] stat_lt_stat0_from_rx0_0;
+	wire [1:0] stat_lt_stat_m1_from_rx0_0;
+
+	/* AN/LT control */
+	wire [47:0]	an_loc_np_data_0 = 'b0;
+	wire [47:0]	an_lp_np_data_0;
+	wire		lt_tx_sof_0;
+
+	wire		ctl_an_loc_np_0;
+	wire		ctl_an_lp_np_ack_0;
+
 	assign txoutclksel_in_0 = 3'b101;    // this value should not be changed as per gtwizard 
 	assign rxoutclksel_in_0 = 3'b101;    // this value should not be changed as per gtwizard
 	wire [31:0] user_reg0_0;
@@ -189,10 +264,11 @@ module legofpga_mac_qsfp
 
 	assign rx_block_lock_led_0 = block_lock_led_0 & stat_rx_status_0;
 
-	wire dclk, clk_100, clk_125, clk_locked;
+	wire an_clk, dclk, clk_100, clk_125, clk_locked;
 
 	/* 100MHZ is used in the reference design */
 	assign dclk = clk_100;
+	assign an_clk = dclk;
 
 	wire _sys_reset, sys_reset;
 	assign _sys_reset = ~clk_locked;
@@ -278,6 +354,16 @@ module legofpga_mac_qsfp
 	);
 
 	/*
+	 * ANLT module can be validated on board by peer to peer connection,
+	 * it cannot be tested in loopback mode.
+	 *
+	 * For simulation ANLT congfiguration is tested bypassing the ANLT
+	 * funtionality by making the ctl_autoneg_bypass = 1'b1
+	 */
+	assign ctl_an_loc_np_0		= 1'b0;
+	assign ctl_an_lp_np_ack_0	= 1'b1; // For simulation this will be 0, board testing change it to 1
+
+	/*
 	 * This is a block diagram, which only has the xxv IP.
 	 * The BD is created from Board IP list.
 	 */
@@ -351,15 +437,91 @@ module legofpga_mac_qsfp
 		.user_reg0_0		(user_reg0_0),
 
 		/* TX Control Signals */
-		.ctl_tx_ctl_tx_send_lfi		(ctl_tx_send_lfi_0),
-		.ctl_tx_ctl_tx_send_rfi		(ctl_tx_send_rfi_0),
-		.ctl_tx_ctl_tx_send_idle	(ctl_tx_send_idle_0),
+		.ctl_tx_ctl_tx_send_lfi			(ctl_tx_send_lfi_0),
+		.ctl_tx_ctl_tx_send_rfi			(ctl_tx_send_rfi_0),
+		.ctl_tx_ctl_tx_send_idle		(ctl_tx_send_idle_0),
 
-		.gtwiz_reset_tx_datapath_0	(gtwiz_reset_tx_datapath_0),
-		.gtwiz_reset_rx_datapath_0	(gtwiz_reset_rx_datapath_0),
-		.gtpowergood_out_0		(gtpowergood_out_0),
-		.txoutclksel_in_0		(txoutclksel_in_0),
-		.rxoutclksel_in_0		(rxoutclksel_in_0),
+		.gtwiz_reset_tx_datapath_0		(gtwiz_reset_tx_datapath_0),
+		.gtwiz_reset_rx_datapath_0		(gtwiz_reset_rx_datapath_0),
+		.gtpowergood_out_0			(gtpowergood_out_0),
+		.txoutclksel_in_0			(txoutclksel_in_0),
+		.rxoutclksel_in_0			(rxoutclksel_in_0),
+
+		/* AN/LT (input) */
+		.an_clk					(an_clk),
+		.an_reset_0				(sys_reset),
+		.ctl_an_loc_np_0			(ctl_an_loc_np_0),
+		.ctl_an_lp_np_ack_0			(ctl_an_lp_np_ack_0),
+		.an_loc_np_data_0			(an_loc_np_data_0),
+
+		/* AN/LT (output) */
+		.lt_tx_sof_0				(lt_tx_sof_0),
+		.stat_an_start_an_good_check_0		(stat_an_start_an_good_check_0),
+		.AN_LT_an_lp_np_data			(an_lp_np_data_0),
+		.AN_LT_stat_an_link_cntl_1000base_kx	(stat_an_link_cntl_1000base_kx_0),
+		.AN_LT_stat_an_link_cntl_10gbase_kx4	(stat_an_link_cntl_10gbase_kx4_0),
+		.AN_LT_stat_an_link_cntl_10gbase_kr	(stat_an_link_cntl_10gbase_kr_0),
+		.AN_LT_stat_an_link_cntl_40gbase_kr4	(stat_an_link_cntl_40gbase_kr4_0),
+		.AN_LT_stat_an_link_cntl_40gbase_cr4	(stat_an_link_cntl_40gbase_cr4_0),
+		.AN_LT_stat_an_link_cntl_100gbase_cr10	(stat_an_link_cntl_100gbase_cr10_0),
+		.AN_LT_stat_an_link_cntl_100gbase_kp4	(stat_an_link_cntl_100gbase_kp4_0),
+		.AN_LT_stat_an_link_cntl_100gbase_kr4	(stat_an_link_cntl_100gbase_kr4_0),
+		.AN_LT_stat_an_link_cntl_100gbase_cr4	(stat_an_link_cntl_100gbase_cr4_0),
+		.AN_LT_stat_an_link_cntl_25gbase_krcr_s	(stat_an_link_cntl_25gbase_krcr_s_0),
+		.AN_LT_stat_an_link_cntl_25gbase_krcr	(stat_an_link_cntl_25gbase_krcr_0),
+		.AN_LT_stat_an_fec_enable		(stat_an_fec_enable_0),
+		.AN_LT_stat_an_tx_pause_enable		(stat_an_tx_pause_enable_0),
+		.AN_LT_stat_an_rx_pause_enable		(stat_an_rx_pause_enable_0),
+		.AN_LT_stat_an_autoneg_complete		(stat_an_autoneg_complete_0),
+		.AN_LT_stat_an_parallel_detection_fault	(stat_an_parallel_detection_fault_0),
+		.AN_LT_stat_an_start_tx_disable		(stat_an_start_tx_disable_0),
+		.AN_LT_stat_an_lp_ability_1000base_kx	(stat_an_lp_ability_1000base_kx_0),
+		.AN_LT_stat_an_lp_ability_10gbase_kx4	(stat_an_lp_ability_10gbase_kx4_0),
+		.AN_LT_stat_an_lp_ability_10gbase_kr	(stat_an_lp_ability_10gbase_kr_0),
+		.AN_LT_stat_an_lp_ability_40gbase_kr4	(stat_an_lp_ability_40gbase_kr4_0),
+		.AN_LT_stat_an_lp_ability_40gbase_cr4	(stat_an_lp_ability_40gbase_cr4_0),
+		.AN_LT_stat_an_lp_ability_100gbase_cr10	(stat_an_lp_ability_100gbase_cr10_0),
+		.AN_LT_stat_an_lp_ability_100gbase_kp4	(stat_an_lp_ability_100gbase_kp4_0),
+		.AN_LT_stat_an_lp_ability_100gbase_kr4	(stat_an_lp_ability_100gbase_kr4_0),
+		.AN_LT_stat_an_lp_ability_100gbase_cr4	(stat_an_lp_ability_100gbase_cr4_0),
+		.AN_LT_stat_an_lp_ability_25gbase_krcr_s(stat_an_lp_ability_25gbase_krcr_s_0),
+		.AN_LT_stat_an_lp_ability_25gbase_krcr	(stat_an_lp_ability_25gbase_krcr_0),
+		.AN_LT_stat_an_lp_pause			(stat_an_lp_pause_0),
+		.AN_LT_stat_an_lp_asm_dir		(stat_an_lp_asm_dir_0),
+		.AN_LT_stat_an_lp_rf			(stat_an_lp_rf_0),
+		.AN_LT_stat_an_lp_fec_10g_ability	(stat_an_lp_fec_10g_ability_0),
+		.AN_LT_stat_an_lp_fec_10g_request	(stat_an_lp_fec_10g_request_0),
+		.AN_LT_stat_an_lp_fec_25g_rs_request	(stat_an_lp_fec_25g_rs_request_0),
+		.AN_LT_stat_an_lp_fec_25g_baser_request	(stat_an_lp_fec_25g_baser_request_0),
+		.AN_LT_stat_an_lp_autoneg_able		(stat_an_lp_autoneg_able_0),
+		.AN_LT_stat_an_lp_ability_valid		(stat_an_lp_ability_valid_0),
+		.AN_LT_stat_an_loc_np_ack		(stat_an_loc_np_ack_0),
+		.AN_LT_stat_an_lp_np			(stat_an_lp_np_0),
+		.AN_LT_stat_an_rxcdrhold		(stat_an_rxcdrhold_0),
+		.AN_LT_stat_an_link_cntl_25gbase_kr1	(stat_an_link_cntl_25gbase_kr1_0),
+		.AN_LT_stat_an_lp_ability_25gbase_kr1	(stat_an_lp_ability_25gbase_kr1_0),
+		.AN_LT_stat_an_link_cntl_25gbase_cr1	(stat_an_link_cntl_25gbase_cr1_0),
+		.AN_LT_stat_an_lp_ability_25gbase_cr1	(stat_an_lp_ability_25gbase_cr1_0),
+		.AN_LT_stat_an_link_cntl_50gbase_kr2	(stat_an_link_cntl_50gbase_kr2_0),
+		.AN_LT_stat_an_lp_ability_50gbase_kr2	(stat_an_lp_ability_50gbase_kr2_0),
+		.AN_LT_stat_an_link_cntl_50gbase_cr2	(stat_an_link_cntl_50gbase_cr2_0),
+		.AN_LT_stat_an_lp_ability_50gbase_cr2	(stat_an_lp_ability_50gbase_cr2_0),
+		.AN_LT_stat_an_lp_ability_extended_fec	(stat_an_lp_ability_extended_fec_0),
+		.AN_LT_stat_an_rs_fec_enable		(stat_an_rs_fec_enable_0),
+		.AN_LT_stat_an_lp_extended_ability_valid (stat_an_lp_extended_ability_valid_0),
+		.AN_LT_stat_lt_signal_detect		(stat_lt_signal_detect_0),
+		.AN_LT_stat_lt_training			(stat_lt_training_0),
+		.AN_LT_stat_lt_training_fail		(stat_lt_training_fail_0),
+		.AN_LT_stat_lt_rx_sof			(stat_lt_rx_sof_0),
+		.AN_LT_stat_lt_frame_lock		(stat_lt_frame_lock_0),
+		.AN_LT_stat_lt_preset_from_rx		(stat_lt_preset_from_rx_0),
+		.AN_LT_stat_lt_initialize_from_rx	(stat_lt_initialize_from_rx_0),
+		.AN_LT_stat_lt_k_p1_from_rx0		(stat_lt_k_p1_from_rx0_0),
+		.AN_LT_stat_lt_k0_from_rx0		(stat_lt_k0_from_rx0_0),
+		.AN_LT_stat_lt_k_m1_from_rx0		(stat_lt_k_m1_from_rx0_0),
+		.AN_LT_stat_lt_stat_p1_from_rx0		(stat_lt_stat_p1_from_rx0_0),
+		.AN_LT_stat_lt_stat0_from_rx0		(stat_lt_stat0_from_rx0_0),
+		.AN_LT_stat_lt_stat_m1_from_rx0		(stat_lt_stat_m1_from_rx0_0),
 
 		.stat_rx_stat_rx_block_lock		(stat_rx_block_lock_0),
 		.stat_rx_stat_rx_framing_err_valid	(stat_rx_framing_err_valid_0),

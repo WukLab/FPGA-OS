@@ -1016,6 +1016,7 @@ proc cr_bd_mac_qsfp { parentCell } {
 
 
   # Create interface ports
+  set AN_LT [ create_bd_intf_port -mode Master -vlnv xilinx.com:display_xxv_ethernet:statistics_ports:2.0 AN_LT ]
   set ctl_tx [ create_bd_intf_port -mode Slave -vlnv xilinx.com:display_xxv_ethernet:ctrl_ports:2.0 ctl_tx ]
   set gt_ref_clk_0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 gt_ref_clk_0 ]
   set_property -dict [ list \
@@ -1061,7 +1062,6 @@ proc cr_bd_mac_qsfp { parentCell } {
   set stat_tx [ create_bd_intf_port -mode Master -vlnv xilinx.com:display_xxv_ethernet:statistics_ports:2.0 stat_tx ]
   set tx_axis [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 tx_axis ]
   set_property -dict [ list \
-   CONFIG.FREQ_HZ {390625000} \
    CONFIG.HAS_TKEEP {1} \
    CONFIG.HAS_TLAST {1} \
    CONFIG.HAS_TREADY {1} \
@@ -1074,14 +1074,19 @@ proc cr_bd_mac_qsfp { parentCell } {
    ] $tx_axis
 
   # Create ports
+  set an_clk [ create_bd_port -dir I -type clk an_clk ]
+  set an_loc_np_data_0 [ create_bd_port -dir I -from 47 -to 0 an_loc_np_data_0 ]
+  set an_reset_0 [ create_bd_port -dir I -type rst an_reset_0 ]
+  set_property -dict [ list \
+   CONFIG.POLARITY {ACTIVE_HIGH} \
+ ] $an_reset_0
+  set ctl_an_loc_np_0 [ create_bd_port -dir I ctl_an_loc_np_0 ]
+  set ctl_an_lp_np_ack_0 [ create_bd_port -dir I ctl_an_lp_np_ack_0 ]
   set dclk [ create_bd_port -dir I -type clk dclk ]
   set_property -dict [ list \
    CONFIG.ASSOCIATED_RESET {sys_reset} \
  ] $dclk
   set gt_refclk_out_0 [ create_bd_port -dir O -type clk gt_refclk_out_0 ]
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {161132812} \
- ] $gt_refclk_out_0
   set gtpowergood_out_0 [ create_bd_port -dir O gtpowergood_out_0 ]
   set gtwiz_reset_rx_datapath_0 [ create_bd_port -dir I -type rst gtwiz_reset_rx_datapath_0 ]
   set_property -dict [ list \
@@ -1091,11 +1096,9 @@ proc cr_bd_mac_qsfp { parentCell } {
   set_property -dict [ list \
    CONFIG.POLARITY {ACTIVE_HIGH} \
  ] $gtwiz_reset_tx_datapath_0
+  set lt_tx_sof_0 [ create_bd_port -dir O lt_tx_sof_0 ]
   set pm_tick_0 [ create_bd_port -dir I pm_tick_0 ]
   set rx_clk_out_0 [ create_bd_port -dir O -type clk rx_clk_out_0 ]
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {390625000} \
- ] $rx_clk_out_0
   set rx_core_clk_0 [ create_bd_port -dir I -type clk rx_core_clk_0 ]
   set_property -dict [ list \
    CONFIG.ASSOCIATED_BUSIF {rx_axis} \
@@ -1110,15 +1113,13 @@ proc cr_bd_mac_qsfp { parentCell } {
  ] $rx_reset_0
   set rxoutclksel_in_0 [ create_bd_port -dir I -from 2 -to 0 rxoutclksel_in_0 ]
   set rxrecclkout_0 [ create_bd_port -dir O -type clk rxrecclkout_0 ]
-  set_property -dict [ list \
-   CONFIG.FREQ_HZ {390625000} \
- ] $rxrecclkout_0
   set s_axi_aclk_0 [ create_bd_port -dir I -type clk s_axi_aclk_0 ]
   set_property -dict [ list \
    CONFIG.ASSOCIATED_BUSIF {s_axi} \
    CONFIG.ASSOCIATED_RESET {s_axi_aresetn_0} \
  ] $s_axi_aclk_0
   set s_axi_aresetn_0 [ create_bd_port -dir I -type rst s_axi_aresetn_0 ]
+  set stat_an_start_an_good_check_0 [ create_bd_port -dir O stat_an_start_an_good_check_0 ]
   set stat_rx_status_0 [ create_bd_port -dir O stat_rx_status_0 ]
   set sys_reset [ create_bd_port -dir I -type rst sys_reset ]
   set_property -dict [ list \
@@ -1127,7 +1128,6 @@ proc cr_bd_mac_qsfp { parentCell } {
   set tx_clk_out_0 [ create_bd_port -dir O -type clk tx_clk_out_0 ]
   set_property -dict [ list \
    CONFIG.ASSOCIATED_BUSIF {tx_axis} \
-   CONFIG.FREQ_HZ {390625000} \
  ] $tx_clk_out_0
   set tx_preamblein_0 [ create_bd_port -dir I -from 55 -to 0 tx_preamblein_0 ]
   set tx_reset_0 [ create_bd_port -dir I -type rst tx_reset_0 ]
@@ -1145,6 +1145,7 @@ proc cr_bd_mac_qsfp { parentCell } {
   set_property -dict [ list \
    CONFIG.DIFFCLK_BOARD_INTERFACE {qsfp_mgt_si570_clock2} \
    CONFIG.ETHERNET_BOARD_INTERFACE {qsfp_1x} \
+   CONFIG.INCLUDE_AUTO_NEG_LT_LOGIC {Include AN/LT Logic} \
    CONFIG.USE_BOARD_FLOW {true} \
  ] $xxv_ethernet_0
 
@@ -1153,12 +1154,18 @@ proc cr_bd_mac_qsfp { parentCell } {
   connect_bd_intf_net -intf_net ctl_tx_0_0_1 [get_bd_intf_ports ctl_tx] [get_bd_intf_pins xxv_ethernet_0/ctl_tx_0]
   connect_bd_intf_net -intf_net gt_ref_clk_0_1 [get_bd_intf_ports gt_ref_clk_0] [get_bd_intf_pins xxv_ethernet_0/gt_ref_clk]
   connect_bd_intf_net -intf_net s_axi_0_0_1 [get_bd_intf_ports s_axi] [get_bd_intf_pins xxv_ethernet_0/s_axi_0]
+  connect_bd_intf_net -intf_net xxv_ethernet_0_AN_LT_stat_0 [get_bd_intf_ports AN_LT] [get_bd_intf_pins xxv_ethernet_0/AN_LT_stat_0]
   connect_bd_intf_net -intf_net xxv_ethernet_0_axis_rx_0 [get_bd_intf_ports rx_axis] [get_bd_intf_pins xxv_ethernet_0/axis_rx_0]
   connect_bd_intf_net -intf_net xxv_ethernet_0_gt_serial_port [get_bd_intf_ports gt_serial_port_0] [get_bd_intf_pins xxv_ethernet_0/gt_serial_port]
   connect_bd_intf_net -intf_net xxv_ethernet_0_stat_rx_0 [get_bd_intf_ports stat_rx] [get_bd_intf_pins xxv_ethernet_0/stat_rx_0]
   connect_bd_intf_net -intf_net xxv_ethernet_0_stat_tx_0 [get_bd_intf_ports stat_tx] [get_bd_intf_pins xxv_ethernet_0/stat_tx_0]
 
   # Create port connections
+  connect_bd_net -net an_clk_0_0_1 [get_bd_ports an_clk] [get_bd_pins xxv_ethernet_0/an_clk_0]
+  connect_bd_net -net an_loc_np_data_0_0_1 [get_bd_ports an_loc_np_data_0] [get_bd_pins xxv_ethernet_0/an_loc_np_data_0]
+  connect_bd_net -net an_reset_0_0_1 [get_bd_ports an_reset_0] [get_bd_pins xxv_ethernet_0/an_reset_0]
+  connect_bd_net -net ctl_an_loc_np_0_0_1 [get_bd_ports ctl_an_loc_np_0] [get_bd_pins xxv_ethernet_0/ctl_an_loc_np_0]
+  connect_bd_net -net ctl_an_lp_np_ack_0_0_1 [get_bd_ports ctl_an_lp_np_ack_0] [get_bd_pins xxv_ethernet_0/ctl_an_lp_np_ack_0]
   connect_bd_net -net dclk_0_1 [get_bd_ports dclk] [get_bd_pins xxv_ethernet_0/dclk]
   connect_bd_net -net gtwiz_reset_rx_datapath_0_0_1 [get_bd_ports gtwiz_reset_rx_datapath_0] [get_bd_pins xxv_ethernet_0/gtwiz_reset_rx_datapath_0]
   connect_bd_net -net gtwiz_reset_tx_datapath_0_0_1 [get_bd_ports gtwiz_reset_tx_datapath_0] [get_bd_pins xxv_ethernet_0/gtwiz_reset_tx_datapath_0]
@@ -1174,9 +1181,11 @@ proc cr_bd_mac_qsfp { parentCell } {
   connect_bd_net -net txoutclksel_in_0_0_1 [get_bd_ports txoutclksel_in_0] [get_bd_pins xxv_ethernet_0/txoutclksel_in_0]
   connect_bd_net -net xxv_ethernet_0_gt_refclk_out [get_bd_ports gt_refclk_out_0] [get_bd_pins xxv_ethernet_0/gt_refclk_out]
   connect_bd_net -net xxv_ethernet_0_gtpowergood_out_0 [get_bd_ports gtpowergood_out_0] [get_bd_pins xxv_ethernet_0/gtpowergood_out_0]
+  connect_bd_net -net xxv_ethernet_0_lt_tx_sof_0 [get_bd_ports lt_tx_sof_0] [get_bd_pins xxv_ethernet_0/lt_tx_sof_0]
   connect_bd_net -net xxv_ethernet_0_rx_clk_out_0 [get_bd_ports rx_clk_out_0] [get_bd_pins xxv_ethernet_0/rx_clk_out_0]
   connect_bd_net -net xxv_ethernet_0_rx_preambleout_0 [get_bd_ports rx_preambleout_0] [get_bd_pins xxv_ethernet_0/rx_preambleout_0]
   connect_bd_net -net xxv_ethernet_0_rxrecclkout_0 [get_bd_ports rxrecclkout_0] [get_bd_pins xxv_ethernet_0/rxrecclkout_0]
+  connect_bd_net -net xxv_ethernet_0_stat_an_start_an_good_check_0 [get_bd_ports stat_an_start_an_good_check_0] [get_bd_pins xxv_ethernet_0/stat_an_start_an_good_check_0]
   connect_bd_net -net xxv_ethernet_0_stat_rx_status_0 [get_bd_ports stat_rx_status_0] [get_bd_pins xxv_ethernet_0/stat_rx_status_0]
   connect_bd_net -net xxv_ethernet_0_tx_clk_out_0 [get_bd_ports tx_clk_out_0] [get_bd_pins xxv_ethernet_0/tx_clk_out_0]
   connect_bd_net -net xxv_ethernet_0_tx_unfout_0 [get_bd_ports tx_unfout_0] [get_bd_pins xxv_ethernet_0/tx_unfout_0]
