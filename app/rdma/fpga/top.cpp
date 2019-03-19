@@ -20,9 +20,6 @@ enum APP_RDMA_STATE {
 	APP_RDMA_APP_DATA,
 };
 
-/* Saved states */
-struct net_axis_512 eth_header, app_header;
-
 #ifdef CONFIG_APP_RDMA_STAT
 static unsigned long nr_requests = 0;
 static inline void inc_nr_requests(void)
@@ -43,84 +40,100 @@ static void handle_error(void)
 
 }
 
+enum handle_read_state {
+	READ_IDLE,
+	READ_HDR_ETH,
+	READ_HDR_APP,
+	READ_DATAFLOW
+};
+
 /*
  * Reply packet format:
  * 	64B | Eth | IP | UDP | Lego |
  * 	64B | App header |    pad   | (opcode: REPLY_READ)
  * 	64B |          Data         | (read data if any)
  * 	...
+ *
+ * Both address and length must be 64B aligned
  */
 #define MAX_READ_LOOPS	4
 #define MAX_READ_LENGTH	(MAX_READ_LOOPS * NR_BYTES_AXIS_512)
-static void handle_read(unsigned long address, unsigned long length,
+template <int _unused>
+static void handle_read(stream<struct request> *req_s,
 			stream<struct net_axis_512> *to_net,
 			ap_uint<512> *dram)
 {
 #if 1
 #pragma HLS PIPELINE
-#pragma HLS INLINE
 
 	struct net_axis_512 tmp;
-	ap_uint<512> cache;
-	unsigned int offset = 0, index;
 
-	/* Output Eth/IP/UDP/Lego header */
-	to_net->write(eth_header);
+	static enum handle_read_state read_state = READ_IDLE;
+	static unsigned int offset = 0;
+	static unsigned int start_index = 0;
+	static unsigned long address = 0, length = 0;
+	static struct request req;
 
-	/*
-	 * FIXME
-	 * Now assume the starting address is 64B aligned
-	 */
-	if ((length == 0) || (address % NR_BYTES_AXIS_512 != 0)) {
-		app_header.data(7, 0)= APP_RDMA_OPCODE_REPLY_READ_ERROR;
-		app_header.last = 1;
-		to_net->write(app_header);
-		return;
-	} else {
-		app_header.data(7, 0)= APP_RDMA_OPCODE_REPLY_READ;
-		app_header.last = 0;
-		to_net->write(app_header);
-	}
+	switch (read_state) {
+	case READ_IDLE:
+		if (req_s->empty())
+			return;
+		req = req_s->read();
 
-	/* Sanity check */
-	if (length > MAX_READ_LENGTH)
-		length = MAX_READ_LENGTH;
+		length = req.length;
+		address = req.address;
 
-	index = address / NR_BYTES_AXIS_512;
-	while (length) {
-	/* Set max according the above MAX_READ_LOOPS */
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=4 avg=1
+		start_index = req.address / NR_BYTES_AXIS_512;
+		offset = 0;
 
-		tmp.keep(NR_BYTES_AXIS_512 - 1, 0) = 0xffffffffffffffff;
-		cache = dram[index + offset];
+		read_state = READ_HDR_ETH;
+		break;
+	case READ_HDR_ETH:
+		/* Output Eth/IP/UDP/Lego header */
+		to_net->write(req.eth_header);
 
-		/* Now decice which part should stay */
-		if (length >= NR_BYTES_AXIS_512) {
-			tmp.data = cache;
-			if (length > NR_BYTES_AXIS_512) {
-				tmp.last = 0;
-				length = length - NR_BYTES_AXIS_512;
-			} else
-				tmp.last = 1;
+		read_state = READ_HDR_APP;
+		break;
+	case READ_HDR_APP:
+		if ((length == 0) || (address % NR_BYTES_AXIS_512 != 0) ||
+		    (length % NR_BYTES_AXIS_512) != 0) {
+			req.app_header.data(7, 0)= APP_RDMA_OPCODE_REPLY_READ_ERROR;
+			req.app_header.last = 1;
+			to_net->write(req.app_header);
+
+			read_state = READ_IDLE;
 		} else {
-			int end = length * 8 - 1;
-			tmp.data = 0;
-			tmp.data(end, 0) = cache(end, 0);
-			tmp.keep(NR_BYTES_AXIS_512 - 1, length) = 0;
-			tmp.last = 1;
+			req.app_header.data(7, 0)= APP_RDMA_OPCODE_REPLY_READ;
+			req.app_header.last = 0;
+			to_net->write(req.app_header);
+
+			read_state = READ_DATAFLOW;
 		}
-		to_net->write(tmp);
+		break;
+	case READ_DATAFLOW:
+		tmp.keep(NR_BYTES_AXIS_512 - 1, 0) = 0xffffffffffffffff;
+		tmp.data = dram[start_index + offset];
 		offset++;
 
+		if (length == NR_BYTES_AXIS_512)
+			tmp.last = 1;
+		else {
+			tmp.last = 0;
+			length = length - NR_BYTES_AXIS_512;
+		}
+		to_net->write(tmp);
+
 		if (tmp.last == 1)
-			break;
-	}
+			read_state = READ_IDLE;
+		break;
+	};
 #endif
 }
 
 static inline void narrow_memcpy_to_axi_512(ap_uint<512> &to, ap_uint<512> &from, int n)
 {
 #pragma HLS INLINE
+
 	switch (n) {
 	case 1:		to(7, 0)	= from(7, 0);		break;
 	case 2:		to(15, 0)	= from(15, 0);		break;
@@ -144,76 +157,85 @@ static inline void narrow_memcpy_to_axi_512(ap_uint<512> &to, ap_uint<512> &from
 	}
 }
 
+enum handle_write_state {
+	WRITE_IDLE,
+	WRITE_DATAFLOW
+};
+
 /*
- * @address: dstination adress
- * @length: in bytes
- *
- * This function can only serve one WRITE request at one time.
- * And different from handle_read(), this function will have a minimum
- * state: nr_written. Because this function will be repeatly invoked
- * during data streaming phase.
- *
+ * Both address and length must be 64B aligned.
+ * We can detect unaligned address, but not unaligned length.
+ * Length will be aligned UP to 64B. For example, if a user
+ * tries to write 65B, it eventually will write 128B.
  */
-static void handle_write(unsigned long address, unsigned long length,
-			 struct net_axis_512 axis_data,
+static void handle_write(stream<struct request> *req_s,
+			 stream<struct net_axis_512> *data_s,
 			 ap_uint<512> *dram)
 {
 #pragma HLS PIPELINE II=1
-#pragma HLS INLINE
-	static unsigned int offset = 0;
-	static unsigned int nr_written = 0;
+
 	unsigned int index;
-	long nr_remain;
+	struct request req;
+	struct net_axis_512 data;
 
- 	/*
-	 * FIXME
-	 * Assume the starting address is always 64B aligned.
-	 * Otherwise skip.
-	 */
-	if (address % NR_BYTES_AXIS_512)
-		return;
+	static long nr_remain;
+	static unsigned int start_index = 0;
+	static unsigned int offset = 0;
+	static unsigned long address, length;
+	static enum handle_write_state write_state = WRITE_IDLE;
 
-	index = (address / NR_BYTES_AXIS_512) + offset;
-	nr_remain = length - nr_written;
+	switch (write_state) {
+	case WRITE_IDLE:
+		if (req_s->empty())
+			return;
+		req = req_s->read();
 
-	if (nr_remain >= NR_BYTES_AXIS_512) {
-		dram[index] = axis_data.data;
-		offset++;
-		nr_written = offset * NR_BYTES_AXIS_512;
-	} else {
-		narrow_memcpy_to_axi_512(dram[index], axis_data.data, nr_remain);
-	}
-
-	if (axis_data.last)
+		length = req.length;
+		address = req.address;
+		start_index = req.address / NR_BYTES_AXIS_512;
 		offset = 0;
+
+		if (address % NR_BYTES_AXIS_512 == 0)
+			write_state = WRITE_DATAFLOW;
+		break;
+	case WRITE_DATAFLOW:
+		if (data_s->empty())
+			return;
+		data = data_s->read();
+
+		index = start_index + offset;
+		offset++;
+
+		dram[index] = data.data;
+		if (data.last)
+			write_state = WRITE_IDLE;
+		break;
+	};
 }
 
 /*
- * Packet
+ * Incoming Packet
  * 	64B | Eth | IP | UDP | Lego |
  * 	64B | App header |    pad   |
  * 	64B |          Data         | (if write)
  * 	...
  * 	N B |          Data         |
  */
-void app_rdma(hls::stream<struct net_axis_512> *from_net,
-	      hls::stream<struct net_axis_512> *to_net,
-	      ap_uint<512> *dram)
+static void parser(stream<struct net_axis_512> *from_net,
+		   stream<struct request> *s_req_read,
+		   stream<struct request> *s_req_write,
+		   stream<struct net_axis_512> *s_data_write)
 {
-#pragma HLS INTERFACE ap_ctrl_none port=return
-#pragma HLS PIPELINE
+#pragma HLS PIPELINE II=1
 
-#pragma HLS INTERFACE axis both port=from_net
-#pragma HLS INTERFACE axis both port=to_net
-#pragma HLS INTERFACE m_axi depth=64 port=dram offset=off
+	static enum APP_RDMA_STATE app_state = APP_RDMA_ETH_HEADER;
+	static struct request req;
+	static struct net_axis_512 eth_header, app_header;
 
-	static enum APP_RDMA_STATE state = APP_RDMA_ETH_HEADER;
-	static char opcode;
-	static unsigned long address, length;
-
+	char opcode;
 	struct net_axis_512 current;
 
-	switch (state) {
+	switch (app_state) {
 	case APP_RDMA_ETH_HEADER:
 		if (from_net->empty())
 			break;
@@ -221,7 +243,7 @@ void app_rdma(hls::stream<struct net_axis_512> *from_net,
 		eth_header = current;
 
 		inc_nr_requests();
-		state = APP_RDMA_APP_HEADER;
+		app_state = APP_RDMA_APP_HEADER;
 		break;
 	case APP_RDMA_APP_HEADER:
 		if (from_net->empty())
@@ -230,28 +252,24 @@ void app_rdma(hls::stream<struct net_axis_512> *from_net,
 		app_header = current;
 
 		/* Extract APP header info */
-		opcode	= app_header.data(7, 0);
-		address	= app_header.data(71, 8);
-		length	= app_header.data(135, 72);
+		opcode		= app_header.data(7, 0);
+		req.address	= app_header.data(71, 8);
+		req.length	= app_header.data(135, 72);
 
-		/*
-		 * Handle read related requests
-		 *
-		 * FIXME:
-		 * Reads currently are blocking requests.
-		 * We are not taking any new data in while handling reads.
-		 */
+		req.eth_header = eth_header;
+		req.app_header = app_header;
+
 		switch (opcode) {
 		case APP_RDMA_OPCODE_READ:
 			if (app_header.last) {
-				handle_read(address, length, to_net, dram);
-				state = APP_RDMA_ETH_HEADER;
+				s_req_read->write(req);
+				app_state = APP_RDMA_ETH_HEADER;
 			} else
-				state = APP_RDMA_INVALID_READ;
+				app_state = APP_RDMA_INVALID_READ;
 			break;
 		default:
 			/* Otherwise to other OPCODE handlers */
-			state = APP_RDMA_APP_DATA;
+			app_state = APP_RDMA_APP_DATA;
 			break;
 		}
 		break;
@@ -266,7 +284,7 @@ void app_rdma(hls::stream<struct net_axis_512> *from_net,
 			break;
 		current = from_net->read();
 		if (current.last)
-			state = APP_RDMA_ETH_HEADER;
+			app_state = APP_RDMA_ETH_HEADER;
 		break;
 	case APP_RDMA_APP_DATA:
 		if (from_net->empty())
@@ -275,19 +293,61 @@ void app_rdma(hls::stream<struct net_axis_512> *from_net,
 
 		switch (opcode) {
 		case APP_RDMA_OPCODE_WRITE:
-			handle_write(address, length, current, dram);
+			s_req_write->write(req);
+			s_data_write->write(current);
 			break;
 		default:
 			/*
 			 * Ignore all other opcodes
 			 * Go back to IDLE state
 			 */
-			state = APP_RDMA_ETH_HEADER;
+			app_state = APP_RDMA_ETH_HEADER;
 			break;
 		};
 
 		if (current.last)
-			state = APP_RDMA_ETH_HEADER;
+			app_state = APP_RDMA_ETH_HEADER;
 		break;
 	};
+}
+
+static void merger(stream<struct net_axis_512> *to_net,
+		   stream<struct net_axis_512> *from_read)
+{
+	struct net_axis_512 current;
+
+	if (from_read->empty())
+		return;
+
+	current = from_read->read();
+	to_net->write(current);
+}
+
+void app_rdma(hls::stream<struct net_axis_512> *from_net,
+	      hls::stream<struct net_axis_512> *to_net,
+	      ap_uint<512> *dram_in, ap_uint<512> *dram_out)
+{
+#pragma HLS INTERFACE ap_ctrl_none port=return
+#pragma HLS DATAFLOW
+
+#pragma HLS INTERFACE axis both port=from_net
+#pragma HLS INTERFACE axis both port=to_net
+#pragma HLS INTERFACE m_axi depth=64 port=dram_in  bundle=MEM  offset=direct
+#pragma HLS INTERFACE m_axi depth=64 port=dram_out bundle=MEM  offset=direct
+
+	static stream<struct request> s_req_read("s_req_read");
+	static stream<struct request> s_req_write("s_req_write");
+	static stream<struct net_axis_512> s_data_write("s_data_write");
+	static stream<struct net_axis_512> s_data_read("s_data_read");
+#pragma HLS STREAM variable=s_req_read depth=2 dim=1
+#pragma HLS STREAM variable=s_req_write depth=2 dim=1
+#pragma HLS STREAM variable=s_data_read depth=2 dim=1
+#pragma HLS STREAM variable=s_data_write depth=2 dim=1
+
+	parser(from_net, &s_req_read, &s_req_write, &s_data_write);
+
+	handle_read<1>(&s_req_read, &s_data_read, dram_in);
+	handle_write(&s_req_write, &s_data_write, dram_out);
+
+	merger(to_net, &s_data_read);
 }

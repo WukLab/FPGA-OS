@@ -76,8 +76,8 @@ next_pkt:
 				/* The second unit is app header */
 				if (j == 1) {
 					tmp.data(7, 0) = APP_RDMA_OPCODE_WRITE;
-					tmp.data(71, 8) = 0x0;
-					tmp.data(135, 72) = 127;
+					tmp.data(71, 8) = 0;
+					tmp.data(135, 72) = 65;
 				}
 			}
 			/* The second packet: READ */
@@ -89,7 +89,7 @@ next_pkt:
 				/* The second unit is app header */
 					tmp.data(7, 0) = APP_RDMA_OPCODE_READ;
 					tmp.data(71, 8) = 0x0;
-					tmp.data(135, 72) = 129;
+					tmp.data(135, 72) = 64;
 
 					/* Read should only have two units */
 					tmp.last = 1;
@@ -108,8 +108,8 @@ next_pkt:
 		}
 	}
 
-	for (i = 0; i < NR_PACKETS * NR_UNITS_PER_PKT; i++)
-		app_rdma(&input, &output, (ap_uint<512> *)dram);
+	for (i = 0; i < NR_PACKETS * NR_UNITS_PER_PKT * 100; i++)
+		app_rdma(&input, &output, (ap_uint<512> *)dram, (ap_uint<512> *)dram);
 
 	/*
 	 * Verilog results
