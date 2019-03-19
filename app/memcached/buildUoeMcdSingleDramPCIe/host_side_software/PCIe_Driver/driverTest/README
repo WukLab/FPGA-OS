@@ -1,0 +1,4 @@
+Use test_consts.cpp as an example application to read and write device registers.
+Install the driver from the Linux_Driver folder first.
+
+the makefile builds executable "consts" from "test_consts.cpp" and the header "xpcie.h" in the driver folder

@@ -1,0 +1,40 @@
+*Author: Stephan Koster
+
+
+This is the software side of the PCIE connection to the FPGA.
+
+Different branches of the hardware present themselves differently to PCIe (address maps, BAR selection, device identifier), so different driver are needed.
+All solutions with a GUI require fltk 1.3.1. Instructions on how to install fltk in extra file
+
+Build a target from folder memMgmt:
+	go to folder memMgmt
+	make <TARGET>
+
+Possible targets:
+Debug (software simulates hardware):
+	commandline_debug       or
+	GUI_debug
+
+Use Linux Driver:
+	Only works with pure PCIe, not CAPI
+	First install Linux driver from folder Linux_Driver
+	go to folder memMgmt and build:
+	commandline_driver       or
+	GUI_driver
+
+Use Linux Driver for Host memory:
+	Only works with hardware that uses host memory
+	First install Driver from folder handsoff_dma
+	go to folder memMgmt and build:
+	commandline_hostmem       or
+	GUI_hostmem
+
+Use CAPI:
+	Instead of a proper driver, this directly opens the PCIe ressource as a file and memory maps it. Also the register addresses are somewhat different for whatever reason.
+	go to folder memMgmt and build:
+	commandline_capi
+
+Fallback: (if all else fails)
+	in folder mmioStats, test_stats_mmio.cpp
+	Very simple application that reads the stats registers
+	Only command line output, and not nicely formatted

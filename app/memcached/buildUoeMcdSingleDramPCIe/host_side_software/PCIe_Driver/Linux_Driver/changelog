@@ -1,0 +1,15 @@
+changes to appnote 1022:
+
+Because Fedora has deprecated and changed some functions since this driver was released, 2 small changes were necessary:
+in XPCIe_init(void):
+replace pci_find_device by pci_get_device
+
+in struct file_operations XPCIe_Intf
+
+replace ioctl by unlocked_ioctl
+
+
+adjusted signature of xpcie_ioctl to conform to unlocked_ioctl
+
+inserted functionality to read and write registers
+added a header to define a data structure that can be exchanged for ioctl

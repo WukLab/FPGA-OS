@@ -1,0 +1,9 @@
+simulations = [
+{
+    'name'            : 'ALLSEQS_R01',
+    'requests'        : '../pkt/ALLSEQS_R1-pkt.in.txt',
+    'golden-response' : '../pkt/ALLSEQS-pkt.out.txt',
+    'backpressure'    : '../bpr/bpr-none-400000',
+    'runtime'         : '4000us'
+  }
+]
