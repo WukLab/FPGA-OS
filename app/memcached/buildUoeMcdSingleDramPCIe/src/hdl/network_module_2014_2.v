@@ -183,9 +183,9 @@ ten_gig_eth_pcs_pma_inst
 .gttxreset(gttxreset),
 .gtrxreset(gtrxreset),
 .txuserrdy(txuserrdy),
-.qplllock(qplllock),
-.qplloutclk(qplloutclk),
-.qplloutrefclk(qplloutrefclk),
+.qpll0lock(qplllock),
+.qpll0outclk(qplloutclk),
+.qpll0outrefclk(qplloutrefclk),
 .reset_counter_done(reset_counter_done),
 .xgmii_txd(xgmii_txd_reg3),
 .xgmii_txc(xgmii_txc_reg3),
@@ -205,18 +205,18 @@ ten_gig_eth_pcs_pma_inst
 //extra drp signals introduced in vivado 2013.4 core gen
 .drp_req(drp_req),                            // output wire drp_req
 .drp_gnt(drp_req),                            // input wire drp_gnt
-.drp_den_o(drp_den_o),                        // output wire drp_den_o
-.drp_dwe_o(drp_dwe_o),                        // output wire drp_dwe_o
-.drp_daddr_o(drp_daddr_o),                    // output wire [15 : 0] drp_daddr_o
-.drp_di_o(drp_di_o),                          // output wire [15 : 0] drp_di_o
-.drp_drdy_o(drp_drdy_o),                      // output wire drp_drdy_o
-.drp_drpdo_o(drp_drpdo_o),                    // output wire [15 : 0] drp_drpdo_o
-.drp_den_i(drp_den_o),                        // input wire drp_den_i
-.drp_dwe_i(drp_dwe_o),                        // input wire drp_dwe_i
-.drp_daddr_i(drp_daddr_o),                    // input wire [15 : 0] drp_daddr_i
-.drp_di_i(drp_di_o),                          // input wire [15 : 0] drp_di_i
-.drp_drdy_i(drp_drdy_o),                      // input wire drp_drdy_i
-.drp_drpdo_i(drp_drpdo_o),
+.core_to_gt_drpen(drp_den_o),                        // output wire drp_den_o
+.core_to_gt_drpwe(drp_dwe_o),                        // output wire drp_dwe_o
+.core_to_gt_drpaddr(drp_daddr_o),                    // output wire [15 : 0] drp_daddr_o
+.core_to_gt_drpdi(drp_di_o),                          // output wire [15 : 0] drp_di_o
+.gt_drprdy(drp_drdy_o),                      // output wire drp_drdy_o
+.gt_drpdo(drp_drpdo_o),                    // output wire [15 : 0] drp_drpdo_o
+.gt_drpen(drp_den_o),                        // input wire drp_den_i
+.gt_drpwe(drp_dwe_o),                        // input wire drp_dwe_i
+.gt_drpaddr(drp_daddr_o),                    // input wire [15 : 0] drp_daddr_i
+.gt_drpdi(drp_di_o),                          // input wire [15 : 0] drp_di_i
+.core_to_gt_drprdy(drp_drdy_o),                      // input wire drp_drdy_i
+.core_to_gt_drpdo(drp_drpdo_o),
 .pma_pmd_type(3'b101),
 //.pma_pmd_type(pma_pmd_type),
 .tx_disable(tx_disable),

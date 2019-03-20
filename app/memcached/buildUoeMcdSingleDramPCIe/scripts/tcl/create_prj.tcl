@@ -6,8 +6,8 @@ set dcp_dir $root_dir/../src/dcp
 set constraints_dir $root_dir/../src/xdc
 
 # Create project
-create_project $proj_name $proj_dir -part xc7vx690tffg1157-2 -force
-
+#create_project $proj_name $proj_dir -part xc7a100tcsg324-1 -force
+create_project $proj_name $proj_dir -part xcvu095-ffva2104-2-e -force
 
 # prepare pcie sub modules
 add_files ${root_dir}/../ip_definitions/pcie2axilite_bridge
@@ -63,9 +63,9 @@ set_property strategy Flow_PerfOptimized_high [get_runs synth_1]
 set_property strategy Performance_ExplorePostRoutePhysOpt [get_runs impl_1]
 #set_property STEPS.PHYS_OPT_DESIGN.ARGS.DIRECTIVE AggressiveExplore [get_runs impl_1]
 #set_property STEPS.POST_ROUTE_PHYS_OPT_DESIGN.ARGS.DIRECTIVE AggressiveExplore [get_runs impl_1]
-launch_runs synth_1 -jobs 1 
-wait_on_run synth_1
-launch_runs impl_1 -to_step write_bitstream -jobs 1
-wait_on_run impl_1
+#launch_runs synth_1 -jobs 1 
+#wait_on_run synth_1
+#launch_runs impl_1 -to_step write_bitstream -jobs 1
+#wait_on_run impl_1
 close_project
 exit

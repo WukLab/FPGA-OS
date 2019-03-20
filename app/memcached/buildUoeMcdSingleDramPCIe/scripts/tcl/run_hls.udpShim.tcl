@@ -6,7 +6,8 @@ add_files ../src/hls/udpShim/udpShim.cpp
 add_files -tb ../src/hls/udpShim/udpShim_tb.cpp
 
 open_solution "solution1"
-set_part {xc7vx690tffg1761-2}
+#set_part {xc7a100tcsg324-1}
+set_part {xcvu095-ffva2104-2-e}
 create_clock -period 6.66 -name default
 config_rtl -reset all -reset_async
 

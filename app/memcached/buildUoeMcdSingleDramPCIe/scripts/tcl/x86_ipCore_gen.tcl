@@ -33,6 +33,7 @@ set_property -dict [list \
 	CONFIG.FIFO_Implementation_rach {Common_Clock_Distributed_RAM} \
 	CONFIG.Full_Threshold_Assert_Value_rach {15} \
 	CONFIG.Empty_Threshold_Assert_Value_rach {14} \
+	CONFIG.FIFO_Implementation_axis {Common_Clock_Distributed_RAM} \
 	CONFIG.Full_Threshold_Assert_Value_axis {4095} \
 	CONFIG.Empty_Threshold_Assert_Value_axis {4094}] [get_ips axis_sync_fifo]
 generate_target {instantiation_template} [get_files axis_sync_fifo.xci]
@@ -49,6 +50,9 @@ set_property -dict [list \
 	CONFIG.Full_Flags_Reset_Value {1} \
 	CONFIG.TSTRB_WIDTH {8} \
 	CONFIG.TKEEP_WIDTH {8} \
+	CONFIG.FIFO_Implementation_axis {Common_Clock_Distributed_RAM} \
+	CONFIG.Full_Threshold_Assert_Value_axis {1024} \
+	CONFIG.Empty_Threshold_Assert_Value_axis {1022} \
 	CONFIG.FIFO_Implementation_wach {Common_Clock_Distributed_RAM} \
 	CONFIG.Full_Threshold_Assert_Value_wach {15} \
 	CONFIG.Empty_Threshold_Assert_Value_wach {14} \
@@ -140,7 +144,9 @@ set_property -dict [list \
 generate_target {instantiation_template} [get_files axis_clock_converter_512.xci]
 
 #pcie sub modules
-create_ip -name pcie3_7x -vendor xilinx.com -library ip -module_name pcie2axilite_sub_pcie3_7x_0
+#CONFIG.shared_logic_in_core {true} \
+#CONFIG.pipe_mode_sim {None} 
+create_ip -name pcie3_ultrascale -vendor xilinx.com -library ip -module_name pcie2axilite_sub_pcie3_7x_0
 set_property -dict [list \
 	CONFIG.pcie_blk_locn {X0Y2} \
 	CONFIG.PF0_LINK_STATUS_SLOT_CLOCK_CONFIG {false} \
@@ -153,7 +159,6 @@ set_property -dict [list \
 	CONFIG.pf0_bar0_size {4} \
 	CONFIG.mode_selection {Advanced} \
 	CONFIG.en_ext_clk {false} \
-	CONFIG.shared_logic_in_core {true} \
 	CONFIG.cfg_fc_if {false} \
 	CONFIG.cfg_ext_if {false} \
 	CONFIG.cfg_status_if {false} \
@@ -171,7 +176,6 @@ set_property -dict [list \
 	CONFIG.pf0_sub_class_interface_menu {Generic_XT_compatible_serial_controller} \
 	CONFIG.PF0_CLASS_CODE {058000} \
 	CONFIG.PF1_DEVICE_ID {7011} \
-	CONFIG.pipe_mode_sim {None} \
 	CONFIG.axisten_freq {250} \
 	CONFIG.aspm_support {No_ASPM}] [get_ips pcie2axilite_sub_pcie3_7x_0]
 generate_target {instantiation_template} [get_files pcie2axilite_sub_pcie3_7x_0.xci]

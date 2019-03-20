@@ -6,7 +6,8 @@ add_files ../src/hls/udp/udpCore/sources/udp.cpp
 add_files -tb ../src/hls/udp/udpCore/sources/udp_tb.cpp
 
 open_solution "solution1"
-set_part {xc7vx690tffg1157-2}
+#set_part {xc7a100tcsg324-1}
+set_part {xcvu095-ffva2104-2-e}
 create_clock -period 6.66 -name default
 
 #csim_design -clean -argv {../../../../sources/rxInput.short.dat ../../../../sources/txInput.short.dat}

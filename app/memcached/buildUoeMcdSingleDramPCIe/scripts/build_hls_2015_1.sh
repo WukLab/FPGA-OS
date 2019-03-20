@@ -19,9 +19,23 @@ echo "BUILDDIR is $BUILDDIR"
 
 # cp ../scripts/tcl/*.tcl ./
 
- vivado_hls -f run_hls.memcachedPipeline.tcl
- vivado_hls -f run_hls.readConverter.tcl
- vivado_hls -f run_hls.writeConverter.tcl
- vivado_hls -f run_hls.flashModel.tcl
+vivado_hls -f run_hls.memcachedPipeline.tcl
+vivado_hls -f run_hls.readConverter.tcl
+vivado_hls -f run_hls.writeConverter.tcl
+vivado_hls -f run_hls.flashModel.tcl
 
 echo "Finished kvs HLS kernel synthesis"
+
+IPREPOSITORYDIR="$BUILDDIR/ipRepository"
+
+if [ -d "$IPREPOSITORYDIR" ]; then
+	echo "$PWD"
+else
+	mkdir "$IPREPOSITORYDIR"
+	echo "create directory $IPREPOSITORYDIR"
+fi
+
+cp -R ./memcachedPipeline_prj ./ipRepository
+cp -R ./readConverter_prj ./ipRepository
+cp -R ./writeConverter_prj ./ipRepository
+cp -R ./flashModel_prj ./ipRepository

@@ -6,7 +6,8 @@ add_files ../src/hls/icmp_server/icmp_server.cpp
 add_files -tb ../src/hls/icmp_server/test_icmp_server.cpp
 
 open_solution "solution1"
-set_part {xc7vx690tffg1761-2}
+#set_part {xc7a100tcsg324-1}
+set_part {xcvu095-ffva2104-2-e}
 create_clock -period 6.66 -name default
 
 #csim_design  -clean

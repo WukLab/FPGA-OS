@@ -1,4 +1,4 @@
-#!/usr/local/bin/bash
+#!/bin/sh
 ################################################################################
 # Author: Lisa Liu
 # Date:	2016/07/29
@@ -13,22 +13,21 @@ BUILDDIR="$PWD"
 
 echo "BUILDDIR is $BUILDDIR"
 
+vivado_hls -f run_hls.arp_server.tcl
 
- vivado_hls -f run_hls.arp_server.tcl
+vivado_hls -f run_hls.dhcp_client.tcl
 
- vivado_hls -f run_hls.dhcp_client.tcl
+vivado_hls -f run_hls.icmp_server.tcl
 
- vivado_hls -f run_hls.icmp_server.tcl
+vivado_hls -f run_hls.ip_handler.tcl
 
- vivado_hls -f run_hls.ip_handler.tcl
+vivado_hls -f run_hls.mac_ip_encode.tcl
 
- vivado_hls -f run_hls.mac_ip_encode.tcl
+vivado_hls -f run_hls.udpCore.tcl
 
- vivado_hls -f run_hls.udpCore.tcl
+vivado_hls -f run_hls.udpAppMux.tcl
 
- vivado_hls -f run_hls.udpAppMux.tcl
-
- vivado_hls -f run_hls.udpShim.tcl
+vivado_hls -f run_hls.udpShim.tcl
 
 echo "Finished tcp_ip core synthesis"
 echo "Create ipRepository"
@@ -43,7 +42,7 @@ else
 fi
 
 
- cp -R ./arp_server_prj ./ipRepository 
+ cp -R ./arp_server_prj ./ipRepository
  cp -R ./dhcp_prj ./ipRepository
  cp -R ./icmpServer_prj ./ipRepository
  cp -R ./ipHandler_prj ./ipRepository
@@ -53,4 +52,3 @@ fi
  cp -R ./udpShim_prj ./ipRepository
 
 echo "finished UOE preparation for creating vivado projec."
-

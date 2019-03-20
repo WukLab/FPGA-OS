@@ -28,7 +28,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.// Copyright (c) 2015 Xilinx, 
 ************************************************/
 #include "globals.h"
 
-void splitter(stream<pipelineWord> &valueSplitterIn, stream<pipelineWord> &valueSplitterOut2valueStoreFlash, stream<pipelineWord> &valueSplitterOut2valueStoreDram) {	// This modules routes request to either the VS attached to the DRAM or the one attached to the Flash, depending on their value length
+void splitter(stream<pipelineWord> &valueSplitterIn, /* stream<pipelineWord> &valueSplitterOut2valueStoreFlash,*/ stream<pipelineWord> &valueSplitterOut2valueStoreDram) {	// This modules routes request to either the VS attached to the DRAM or the one attached to the Flash, depending on their value length
 	#pragma HLS INLINE off
 	#pragma HLS pipeline II=1
 
@@ -39,15 +39,14 @@ void splitter(stream<pipelineWord> &valueSplitterIn, stream<pipelineWord> &value
 		pipelineWord inputWord = valueSplitterIn.read();
 		if (inputWord.SOP == 1) {
 			is_validFlag = true;
-			if (inputWord.metadata.range(39, 8) > splitLength)
-				dramOrFlash = 0;
-			else
-				dramOrFlash = 1;
+			dramOrFlash = 1;
 		}
 		if (is_validFlag) {
-			if (dramOrFlash == 0)
+			/*if (dramOrFlash == 0)
 				valueSplitterOut2valueStoreFlash.write(inputWord);
-			else if (dramOrFlash == 1)
+			else
+            */
+            if (dramOrFlash == 1)
 				valueSplitterOut2valueStoreDram.write(inputWord);
 			if (inputWord.EOP == 1)
 				is_validFlag = false;

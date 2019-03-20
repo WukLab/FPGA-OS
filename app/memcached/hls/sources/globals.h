@@ -248,13 +248,13 @@ void ht_compare(stream<hashTableInternalWord> &memRd2comp, stream<internalMdWord
 
 void memWrite(stream<hashTableInternalWord> &comp2memWrKey, stream<internalMdWord> &comp2memWrMd, stream<comp2decWord> &comp2memWrKeyStatus, stream<ap_uint<512> > &comp2memWrMemData,
 			  stream<memCtrlWord> &memWrCtrl, stream<ap_uint<512> > &memWrData, stream<decideResultWord> &memWr2out, stream<ap_uint<1> > &memWr2cc,
-			  stream<ap_uint<32> > &addressReturnOut, stream<ap_uint<32> > &addressAssignDramIn, stream<ap_uint<32> > &addressAssignFlashIn, ap_uint<1> &flushReq, ap_uint<1> flushAck, ap_uint<1> &flushDone);
+			  stream<ap_uint<32> > &addressReturnOut, stream<ap_uint<32> > &addressAssignDramIn, /*stream<ap_uint<32> > &addressAssignFlashIn,*/ ap_uint<1> &flushReq, ap_uint<1> flushAck, ap_uint<1> &flushDone);
 
 void hash(stream<ap_uint<64> > &in2hash, stream<ap_uint<8> > &in2hashKeyLength, stream<ap_uint<32> > &hash2cc);
 
 void hashTable(stream<pipelineWord> &hashTableInData, stream<pipelineWord> &hashTableOutData,
 			   stream<ap_uint<512> > &hashTableMemRdData, stream<memCtrlWord> &hashTableMemRdCtrl, stream<ap_uint<512> > &hashTableMemWrData, stream<memCtrlWord> &hashTableMemWrCtrl,
-			   stream<ap_uint<32> > &addressReturnOut, stream<ap_uint<32> > &addressAssignDramIn, stream<ap_uint<32> > &addressAssignFlashIn, ap_uint<1> &flushReq, ap_uint<1> flushAck, ap_uint<1> &flushDone);
+			   stream<ap_uint<32> > &addressReturnOut, stream<ap_uint<32> > &addressAssignDramIn, /* stream<ap_uint<32> > &addressAssignFlashIn,*/ ap_uint<1> &flushReq, ap_uint<1> flushAck, ap_uint<1> &flushDone);
 
 void asciiResponse(stream<pipelineWord> &inData, stream<extendedAxiWord> &outData);
 
@@ -268,14 +268,14 @@ void valueStoreDram(stream<pipelineWord> &valueStoreInData, stream<memCtrlWord> 
 
 void valueStoreFlash(stream<pipelineWord> &valueStoreInData, stream<flashMemCtrlWord> &valueStoreMemRdCmd, stream<ap_uint<64> > &valueStoreMemRdData, stream<flashMemCtrlWord> &valueStoreMemWrCmd, stream<ap_uint<64> > &valueStoreMemWrData, stream<pipelineWord> &valueStoreOutData);
 
-void splitter(stream<pipelineWord> &valueSplitterIn, stream<pipelineWord> &valueSplitterOut2valueStoreFlash, stream<pipelineWord> &valueSplitterOut2valueStoreDram);
+void splitter(stream<pipelineWord> &valueSplitterIn, /* stream<pipelineWord> &valueSplitterOut2valueStoreFlash,*/ stream<pipelineWord> &valueSplitterOut2valueStoreDram);
 
-void merger(stream<pipelineWord> &flash2valueMerger, stream<pipelineWord> &dram2valueMerger, stream<pipelineWord> &valueMerger2responseFormatter);
+void merger(/*stream<pipelineWord> &flash2valueMerger,*/ stream<pipelineWord> &dram2valueMerger, stream<pipelineWord> &valueMerger2responseFormatter);
 
 void memcachedPipeline(stream<extendedAxiWord> &inData, stream<extendedAxiWord> &outData,
 					   stream<memCtrlWord> &dramValueStoreMemRdCmd, stream<ap_uint<512> > &dramValueStoreMemRdData, stream<memCtrlWord> &dramValueStoreMemWrCmd, stream<ap_uint<512> > &dramValueStoreMemWrData,
-					   stream<flashMemCtrlWord> &flashValueStoreMemRdCmd, stream<ap_uint<64> > &flashValueStoreMemRdData, stream<flashMemCtrlWord> &flashValueStoreMemWrCmd, stream<ap_uint<64> > &flashValueStoreMemWrData,
+					   /*stream<flashMemCtrlWord> &flashValueStoreMemRdCmd, stream<ap_uint<64> > &flashValueStoreMemRdData, stream<flashMemCtrlWord> &flashValueStoreMemWrCmd, stream<ap_uint<64> > &flashValueStoreMemWrData,*/
 					   stream<ap_uint<512> > &hashTableMemRdData, stream<memCtrlWord> &hashTableMemRdCmd, stream<ap_uint<512> > &hashTableMemWrData, stream<memCtrlWord> &hashTableMemWrCmd,
-					   stream<ap_uint<32> > &addressReturnOut, stream<ap_uint<32> > &addressAssignDramIn, stream<ap_uint<32> > &addressAssignFlashIn, ap_uint<1> &flushReq, ap_uint<1> flushAck, ap_uint<1> &flushDone);
+					   stream<ap_uint<32> > &addressReturnOut, stream<ap_uint<32> > &addressAssignDramIn, /*stream<ap_uint<32> > &addressAssignFlashIn,*/ ap_uint<1> &flushReq, ap_uint<1> flushAck, ap_uint<1> &flushDone);
 
 #endif

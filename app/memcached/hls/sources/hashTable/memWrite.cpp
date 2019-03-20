@@ -30,7 +30,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.// Copyright (c) 2015 Xilinx, 
 
 void memWrite(stream<hashTableInternalWord> &comp2memWrKey, stream<internalMdWord> &comp2memWrMd, stream<comp2decWord> &comp2memWrKeyStatus, stream<ap_uint<512> > &comp2memWrMemData,
 			  stream<memCtrlWord> &memWrCtrl, stream<ap_uint<512> > &memWrData, stream<decideResultWord> &memWr2out, stream<ap_uint<1> > &memWr2cc,
-			  stream<ap_uint<32> > &addressReturnOut, stream<ap_uint<32> > &addressAssignDramIn, stream<ap_uint<32> > &addressAssignFlashIn,
+			  stream<ap_uint<32> > &addressReturnOut, stream<ap_uint<32> > &addressAssignDramIn,
 			  ap_uint<1> &flushReq, ap_uint<1> flushAck, ap_uint<1> &flushDone) {
 	#pragma HLS INLINE off
 	#pragma HLS pipeline II=1 enable_flush
@@ -122,8 +122,8 @@ void memWrite(stream<hashTableInternalWord> &comp2memWrKey, stream<internalMdWor
 							memWr_replaceLocation = i-1;
 						}
 					}
-					if ((found == false && replace == false) || ((htMemWriteInputWordMd.valueLength < splitLength && addressAssignDramIn.empty())
-						|| (htMemWriteInputWordMd.valueLength >= splitLength && addressAssignFlashIn.empty()))) {	// Failed Set // Add stuff here
+					if ((found == false && replace == false) || (addressAssignDramIn.empty())) {
+//						|| (htMemWriteInputWordMd.valueLength >= splitLength && addressAssignFlashIn.empty()))) {	// Failed Set // Add stuff here
 						outputWord.status = 1;
 						memWr2out.write(outputWord);
 						memWr2cc.write(1); // Pop the hash value from the CC filter.
@@ -148,10 +148,10 @@ void memWrite(stream<hashTableInternalWord> &comp2memWrKey, stream<internalMdWor
 						ap_uint<32> addressPointer;		// Address pointer will hold the value store address of the data
 						if (replace == true)			// If the value is to be replaced, then the address, which has already been assigned, can be reused
 							addressPointer = inputWordMem.range(((bitsPerBin*memWr_location)+88)-1, (bitsPerBin*memWr_location)+56);
-						else if (htMemWriteInputWordMd.valueLength < splitLength)	// If not and the value is smaller than the split length, a value from the DRAM pool is fetched
-							addressPointer = addressAssignDramIn.read();
+					//	else if (htMemWriteInputWordMd.valueLength < splitLength)	// If not and the value is smaller than the split length, a value from the DRAM pool is fetched
+					//		addressPointer = addressAssignFlashIn.read();
 						else														// if the value is larger than the split length, then a value from the SSD pool is read
-							addressPointer = addressAssignFlashIn.read();
+							addressPointer = addressAssignDramIn.read();
 						inputWordMem.range(((bitsPerBin*memWr_location)+88)-1, (bitsPerBin*memWr_location)+56) = addressPointer;
 						memWrData.write(inputWordMem);
 						outputWord.address = addressPointer;

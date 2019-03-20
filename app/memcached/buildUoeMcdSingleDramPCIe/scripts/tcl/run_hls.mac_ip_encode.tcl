@@ -6,7 +6,8 @@ add_files ../src/hls/mac_ip_encode/mac_ip_encode.cpp
 add_files -tb ../src/hls/mac_ip_encode/test_mac_ip_encode.cpp
 
 open_solution "solution1"
-set_part {xc7vx690tffg1761-2}
+#set_part {xc7a100tcsg324-1}
+set_part {xcvu095-ffva2104-2-e}
 create_clock -period 6.66 -name default
 
 #csim_design  -clean -argv {in.dat out.dat}

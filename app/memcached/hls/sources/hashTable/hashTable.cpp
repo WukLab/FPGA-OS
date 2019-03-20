@@ -265,7 +265,7 @@ void ht_outputLogic(stream<decideResultWord> &memWr2out, stream<ap_uint<64> > &k
 
 void hashTable(stream<pipelineWord> &ht_inData, stream<pipelineWord> &ht_outData,
 			   stream<ap_uint<512> > &memRdData, stream<memCtrlWord> &memRdCtrl, stream<ap_uint<512> > &memWrData, stream<memCtrlWord> &memWrCtrl,
-			   stream<ap_uint<32> > &addressReturnOut, stream<ap_uint<32> > &addressAssignDramIn, stream<ap_uint<32> > &addressAssignFlashIn, 
+			   stream<ap_uint<32> > &addressReturnOut, stream<ap_uint<32> > &addressAssignDramIn,
 			   ap_uint<1> &flushReq, ap_uint<1> flushAck, ap_uint<1> &flushDone) {
 
 	#pragma HLS INTERFACE ap_ctrl_none port=return
@@ -323,6 +323,10 @@ void hashTable(stream<pipelineWord> &ht_inData, stream<pipelineWord> &ht_outData
 	concurrencyControl(in2cc, in2ccMd, hash2cc, cc2memRead, cc2memReadMd, dec2cc);
 	memRead(cc2memRead, cc2memReadMd, memRdCtrl, memRd2comp, memRd2compMd);
 	ht_compare(memRd2comp, memRd2compMd, memRdData, comp2memWrKey, comp2memWrMd, comp2memWrStatus, comp2memWrMemData);
-	memWrite(comp2memWrKey,comp2memWrMd,comp2memWrStatus, comp2memWrMemData, memWrCtrl, memWrData, memWr2out, dec2cc, addressReturnOut, addressAssignDramIn, addressAssignFlashIn, flushReq, flushAck, flushDone);
+	memWrite(comp2memWrKey,comp2memWrMd,comp2memWrStatus, comp2memWrMemData, 
+             memWrCtrl, memWrData, memWr2out, 
+             dec2cc, 
+             addressReturnOut, addressAssignDramIn, 
+             flushReq, flushAck, flushDone);
 	ht_outputLogic(memWr2out, hashKeyBuffer, hashValueBuffer, hashMdBuffer, ht_outData);
 }

@@ -28,22 +28,23 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.// Copyright (c) 2015 Xilinx, 
 ************************************************/
 #include "globals.h"
 
-void merger(stream<pipelineWord> &flash2valueMerger, stream<pipelineWord> &dram2valueMerger, stream<pipelineWord> &valueMerger2responseFormatter) {	// This modules recombines the results from the flash and DRAM value stores into one strea and sends them on to the response formatter
+void merger(/*stream<pipelineWord> &flash2valueMerger,*/ stream<pipelineWord> &dram2valueMerger, stream<pipelineWord> &valueMerger2responseFormatter) {	// This modules recombines the results from the flash and DRAM value stores into one strea and sends them on to the response formatter
 #pragma HLS INTERFACE ap_ctrl_none port=return
 #pragma HLS INLINE off
 #pragma HLS pipeline II=1
 
 	static enum mState{M_IDLE = 0, M_STREAM} mergerState;
-	static ap_uint<1>	dramOrFlash		= 0;	// 0 = Flash, 1 = DRAM
+	static ap_uint<1>	dramOrFlash		= 1;	// 0 = Flash, 1 = DRAM
 
 	switch (mergerState) {
 	case M_IDLE:
-		if (!flash2valueMerger.empty()) {
+		/* if (!flash2valueMerger.empty()) {
 			valueMerger2responseFormatter.write(flash2valueMerger.read());
 			dramOrFlash = 0;
 			mergerState = M_STREAM;
 		}
-		else if (!dram2valueMerger.empty()) {
+		else */
+        if (!dram2valueMerger.empty()) {
 			valueMerger2responseFormatter.write(dram2valueMerger.read());
 			dramOrFlash = 1;
 			mergerState = M_STREAM;
@@ -51,13 +52,14 @@ void merger(stream<pipelineWord> &flash2valueMerger, stream<pipelineWord> &dram2
 		break;
 	case M_STREAM:
 		pipelineWord outputWord = {0, 0, 0};
-		if (dramOrFlash == 0 && !flash2valueMerger.empty()) {
+		/* if (dramOrFlash == 0 && !flash2valueMerger.empty()) {
 			flash2valueMerger.read(outputWord);
 			valueMerger2responseFormatter.write(outputWord);
 			if (outputWord.EOP == 1)
 				mergerState = M_IDLE;
 		}
-		else if (dramOrFlash == 1 && !dram2valueMerger.empty()) {
+		else */ 
+        if (dramOrFlash == 1 && !dram2valueMerger.empty()) {
 			dram2valueMerger.read(outputWord);
 			valueMerger2responseFormatter.write(outputWord);
 			if (outputWord.EOP == 1)

@@ -19,10 +19,11 @@ add_files ../../hls/sources/memcachedPipeline.cpp
 add_files -tb ../../hls/sources/memcachedPipeline_tb.cpp
 
 open_solution "solution1"
-set_part {xc7vx690tffg1157-2}
+#set_part {xc7a100tcsg324-1}
+set_part {xcvu095-ffva2104-2-e}
 create_clock -period 6.66 -name default
 config_rtl -reset all -reset_async
 
 csynth_design
-export_design -format ip_catalog -display_name "Combined Binary Flash/DRAM Memcached Pipeline" -description "A 4 stage memcached pipeline with SSD & DRAM value stores supporting only the binary protocol" -vendor "xilinx.labs" -version "1.07"
+export_design -format ip_catalog -display_name "Memcached Pipeline" -description "A 4 stage memcached pipeline with SSD & DRAM value stores supporting only the binary protocol" -vendor "xilinx.labs" -version "1.07"
 exit
