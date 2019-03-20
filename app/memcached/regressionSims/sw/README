@@ -1,0 +1,1 @@
+/usr/bin/python2.6 memtest_deploy.py env.server ../config/sim.allseqs.hls

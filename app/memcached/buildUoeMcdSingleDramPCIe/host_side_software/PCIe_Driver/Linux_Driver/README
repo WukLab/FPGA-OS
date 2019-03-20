@@ -1,0 +1,38 @@
+
+README: XPCIE Sample  Device Driver FC10 tested
+-----------------------------------------
+
+Manifest:
+
+1. README: This file.
+2. xpcie.c : XPCIE device driver.
+--met.cpp not here any more
+--3. met.cpp : Example memory endpoint test.    moved to folder Test_PCIE
+4. make_device : Script that creates the xpcie device on the system. 
+   Must be run before loading the device driver.
+5. Makefile : Makefile 
+   a. Compiles xpcie.c into a loadable xpcie.ko.
+   --b. Compiles met.cpp into met executable
+
+
+
+To make, install and load the driver and run memory test (met).
+>vi xpcie.c :change to match the DID of the target board in the system.
+>make
+>./make_device
+>insmod xpcie.ko
+>./met
+
+to do all of the above in one go, run install_driver.sh
+
+
+Board must be powered on and hardware design loaded BEFORE host system is booted
+check presence of pcie card with lspci    (should show up as "Memory controller: Xilinx Corporation Zomojo Z1") 
+install driver
+run some tests
+
+
+nuxNote:
+	lspci shows the pci cards in the system
+	lsmod shows the loaded devices
+	rmmod xpcie removes driver, insmod inserts driver

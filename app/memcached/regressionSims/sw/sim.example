@@ -1,0 +1,36 @@
+# ------------------------------------------------------------------------------
+# Simulation Setup Example File for KVS Regression regressionSims
+# ------------------------------------------------------------------------------
+
+# This is just a python file and you can do whatever you want.
+# A simulation setup is an array of simulations called 'simulations'.
+# All simulations in the array are run in parallel. A simulation needs to
+# specify the following properties:
+#   name            : Reference of simulation. Used as deploy direcotry
+#   requests        : pkt.in.txt for simulation
+#   golden-response : used to verify results in pkt.out.txt
+#   backpressure    : bpr.txt
+#   runtime         : need to specify runtime explicitly
+
+# Example
+simulations = [
+  {
+    'name'            : 'S1R12B17',
+    'requests'        : '~/vc709sim/regressionSims/pkt/SEQ1_R12-pkt.in.txt',
+    'golden-response' : '~/vc709sim/regressionSims/pkt/SEQ1-pkt.out.txt',
+    'backpressure'    : '~/vc709sim/regressionSims/bpr/bpr-100-20-17-300000',
+    'runtime'         : '35us'
+  }, {
+    'name'            : 'S2R12B17',
+    'requests'        : '~/vc709sim/regressionSims/pkt/SEQ2_R12-pkt.in.txt',
+    'golden-response' : '~/vc709sim/regressionSims/pkt/SEQ2-pkt.out.txt',
+    'backpressure'    : '~/vc709sim/regressionSims/bpr/bpr-100-20-17-300000',
+    'runtime'         : '35us'
+  }, {
+    'name'            : 'S3R12B17',
+    'requests'        : '~/vc709sim/regressionSims/pkt/SEQ3_R12-pkt.in.txt',
+    'golden-response' : '~/vc709sim/regressionSims/pkt/SEQ3-pkt.out.txt',
+    'backpressure'    : '~/vc709sim/regressionSims/bpr/bpr-100-20-17-300000',
+    'runtime'         : '35us'
+  }
+]

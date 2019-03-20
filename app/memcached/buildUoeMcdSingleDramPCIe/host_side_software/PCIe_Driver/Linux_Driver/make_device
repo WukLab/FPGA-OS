@@ -1,0 +1,6 @@
+#!/bin/bash
+rm -rf /dev/xpcie
+mknod /dev/xpcie c 240 1
+chown root /dev/xpcie
+chmod 0644 /dev/xpcie
+ls -al /dev/xpcie
