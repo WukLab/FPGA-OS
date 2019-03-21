@@ -10,6 +10,11 @@
 #ifndef _LEGO_FPGA_MEM_COMMON_
 #define _LEGO_FPGA_MEM_COMMON_
 
+typedef enum {
+	SUCCESS = 0,
+	ERROR = 1,
+} RET_STATUS;
+
 #define PID_SHIFT			10	/* pid width */
 #define PA_SHIFT			32	/* address width */
 #define BLOCK_SHIFT			28	/* minimum chunk granularity */
@@ -18,11 +23,6 @@
 #define SIZE(shift)			(1UL << shift)
 #define IDX(addr, shift)	(addr >> shift)
 #define ADDR(idx ,shift)	(idx << shift)
-
-typedef enum {
-	SUCCESS = 0,
-	ERROR = 1,
-} RET_STATUS;
 
 /*
  * use these macros below carefully,

@@ -17,13 +17,45 @@
 #include <bitset>
 #endif
 
-const int LOOP_LEVEL_MAX = LEVEL_MAX;
 /*
  * some terminology used in this code
  * level: index of buddy caches, used to select a single set of whole caches
  * nr_asso: the number of associativity, used to select a single line from a set
  * idx:	the number of bit, used as a index of bit in a cache line
  */
+const int LOOP_LEVEL_MAX = LEVEL_MAX;
+const int UNROLL_FACTOR = BUDDY_SET_SIZE >> 2;
+
+/*
+ * put constructor on the top for modify hls pragma
+ */
+Buddy::Buddy()
+{
+	dram_addr = 0;
+	INIT_LOOP:
+	for (ap_uint<LEVEL_MAX> i = 0; i < LEVEL_MAX; i++) {
+		buddy_set[i].level = i;
+		buddy_set[i].size = (1 << 3*i) < BUDDY_SET_SIZE ? (1 << 3*i) : BUDDY_SET_SIZE;
+		buddy_set[i].rand_counter = 0;
+		buddy_free_set[i].level = i;
+	}
+	buddy_set[0].lines[0].valid = 1;
+}
+
+BuddyCacheSet::BuddyCacheSet()
+{
+#pragma HLS RESOURCE variable=size core=ROM_nP_LUTRAM
+#pragma HLS RESOURCE variable=level core=ROM_nP_LUTRAM
+}
+
+BuddyCacheLine::BuddyCacheLine()
+{
+#pragma HLS RESOURCE variable=valid core=RAM_S2P_LUTRAM
+	valid = ap_uint<1>(0);
+	tag = ap_uint<ORDER_MAX>(0);
+	children = ap_uint<8>(0);
+}
+
 void Buddy::handler(axis_buddy_alloc& alloc, axis_buddy_alloc_ret* alloc_ret, char* dram, RET_STATUS* stat)
 {
 	/*
@@ -317,10 +349,15 @@ bool Buddy::tag_in_cache(BuddyCacheSet& set, ap_uint<ORDER_MAX> tag, ap_uint<BUD
 
 bool Buddy::get_valid_free_set(BuddyCacheSet& set, ap_uint<3> width, ap_uint<BUDDY_SET_TYPE>* nr_asso, ap_uint<3>* idx)
 {
+//#pragma HLS PIPELINE
 	bool ret = false;
 	GET_VALID_FREE_SET:
-	for (*nr_asso = 0; *nr_asso < set.size; (*nr_asso)++) {
-#pragma HLS loop_tripcount min=1 max=LOOP_LEVEL_MAX
+	for (*nr_asso = 0; *nr_asso < BUDDY_SET_SIZE; (*nr_asso)++) {
+//#pragma HLS UNROLL factor=UNROLL_FACTOR
+//#pragma HLS loop_tripcount min=1 max=LOOP_LEVEL_MAX
+		if (*nr_asso >= set.size)
+			break;
+
 		ret = get_valid_free_line(set.lines[*nr_asso], width, idx);
 		if (ret)
 			break;
@@ -567,19 +604,6 @@ void Buddy::dump_buddy_table()
 #endif
 }
 
-Buddy::Buddy()
-{
-	dram_addr = 0;
-	INIT_LOOP:
-	for (ap_uint<LEVEL_MAX> i = 0; i < LEVEL_MAX; i++) {
-		buddy_set[i].level = i;
-		buddy_set[i].size = (1 << 3*i) < BUDDY_SET_SIZE ? (1 << 3*i) : BUDDY_SET_SIZE;
-		buddy_set[i].rand_counter = 0;
-		buddy_free_set[i].level = i;
-	}
-	buddy_set[0].lines[0].valid = 1;
-}
-
 Buddy::~Buddy()
 {
 }
@@ -590,11 +614,4 @@ void BuddyCacheSet::count()
 		this->rand_counter = 0;
 	else
 		this->rand_counter++;
-}
-
-BuddyCacheLine::BuddyCacheLine()
-{
-	this->valid = ap_uint<1>(0);
-	this->tag = ap_uint<ORDER_MAX>(0);
-	this->children = ap_uint<8>(0);
 }

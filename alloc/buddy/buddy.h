@@ -27,6 +27,7 @@ struct BuddyCacheSet
 	BuddyCacheLine lines[BUDDY_SET_SIZE];
 	ap_uint<BUDDY_SET_TYPE> rand_counter;
 
+	BuddyCacheSet();
 	void count();
 };
 
