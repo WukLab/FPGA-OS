@@ -12,7 +12,7 @@
 
 `timescale 1ns / 1ps
 
-module axi_addr_ch_tx #(
+module axi_addr_ch_txs #(
     parameter ADDR_WIDTH = 32,
     parameter ID_WIDTH   = 8,
     parameter USER_WIDTH = 2

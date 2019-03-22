@@ -13,33 +13,28 @@
 
 `timescale 1ns / 1ps
 
-module axi_mmu_wrapper #(
-   parameter AW_BUF_SZ        = 32,
-   parameter AR_BUF_SZ        = 32,
-   parameter W_BUF_SZ         = 256,
-   parameter R_BUF_SZ         = 256,
-   parameter B_BUF_SZ         = 16,
-   parameter AXI_DATA_WIDTH   = 32,
-   parameter AXI_ADDR_WIDTH   = 32,
-   parameter AXI_ID_WIDTH     = 8,
-   parameter AXI_AWUSER_WIDTH = 1,
-   parameter AXI_WUSER_WIDTH  = 1,
-   parameter AXI_BUSER_WIDTH  = 1,
-   parameter AXI_ARUSER_WIDTH = 1,
-   parameter AXI_RUSER_WIDTH  = 1, 
-   parameter AXI_STRB_WIDTH   = (AXI_DATA_WIDTH/8)
+module axi_mmu_wrapper_sync #(
+    parameter AW_BUF_SZ        = 32,
+    parameter AR_BUF_SZ        = 32,
+    parameter W_BUF_SZ         = 256,
+    parameter R_BUF_SZ         = 256,
+    parameter B_BUF_SZ         = 16,
+    parameter AXI_DATA_WIDTH   = 32,
+    parameter AXI_ADDR_WIDTH   = 32,
+	parameter AXI_STRB_WIDTH   = (AXI_DATA_WIDTH/8),
+	parameter AXI_ID_WIDTH     = 8,
+	parameter AXI_AWUSER_WIDTH = 2,
+	parameter AXI_WUSER_WIDTH  = 2,
+	parameter AXI_BUSER_WIDTH  = 2,
+	parameter AXI_ARUSER_WIDTH = 2,
+	parameter AXI_RUSER_WIDTH  = 2
 )
 (
 /* 
- * AXI Slave clk and reset
+ * AXI clk and reset single clock domain
  */
     input         s_axi_clk,
     input         s_aresetn,
-/* 
- * AXI Master clk and reset
- */
-    input         m_axi_clk,
-    input         m_aresetn,
 
 /*WRITE ADDRESS CHANNEL*/
 /* slave write address channel of MMU sharing interface with master app/interconnect AXI */
@@ -130,9 +125,9 @@ module axi_mmu_wrapper #(
     input  [AXI_DATA_WIDTH-1:0] m_axi_RDATA,
     input                 [1:0] m_axi_RRESP,
     input [AXI_RUSER_WIDTH-1:0] m_axi_RUSER,
-    input                        m_axi_RLAST,
-    input                        m_axi_RVALID,
-    output                       m_axi_RREADY,
+    input                       m_axi_RLAST,
+    input                       m_axi_RVALID,
+    output                      m_axi_RREADY,
     
 /* read data channel of MMU sharing interface with actual master i.e. App/interconnect */
     output    [AXI_ID_WIDTH-1:0] s_axi_RID,
@@ -150,16 +145,20 @@ module axi_mmu_wrapper #(
     output [AXI_ADDR_WIDTH-1:0] virt_wr_addr,
     output                [2:0] virt_wr_size,
     output                [7:0] virt_wr_len,
+    output                      start_rd_translation,
+    output                      start_wr_translation,
     input  [AXI_ADDR_WIDTH-1:0] phys_rd_addr,
     input  [AXI_ADDR_WIDTH-1:0] phys_wr_addr,
     input                       rd_trans_done,
     input                       rd_drop,
-    input                       wr_trans_wdone,
+    input                       wr_trans_done,
     input                       wr_drop
 );
 
+//Reg
+reg  firstw = 0, firstr = 0, rtrig, wtrig, rd_nxt_waddr_d, rd_nxt_raddr_d, r_nxt_tmp, w_nxt_tmp, drpr = 0, drpw = 0;
+
 //Wire
-wire iaxi_rdone, iaxi_wdone, t_rdone, t_wdone; 
 wire [AXI_ID_WIDTH-1:0] tmp_awid, tmp_arid;
 wire [AXI_ADDR_WIDTH-1:0] tmp_awaddr, tmp_araddr, p_raddr, p_waddr;
 wire [7:0] tmp_awlen, tmp_arlen;
@@ -167,32 +166,70 @@ wire [2:0] tmp_awsize, tmp_arsize, tmp_awprot, tmp_arprot;
 wire [3:0] tmp_awcache, tmp_arcache;
 wire [AXI_AWUSER_WIDTH-1:0] tmp_awuser;
 wire [AXI_ARUSER_WIDTH-1:0] tmp_aruser;
-wire [1:0] tmp_awburst, tmp_arburst;
-wire       tmp_awlock , tmp_arlock, rd_nxt_waddr, rd_nxt_raddr;
+wire  [1:0] tmp_awburst, tmp_arburst;
+wire        tmp_awlock , tmp_arlock, t_wdone, t_rdone, r_drop, w_drop, rd_nxt_waddr, rd_nxt_raddr;
+wire        rd_rxbuf_empty, wr_rxbuf_empty, rd_drop_done, w_drop_done;
 
 assign virt_rd_addr = tmp_araddr;
 assign virt_rd_size = tmp_arsize;
-assign virt_rd_len  = tmp_arlen ;
+assign virt_rd_len  = tmp_arlen;
 assign virt_wr_addr = tmp_awaddr;
 assign virt_wr_size = tmp_awsize;
-assign virt_wr_len  = tmp_awlen ;
+assign virt_wr_len  = tmp_awlen;
 
-assign p_raddr = phys_rd_addr;
 assign p_waddr = phys_wr_addr;
+assign p_raddr = phys_rd_addr;
 assign t_rdone = rd_trans_done;
-assign t_wdone = wr_trans_wdone;
-assign rdrop   = rd_drop;
-assign wdrop   = wr_drop;
+assign t_wdone = wr_trans_done;
+assign r_drop  = rd_drop;
+assign w_drop  = wr_drop;
 
-assign rd_nxt_waddr = wr_drop | wr_trans_done;
-assign rd_nxt_raddr = rd_drop | rd_trans_done;
+assign start_rd_translation = s_aresetn & ~rd_rxbuf_empty ? rtrig | rd_nxt_raddr_d : 'b0;
+assign start_wr_translation = s_aresetn & ~wr_rxbuf_empty ? wtrig | rd_nxt_waddr_d : 'b0;
+
+/* can be more efficient -- once rd and wr triggered don't do anything -- gate the clock */
+always @(posedge s_axi_clk) begin
+   if (~firstr & s_axi_ARVALID & s_axi_ARREADY & ~drpr ) begin
+       firstr <= 1;
+       rtrig  <= 1;
+   end else if (r_drop) begin
+       drpr   <= 1;
+   end else if (rd_drop_done) begin
+       drpr   <= 0;
+   end else if ( rd_rxbuf_empty & ~drpr ) begin
+       firstr <= 0;
+       rtrig  <= 0;
+   end else begin
+       rtrig  <= 0;
+   end
+   if (~firstw & s_axi_AWVALID & s_axi_AWREADY & ~drpw ) begin
+       firstw <= 1;
+       wtrig  <= 1;
+   end else if (w_drop) begin
+       drpw   <= 1;
+   end else if (w_drop_done) begin
+       drpw   <= 0;
+   end else if (wr_rxbuf_empty & ~drpw ) begin
+       firstw <= 0;
+       wtrig  <= 0;
+   end else begin
+       wtrig  <= 0;
+   end
+   r_nxt_tmp <= rd_nxt_waddr;
+   w_nxt_tmp <= rd_nxt_raddr;
+   rd_nxt_waddr_d <= r_nxt_tmp;
+   rd_nxt_raddr_d <= w_nxt_tmp;
+end
+
+assign rd_nxt_waddr = wr_trans_done | w_drop_done; /* for write drop don't stop anything */
+assign rd_nxt_raddr = rd_trans_done | rd_drop_done; /* for read drops wait till read data has been completed*/
 
 /* Write Data */
-axi_addr_ch_rx #(
+axi_addr_ch_rxs #(
     .BUF_SZ    (AW_BUF_SZ),
     .ADDR_WIDTH(AXI_ADDR_WIDTH),
-    .ID_WIDTH  (AXI_ID_WIDTH),
-    .USER_WIDTH(AXI_AWUSER_WIDTH)
+	.ID_WIDTH  (AXI_ID_WIDTH),
+	.USER_WIDTH(AXI_AWUSER_WIDTH)
 )
                AXI_WA_RX ( .rx_clk    (s_axi_clk),
                            .reset_    (s_aresetn),
@@ -216,16 +253,17 @@ axi_addr_ch_rx #(
                            .out_user  (tmp_awuser),
                            .out_cache (tmp_awcache),
                            .out_lock  (tmp_awlock),
-                           .i_buf_rd  (iaxi_wdone)
+                           .i_buf_rd  (rd_nxt_waddr),
+                           .buf_empty (wr_rxbuf_empty)
                          );
                      
-axi_addr_ch_tx #(
+axi_addr_ch_txs #(
     .ADDR_WIDTH(AXI_ADDR_WIDTH),
-    .ID_WIDTH  (AXI_ID_WIDTH),
-    .USER_WIDTH(AXI_AWUSER_WIDTH)
+	.ID_WIDTH  (AXI_ID_WIDTH),
+	.USER_WIDTH(AXI_AWUSER_WIDTH)
 )
-    AXI_WA_TX ( .tx_clk    (m_axi_clk),
-                           .reset_    (m_aresetn),
+               AXI_WA_TX ( .tx_clk    (s_axi_clk),
+                           .reset_    (s_aresetn),
                            .in_id     (tmp_awid),
                            .in_len    (tmp_awlen),
                            .in_size   (tmp_awsize),
@@ -249,19 +287,15 @@ axi_addr_ch_tx #(
                            .t_done    (t_wdone)
                          );
 
-sync2d #(.DW(1)) sync2d_awready_masterClk(.d(rd_nxt_waddr), .q(iaxi_wdone), .clk(s_axi_clk));
-
 /* Write Data */
-axi_wdata_ch #(
+axi_wdata_chs #(
     .BUF_SZ    (W_BUF_SZ),
     .DATA_WIDTH(AXI_DATA_WIDTH),
-    .STRB_WIDTH(AXI_STRB_WIDTH),
-    .USER_WIDTH(AXI_WUSER_WIDTH)
+	.STRB_WIDTH(AXI_STRB_WIDTH),
+	.USER_WIDTH(AXI_WUSER_WIDTH)
 )
-             AXI_WDAT_CH ( .rx_clk     (s_axi_clk),
-                           .tx_clk     (m_axi_clk),
-                           .rxreset_   (s_aresetn),
-                           .txreset_   (m_aresetn),
+             AXI_WDAT_CH ( .clk        (s_axi_clk),
+                           .reset_     (s_aresetn),
 
                            .in_wdata   (s_axi_WDATA),
                            .in_wstrb   (s_axi_WSTRB),
@@ -277,19 +311,19 @@ axi_wdata_ch #(
                            .out_mwvalid(m_axi_WVALID),
                            .in_mwready (m_axi_WREADY),
 
-                           .start      (t_wdone)
+                           .done       (t_wdone),
+                           .drop       (w_drop),
+                           .drop_done  (w_drop_done)
                          );
 
 /* Write response channel */
-axi_bresp_ch #(
+axi_bresp_chs #(
     .BUF_SZ    (B_BUF_SZ),
     .ID_WIDTH  (AXI_ID_WIDTH),
-    .USER_WIDTH(AXI_BUSER_WIDTH)
+	.USER_WIDTH(AXI_BUSER_WIDTH)
 )
-             AXI_B_CH ( .rxclk      (m_axi_clk),
-                        .rxreset_   (m_aresetn),
-                        .txclk      (s_axi_clk),
-                        .txreset_   (s_aresetn),
+             AXI_B_CH ( .clk        (s_axi_clk),
+                        .reset_     (s_aresetn),
 
                         .in_mbid    (m_axi_BID),
                         .in_mbresp  (m_axi_BRESP),
@@ -301,15 +335,19 @@ axi_bresp_ch #(
                         .out_sbresp (s_axi_BRESP),
                         .out_sbuser (s_axi_BUSER),
                         .out_sbvalid(s_axi_BVALID),
-                        .in_sbready (s_axi_BREADY)
+                        .in_sbready (s_axi_BREADY),
+                        
+                        .in_awid    (tmp_awid),
+                        .in_awuser  (tmp_awuser),
+                        .drop       (w_drop)
                       );
         
 /* Read Address */
-axi_addr_ch_rx #(
+axi_addr_ch_rxs #(
     .BUF_SZ    (AR_BUF_SZ),
     .ADDR_WIDTH(AXI_ADDR_WIDTH),
-    .ID_WIDTH  (AXI_ID_WIDTH),
-    .USER_WIDTH(AXI_ARUSER_WIDTH)
+	.ID_WIDTH  (AXI_ID_WIDTH),
+	.USER_WIDTH(AXI_ARUSER_WIDTH)
 )
                AXI_RA_RX ( .rx_clk    (s_axi_clk),
                            .reset_    (s_aresetn),
@@ -333,16 +371,17 @@ axi_addr_ch_rx #(
                            .out_user  (tmp_aruser),
                            .out_cache (tmp_arcache),
                            .out_lock  (tmp_arlock),
-                           .i_buf_rd  (iaxi_rdone)
+                           .i_buf_rd  (rd_nxt_raddr),
+                           .buf_empty (rd_rxbuf_empty)
                          );
                      
-axi_addr_ch_tx #(
+axi_addr_ch_txs #(
     .ADDR_WIDTH(AXI_ADDR_WIDTH),
-    .ID_WIDTH  (AXI_ID_WIDTH),
-    .USER_WIDTH(AXI_ARUSER_WIDTH)
+	.ID_WIDTH  (AXI_ID_WIDTH),
+	.USER_WIDTH(AXI_ARUSER_WIDTH)
 )
-               AXI_RA_TX ( .tx_clk    (m_axi_clk),
-                           .reset_    (m_aresetn),
+               AXI_RA_TX ( .tx_clk    (s_axi_clk),
+                           .reset_    (s_aresetn),
                            .in_id     (tmp_arid),
                            .in_len    (tmp_arlen),
                            .in_size   (tmp_arsize),
@@ -363,23 +402,19 @@ axi_addr_ch_tx #(
                            .out_valid (m_axi_ARVALID),
                            .in_ready  (m_axi_ARREADY),
                            .phy_addr  (p_raddr),
-                           .t_done    (t_rdone)
+                           .t_done    (t_rdone)                          
                          );
 
-sync2d #(.DW(1)) sync2d_arready_masterClk(.d(rd_nxt_rd_addr), .q(iaxi_rdone), .clk(s_axi_clk));
-
 /* Read Data channel */
-axi_rdata_ch #(
+axi_rdata_chs #(
     .BUF_SZ  (R_BUF_SZ),
     .DATA_WID(AXI_DATA_WIDTH),
-    .ID_WID  (AXI_ID_WIDTH),
-    .USER_WID(AXI_RUSER_WIDTH)
+	.ID_WID  (AXI_ID_WIDTH),
+	.USER_WID(AXI_RUSER_WIDTH)
 )
-             AXI_RDAT_CH ( .rxclk      (m_axi_clk),
-                           .rxreset_   (m_aresetn),
-                           .txclk      (s_axi_clk),
-                           .txreset_   (s_aresetn),
-                           
+             AXI_RDAT_CH ( .clk        (s_axi_clk),
+                           .reset_     (s_aresetn),
+                          
                            .in_rid     (m_axi_RID),
                            .in_rdata   (m_axi_RDATA),
                            .in_rresp   (m_axi_RRESP),
@@ -394,7 +429,14 @@ axi_rdata_ch #(
                            .out_ruser  (s_axi_RUSER),
                            .out_rlast  (s_axi_RLAST),
                            .out_srvalid(s_axi_RVALID),
-                           .in_srready (s_axi_RREADY)
+                           .in_srready (s_axi_RREADY),
+                           
+                           .in_arid    (tmp_arid),
+                           .in_aruser  (tmp_aruser),
+                           .in_arsize  (tmp_arsize),
+                           .in_arlen   (tmp_arlen),
+                           .drop       (r_drop),
+                           .drop_done  (rd_drop_done)
                          );
 
 endmodule

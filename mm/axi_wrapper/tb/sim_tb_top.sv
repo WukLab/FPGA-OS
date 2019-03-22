@@ -1,12 +1,28 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Testbecnh module
-// For the axi mmu wrapper that works on two clock domains (RTL) 
+// Company: 
+// Engineer: 
+// 
+// Create Date: 03/06/2019 05:52:01 PM
+// Design Name: 
+// Module Name: sim_tb_top
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
 //////////////////////////////////////////////////////////////////////////////////
 
-module testbench();
 
-reg axiClk, memclk, reset_;
+module sim_tb_top();
+
+reg axiClk, reset_;
 reg  [7:0] waid, raid, wid, rid, bid, tmp_id, tmp_id1;
 reg [31:0] raddr, waddr, data, rd_count, wr_count, prev_rd_count;
 reg  [7:0] wlen, rlen, tmplen;
@@ -24,7 +40,7 @@ integer i;
 wire [31:0] v_raddr, v_waddr, p_raddr, p_waddr;
 wire  [7:0] v_rlen , v_wlen;
 wire  [2:0] v_rsz  , v_wsz;
-wire        t_rdone, t_wdone;
+wire        t_rdone, t_wdone, start_rd, start_wr;
 
 reg [31:0] rdata;
 reg  [1:0] bresp, rresp;
@@ -39,7 +55,7 @@ initial begin
     #5;
     reset_ = 1'b0;
     axiClk   = 1'b0;
-    memclk   = 1'b0;
+    axiClk   = 1'b0;
     writing  = 0;
     #5;
     waid   = 4'h0; raid  = 4'h0; wid = 4'h0;
@@ -61,9 +77,6 @@ end
 // Simple clock generation
 always 
     #10 axiClk = ~axiClk;
-
-always 
-    #15 memclk = ~memclk;
 
 initial begin
     wait(reset_ === 1'b1);
@@ -120,11 +133,9 @@ task drive_master_signals();
     end
 endtask
 
-axi_mmu_wrapper #(.AXI_ID_WIDTH(4), .AXI_USER_WIDTH(2)) DUT(
+axi_mmu_wrapper_sync #(.AXI_ID_WIDTH(4), .AXI_AWUSER_WIDTH(2), .AXI_ARUSER_WIDTH(2), .AXI_RUSER_WIDTH(2), .AXI_WUSER_WIDTH(2), .AXI_BUSER_WIDTH(2)) DUT(
     .s_axi_clk(axiClk),
-    .m_axi_clk(memclk),
     .s_aresetn(reset_),
-    .m_aresetn(reset_),
     .s_axi_AWID   (waid),
     .s_axi_AWADDR (waddr),
     .s_axi_AWLEN  (wlen),
@@ -205,19 +216,23 @@ axi_mmu_wrapper #(.AXI_ID_WIDTH(4), .AXI_USER_WIDTH(2)) DUT(
     .s_axi_RLAST  (s_rlst),
     .s_axi_RVALID (s_rvld),
     .s_axi_RREADY (1'b1),
-    .tmp_araddr   (v_raddr),
-    .tmp_arsize   (v_rsz),
-    .tmp_arlen    (v_rlen),
-    .tmp_awaddr   (v_waddr),
-    .tmp_awsize   (v_wsz),
-    .tmp_awlen    (v_wlen),
-    .p_raddr      (p_raddr),
-    .p_waddr      (p_waddr),
-    .t_rdone      (t_rdone),
-    .t_wdone      (t_wdone) 
+    .virt_rd_addr (v_raddr),
+    .virt_rd_size (v_rsz),
+    .virt_rd_len  (v_rlen),
+    .virt_wr_addr (v_waddr),
+    .virt_wr_size (v_wsz),
+    .virt_wr_len  (v_wlen),
+    .phys_rd_addr (p_raddr),
+    .phys_wr_addr (p_waddr),
+    .rd_trans_done(t_rdone),
+    .wr_trans_done(t_wdone),
+    .rd_drop      (rdrop),
+    .wr_drop      (wdrop),
+    .start_rd_translation(start_rd),
+    .start_wr_translation(start_wr)
 );
 
-translation_simple TR0 ( .clk       (memclk),
+translation_simple TR0 ( .clk       (axiClk),
                          .reset_    (reset_),
                          .v_raddr   (v_raddr),
                          .v_waddr   (v_waddr),
@@ -228,7 +243,11 @@ translation_simple TR0 ( .clk       (memclk),
                          .p_raddr   (p_raddr),
                          .p_waddr   (p_waddr),
                          .t_rdone   (t_rdone),
-                         .t_wdone   (t_wdone)
+                         .t_wdone   (t_wdone),
+                         .r_drop    (rdrop),
+                         .w_drop    (wdrop),
+                         .rstart    (start_rd),
+                         .wstart    (start_wr)
                        );
 
 /* Write Response generation */
@@ -237,13 +256,13 @@ always @(s_wv or s_wr or s_wlast) begin
         if (s_wv & s_wr & s_wlast) begin
             tmp_id  = s_waid;
             tmp_usr = s_wdusr;
-            @(posedge memclk);
+            @(posedge axiClk);
             m_bvld = 1'b1;
             bresp  = $urandom_range(0, $urandom_range(0,3));
             bid    = tmp_id;
             buser  = tmp_usr;
         end else begin
-            @(posedge memclk);
+            @(posedge axiClk);
             wait (m_brdy == 1);
             m_bvld = 1'b0;
         end
@@ -253,9 +272,9 @@ end
 task drive_read_resp();
     wait(prev_rd_count != rd_count);
     while (prev_rd_count != rd_count) begin
-        repeat($urandom_range(40, 48)) @(posedge memclk); 
+        repeat($urandom_range(40, 48)) @(posedge axiClk); 
         tmplen  = $urandom_range(1, 32);   
-        repeat($urandom_range(3, 6)) @(posedge memclk);
+        repeat($urandom_range(3, 6)) @(posedge axiClk);
         m_rvld = 1'b1;
         rresp  = $urandom_range(0, $urandom_range(0,3));
         rid    = $urandom_range(0,1);
@@ -268,11 +287,11 @@ task drive_read_resp();
                 rlst = 1;
             end
             rdata = j%2 ? 32'hdead_beef : 32'hdead_dead;
-            @(posedge memclk);
+            @(posedge axiClk);
         end
         rlst = 0;
         m_rvld    = 1'b0;
-        @(posedge memclk);
+        @(posedge axiClk);
         prev_rd_count += 1;
         if ((prev_rd_count == rd_count) && ((rd_count + wr_count) != 50)) begin
             wait(s_rar == 1);

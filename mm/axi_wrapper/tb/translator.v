@@ -4,7 +4,7 @@
  *------------------------------------------------------------------------------
  * File       : translator.v 
  * -----------------------------------------------------------------------------
- * Description: A simple translator model with variable delays
+ * Description: A simple translator model which looks up a default value table (currently 0)
  * ------------------------------------------------------------------------------
 */
 
@@ -19,125 +19,92 @@ module translation_simple (
     input   [7:0] r_len,
     input   [2:0] w_size,
     input   [7:0] w_len,
+    input         rstart,
+    input         wstart,
     output [31:0] p_raddr,
     output [31:0] p_waddr,
     output        t_rdone,
-    output        t_wdone
-/* Bus/simple wire connection to cache or LUT */
-
-/*AXI to memory controller (analogous to lower level of memory) */
+    output        t_wdone,
+    output        r_drop,
+    output        w_drop
 );
 
-reg rdone, wdone;
-wire r_timer_done, w_timer_done;
-reg [31:0] roffset = 32'h1000, woffset = 32'h1100;
+reg [31:0] roffset , woffset, rcount, wcount;
 reg [31:0] tmp_waddr, tmp_raddr;
-reg rstart = 0, wstart = 0;
-reg rstart_d, wstart_d;
+reg rdone, wdone, rdrop, wdrop;
+reg [31:0] segTable [0:31];
+integer i;
 
 assign p_raddr = tmp_raddr;
 assign p_waddr = tmp_waddr;
 assign t_rdone = rdone;
 assign t_wdone = wdone;
+assign r_drop  = rdrop;
+assign w_drop  = wdrop;
 
+/* read address translation */
 always @(posedge clk) begin
     if(~reset_) begin
         tmp_raddr <= 'h0;
-        rdone     <= 1'b0;
+        roffset   <= 'h0;
+        rdone     <= 'b0;
+        rdrop     <= 'b0;
+        for ( i = 0; i < 32; i = i + 1) begin
+            segTable[i] <= i * 32'h1000;
+        end
     end else begin
-        if (r_timer_done) begin
-            tmp_raddr <= v_raddr + roffset;
-            rdone     <= 1'b1;
+        tmp_raddr <= v_raddr[31:0] + segTable[v_raddr[31:27]];
+        roffset   <= rcount;
+        if (roffset != rcount) begin
+            if ( rcount + wcount == 31 ) begin
+                rdrop <= 1'b1;
+            end else begin
+                rdone <= 1'b1;
+            end
         end else begin
-            rdone     <= 1'b0;
+            rdone <= 1'b0;
+            rdrop <= 1'b0;
         end
     end
 end
 
+/* write address translation */
 always @(posedge clk) begin
     if(~reset_) begin
         tmp_waddr <= 'h0;
-        wdone     <= 1'b0;
+        woffset   <= 'h0;
+        wdone     <= 'b0;
+        wdrop     <= 'b0;
     end else begin
-        if (w_timer_done) begin
-            tmp_waddr <= v_waddr + woffset;
-            wdone     <= 1'b1;
+        tmp_waddr <= v_waddr[31:0] + segTable[v_waddr[31:27]];
+        woffset   <= wcount;
+        if (woffset != wcount) begin
+            if ( rcount + wcount == 32 ) begin
+                wdrop <= 1'b1;
+            end else begin
+                wdone <= 1'b1;
+            end
         end else begin
-            wdone     <= 1'b0;
+            wdone <= 1'b0;
+            wdrop <= 1'b0;
         end
     end
 end
 
-/*Sample timer non-synthesizable -- part of testbench to say*/
-always @(v_raddr or rstart_d) begin
-    if (~rstart & ~rstart_d) begin
-        rstart = 1'b1;
-    end else if (rstart & ~rstart_d) begin
-        rstart = 1'b0;
-    end
-end
-
-always @ (v_waddr or wstart_d) begin
-    if (~wstart & ~wstart_d) begin
-        wstart = 1'b1;
-    end else if (wstart & ~wstart_d) begin
-        wstart = 1'b0;
-    end
-end
-
-always @(posedge clk) begin
-    if (rstart & ~rstart_d) begin
-        rstart_d <= 1'b1;
-    end else begin
-        rstart_d <= 1'b0;
-    end
-    if (wstart & ~wstart_d) begin
-        wstart_d <= 1'b1;
-    end else begin
-        wstart_d <= 1'b0;
-    end
-end
-
-timer WR_TIMER (.clk(clk), .reset_(reset_), .start(wstart_d), .done(w_timer_done)); 
-timer RD_TIMER (.clk(clk), .reset_(reset_), .start(rstart_d), .done(r_timer_done)); 
-
-endmodule
-
-
-module timer (
-    input  clk,
-    input  reset_,
-    input  start,
-    output done
-  );
-
-reg [9:0] limit, timer;
-reg tick;
-
-assign done = (timer == limit);
-
-always @(posedge clk) begin
-    if ( !reset_ ) begin
-        timer <= 10'h0;
-        limit <= 10'h28; // 40 clocks
-    end else begin
-        if (tick & ~done) begin
-            timer    <= timer + 10'b1;
-        end else begin
-            timer    <= 10'b0;
-        end 
-    end
-end 
-
-always @(posedge clk) begin
+/* Logic for done pulse */
+always @(posedge rstart or negedge reset_) begin
     if (~reset_) begin
-        tick <= 1'b0;
+        rcount = 'h0;
     end else begin
-        if ( start ) begin
-            tick <= 1'b1;
-        end else if (done) begin
-            tick <= 1'b0;
-        end
+        rcount = rcount + 1;
+    end
+end
+
+always @(posedge wstart or negedge reset_) begin
+    if (~reset_) begin
+        wcount = 0;
+    end else begin
+        wcount = wcount + 1;
     end
 end
 

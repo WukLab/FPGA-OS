@@ -26,7 +26,7 @@ reg [AW:0] wr_ptr;
 //FIFO memory. Initializing with all 0 to avoid any x-prop
 reg [DW-1:0] fifo [0:FIFO_DEPTH-1];
 
-always @(posedge clk or negedge rst_) begin
+always @(posedge clk) begin
     if(~rst_) begin
         rd_ptr <= 'h0;
         wr_ptr <= 'h0;
