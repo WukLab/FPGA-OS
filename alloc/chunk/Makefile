@@ -5,7 +5,7 @@ VIVADO_HLS=/opt/Xilinx/Vivado/2018.2/bin/vivado_hls
 project_path=generated_hls_project
 
 ifeq ($(TARGET_BOARD), )
-  TARGET_BOARD = arty_a7
+  TARGET_BOARD = vcu108
 endif
 
 all:
