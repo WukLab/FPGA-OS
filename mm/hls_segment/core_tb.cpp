@@ -38,7 +38,7 @@ static int data_test(ap_uint<PA_SHIFT> addr, ap_uint<PID_SHIFT> pid,
 			<< " Size:" << std::hex << std::setw(10) << req.size
 			<< " RW:" << std::dec << req.rw;
 
-	core(ctrlpath_dummy, datapath, &dummy, &result);
+	mm_segment_top(ctrlpath_dummy, datapath, &dummy, &result);
 
 	return result ? -1 : 0;
 }
@@ -66,7 +66,7 @@ static int ctrl_test(OPCODE opcode, ap_uint<PA_SHIFT> addr, ap_uint<PID_SHIFT> p
 			<< " Size:" << std::setw(10) << "N/A"
 			<< " RW:" << req.rw;
 
-	core(ctrlpath, datapath_dummy, &result, &dummy);
+	mm_segment_top(ctrlpath, datapath_dummy, &result, &dummy);
 
 	return result ? -1 : 0;
 }

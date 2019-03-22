@@ -41,7 +41,7 @@ if { [info exists ::origin_dir_loc] } {
 }
 
 # Set the project name
-set _xil_proj_name_ "mm_sys_mm"
+set _xil_proj_name_ "generated_vivado_project"
 
 # Use project name variable, if specified in the tcl shell
 if { [info exists ::user_project_name] } {
@@ -586,7 +586,7 @@ set_property -name "steps.write_bitstream.args.verbose" -value "0" -objects $obj
 current_run -implementation [get_runs impl_1]
 
 # Export the project, not just the block diagram
-ipx::package_project -root_dir ../../generated_ip/mm_sys_arty_a7 -vendor wuklab -library user -taxonomy UserIP -import_files -set_current false -force
+ipx::package_project -root_dir ../../generated_ip/mm_ip_sysmmu_segment_arty_a7 -vendor wuklab -library user -taxonomy UserIP -import_files -set_current false -force
 
 update_ip_catalog -rebuild
 

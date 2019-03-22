@@ -30,7 +30,7 @@ private:
 	RET_STATUS check(sysmmu_data_if& data);
 };
 
-void core(axis_sysmmu_ctrl& ctrl, axis_sysmmu_data& data,
-		RET_STATUS* ctrl_stat, RET_STATUS* data_stat);
+void mm_segment_top(axis_sysmmu_ctrl& ctrl, axis_sysmmu_data& data,
+		    RET_STATUS* ctrl_stat, RET_STATUS* data_stat);
 
 #endif /* _SYSMMU_H_ */

@@ -2,8 +2,8 @@
 
 static Sysmmu sysmmu_table = Sysmmu();
 
-void core(axis_sysmmu_ctrl& ctrl, axis_sysmmu_data& data,
-			RET_STATUS* ctrl_stat, RET_STATUS* data_stat)
+void mm_segment_top(axis_sysmmu_ctrl& ctrl, axis_sysmmu_data& data,
+		    RET_STATUS* ctrl_stat, RET_STATUS* data_stat)
 {
 #pragma HLS PIPELINE
 #pragma HLS INTERFACE axis register both port=data

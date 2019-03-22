@@ -4,6 +4,7 @@
 
 ifeq ($(TARGET_BOARD), )
   TARGET_BOARD = vcu108
+  export TARGET_BOARD
 endif
 
 #

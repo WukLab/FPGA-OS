@@ -22,7 +22,7 @@ add_files	sysmmu.cpp	-cflags "-I../../include"
 add_files -tb	core_tb.cpp	-cflags "-I../../include"
 
 # Specify the top-level function for synthesis
-set_top		core
+set_top		mm_segment_top
 
 ###########################
 # Solution settings
