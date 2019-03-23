@@ -6,8 +6,8 @@
 open_project	-reset generated_hls_project 
 
 # The source file and test bench
-add_files	top.cpp
-add_files -tb	tb.cpp
+add_files	top.cpp -cflags -I../../../include/
+add_files -tb	tb.cpp  -cflags -I../../../include/
 
 # Specify the top-level function for synthesis
 set_top		app_rdma
@@ -28,7 +28,7 @@ create_clock -period 10 -name default
 set_clock_uncertainty 1.25
 
 # Simulate the C code 
-csim_design
+#csim_design
 
 # Synthesis the C code
 csynth_design

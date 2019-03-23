@@ -295,6 +295,7 @@ proc create_hier_cell_sysnet_1 { parentCell nameHier } {
   # Create interface ports
   set from_mac [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 from_mac ]
   set_property -dict [ list \
+   CONFIG.FREQ_HZ {125000000} \
    CONFIG.HAS_TKEEP {1} \
    CONFIG.HAS_TLAST {1} \
    CONFIG.HAS_TREADY {1} \
@@ -306,10 +307,20 @@ proc create_hier_cell_sysnet_1 { parentCell nameHier } {
    CONFIG.TUSER_WIDTH {64} \
    ] $from_mac
   set to_libnet_0 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 to_libnet_0 ]
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {125000000} \
+   ] $to_libnet_0
   set to_libnet_1 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 to_libnet_1 ]
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {125000000} \
+   ] $to_libnet_1
   set to_mac [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 to_mac ]
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {125000000} \
+   ] $to_mac
   set to_sysnet_0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 to_sysnet_0 ]
   set_property -dict [ list \
+   CONFIG.FREQ_HZ {125000000} \
    CONFIG.HAS_TKEEP {1} \
    CONFIG.HAS_TLAST {1} \
    CONFIG.HAS_TREADY {1} \
@@ -322,6 +333,7 @@ proc create_hier_cell_sysnet_1 { parentCell nameHier } {
    ] $to_sysnet_0
   set to_sysnet_1 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 to_sysnet_1 ]
   set_property -dict [ list \
+   CONFIG.FREQ_HZ {125000000} \
    CONFIG.HAS_TKEEP {1} \
    CONFIG.HAS_TLAST {1} \
    CONFIG.HAS_TREADY {1} \
@@ -337,6 +349,7 @@ proc create_hier_cell_sysnet_1 { parentCell nameHier } {
   set sysnet_clk [ create_bd_port -dir I -type clk sysnet_clk ]
   set_property -dict [ list \
    CONFIG.ASSOCIATED_RESET {sysnet_rst_n} \
+   CONFIG.FREQ_HZ {125000000} \
  ] $sysnet_clk
   set sysnet_rst_n [ create_bd_port -dir I -type rst sysnet_rst_n ]
   set_property -dict [ list \

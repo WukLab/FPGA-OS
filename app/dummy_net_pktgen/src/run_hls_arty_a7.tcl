@@ -10,7 +10,7 @@ add_files	top.cpp -cflags -I../../../include/
 add_files -tb	tb.cpp  -cflags -I../../../include/
 
 # Specify the top-level function for synthesis
-set_top		net_loopback
+set_top		dummy_net_pktgen
 
 ###########################
 # Solution settings

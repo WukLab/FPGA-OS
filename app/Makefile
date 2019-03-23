@@ -1,3 +1,8 @@
+ifeq ($(TARGET_BOARD), )
+  TARGET_BOARD = vcu108
+  export TARGET_BOARD
+endif
+
 all:
 	$(Q)make -C dummy_net_blackhole
 	$(Q)make -C dummy_net_dram

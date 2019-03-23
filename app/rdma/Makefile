@@ -1,5 +1,5 @@
 ifeq ($(TARGET_BOARD), )
-  TARGET_BOARD = arty_a7
+  TARGET_BOARD = vcu108
 endif
 
 all:
