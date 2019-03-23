@@ -6,11 +6,11 @@
 open_project	-reset generated_hls_project 
 
 # The source file and test bench
-add_files	top.cpp
-add_files -tb	tb.cpp
+add_files	top_512.cpp	-cflags -I../../../include
+add_files -tb	tb_512.cpp	-cflags -I../../../include
 
 # Specify the top-level function for synthesis
-set_top		sysnet_rx
+set_top		sysnet_rx_512
 
 ###########################
 # Solution settings
@@ -19,16 +19,15 @@ set_top		sysnet_rx
 open_solution -reset solution1
 
 # Specify a Xilinx device and clock period
-#
 # VCU108:	xcvu095-2ffva2104e
-# ArtyA7:	xc7a100tcsg324-1
-#
 set_part {xcvu095-ffva2104-2-e}
-create_clock -period 10 -name default
+
+# 125MHz
+create_clock -period 8 -name default
 set_clock_uncertainty 1.25
 
 # Simulate the C code 
-csim_design
+#csim_design
 
 # Synthesis the C code
 csynth_design
