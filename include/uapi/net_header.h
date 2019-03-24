@@ -52,7 +52,7 @@ struct lego_header {
  * So the start bit is 42*8 = 336.
  * And end bit is 336 + 7 = 343.
  *
- * These are used by HLS code to extract APP_ID.
+ * These are used by HLS code to write or read APP_ID.
  */
 #define LEGO_HEADER_APP_ID_BITS_START	(336)
 #define LEGO_HEADER_APP_ID_BITS_END	(343)

@@ -21,7 +21,7 @@ GENERATED_HLS_PROJECT="generated_hls_project"
 HLS_DIR="$PWD"
 
 # Customize: sub-folders
-HLS_IP_CORES=(fpga)
+HLS_IP_CORES=(fpga fpga_test)
 
 # Customize: relative path
 GENERATED_IP_FOLDER="${HLS_DIR}/../../generated_ip"

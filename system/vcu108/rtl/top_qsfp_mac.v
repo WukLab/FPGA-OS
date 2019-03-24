@@ -28,6 +28,8 @@ module legofpga_mac_qsfp
 	/* Board Clock */
 	input			default_sysclk_125_clk_n,
 	input			default_sysclk_125_clk_p,
+	input			default_sysclk_300_clk_n,
+	input                   default_sysclk_300_clk_p,
 	input			default_sysclk_161_clk_n,
 	input			default_sysclk_161_clk_p,
 
@@ -279,7 +281,7 @@ module legofpga_mac_qsfp
 
 	assign rx_block_lock_led_0 = block_lock_led_0 & stat_rx_status_0;
 
-	wire an_clk, dclk, clk_100, clk_125, clk_300, clk_locked;
+	wire an_clk, dclk, clk_100, clk_125, _clk_300, clk_300, clk_locked;
 
 	/* 100MHZ is used in the reference design */
 	assign dclk = clk_100;
@@ -302,13 +304,29 @@ module legofpga_mac_qsfp
 		/* Input: Board Clock */
 		.default_sysclk_125_clk_n	(default_sysclk_125_clk_n),
 		.default_sysclk_125_clk_p	(default_sysclk_125_clk_p),
-
+                
 		/* Ouputs */
 		.clk_100		(clk_100),
 		.clk_125		(clk_125),
-		.clk_300		(clk_300),
 		.clk_locked		(clk_locked)
 	);
+
+	IBUFDS #
+	  (
+	   .IBUF_LOW_PWR ("FALSE")
+	   )
+	  u_ibufg_sys_clk_300
+	    (
+	     .I  (default_sysclk_300_clk_p),
+	     .IB (default_sysclk_300_clk_n),
+	     .O  (_clk_300)
+	     );
+
+	BUFG u__bufg_backbone
+	  (
+	   .O (clk_300),
+	   .I (_clk_300)
+	   );
 
 	/*
 	 * mac_ready indicate the the MAC layer is ready

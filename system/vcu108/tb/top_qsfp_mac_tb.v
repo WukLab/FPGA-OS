@@ -24,11 +24,16 @@ module legofpga_mac_qsfp_tb
 	reg             sysclk_161_clk_n;
 	reg             sysclk_161_clk_p;
 
+	reg		default_sysclk_300_clk_p;
+	reg		default_sysclk_300_clk_n;
+
 	legofpga_mac_qsfp	DUT (
 		.default_sysclk_125_clk_n	(sysclk_125_clk_n),
 		.default_sysclk_125_clk_p	(sysclk_125_clk_p),
 		.default_sysclk_161_clk_n	(sysclk_161_clk_n),
 		.default_sysclk_161_clk_p	(sysclk_161_clk_p),
+		.default_sysclk_300_clk_n	(default_sysclk_300_clk_n),
+		.default_sysclk_300_clk_p	(default_sysclk_300_clk_p),
 
 		.gt_rxp_in			(gt_txp_out),
 		.gt_rxn_in			(gt_txn_out),
@@ -53,6 +58,9 @@ module legofpga_mac_qsfp_tb
 
       sysclk_161_clk_n = 1;
       sysclk_161_clk_p = 0;
+
+      default_sysclk_300_clk_n = 1;
+      default_sysclk_300_clk_p = 0;
 
       // One lock
       $display("INFO : waiting for the gt lock..........");
@@ -99,6 +107,18 @@ module legofpga_mac_qsfp_tb
     begin
         sysclk_125_clk_n =0;
         forever #4000000.000  sysclk_125_clk_n = ~ sysclk_125_clk_n;
+    end
+
+    initial
+    begin
+        default_sysclk_300_clk_n =0;
+        forever #3333333.333 default_sysclk_300_clk_n = ~ default_sysclk_300_clk_n;
+    end
+
+    initial
+    begin
+        default_sysclk_300_clk_p =0;
+        forever #3333333.333  default_sysclk_300_clk_p = ~ default_sysclk_300_clk_p;
     end
 
 endmodule

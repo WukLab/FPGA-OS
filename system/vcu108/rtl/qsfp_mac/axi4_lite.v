@@ -338,8 +338,8 @@ module xxv_ethernet_0_axi4_lite_user_if
                                                            $display( "           AXI4 Lite Write Started to MODE_REG ..." );
                                                            $display( " AXI_WR rd_wr_cntr=%d", rd_wr_cntr);
                                                            axi_wr_addr             <= ADDR_MODE_REG;    //// ADDR_MODE_REG 
-                                                           //axi_wr_data             <= 32'hC000_0000;
-                                                           axi_wr_data             <= 32'h4000_0000;	// no loopback
+                                                           axi_wr_data             <= 32'hC000_0000;	// loopback
+                                                           //axi_wr_data             <= 32'h4000_0000;	// no loopback
                                                            axi_wr_addr_valid       <= 1'b1;
                                                            axi_wr_data_valid       <= 1'b1;
                                                            axi_wr_strobe           <= 4'hF;
@@ -403,12 +403,11 @@ module xxv_ethernet_0_axi4_lite_user_if
                                                           axi_rd_req              <= 1'b0;
                                                           axi_wr_req              <= 1'b1;
                                                         end
+/*
                                              'd6     :  begin
                                                            $display( " AXI_WR rd_wr_cntr=%d AN", rd_wr_cntr);
-							  /*
-							   * (bit 0) ctl_autoneg_enable = 1
-							   * (bit 1) ctl_autonet_bypass = 0
-							   */
+							  // (bit 0) ctl_autoneg_enable = 1
+							  // (bit 1) ctl_autonet_bypass = 0
                                                           axi_wr_data             <= 32'h00000001;
                                                           axi_wr_addr             <= ADDR_AN_CONTROL_REG1;
                                                           axi_wr_addr_valid       <= 1'b1;
@@ -419,9 +418,7 @@ module xxv_ethernet_0_axi4_lite_user_if
                                                         end
                                              'd7     :  begin
                                                            $display( " AXI_WR rd_wr_cntr=%d LT", rd_wr_cntr);
-							  /*
-							   * (bit 0) ctl_lt_training_enable = 1
-							   */
+							  // (bit 0) ctl_lt_training_enable = 1
                                                           axi_wr_data             <= 32'h00000001;
                                                           axi_wr_addr             <= ADDR_LT_CONTROL_REG1;
                                                           axi_wr_addr_valid       <= 1'b1;
@@ -430,7 +427,7 @@ module xxv_ethernet_0_axi4_lite_user_if
                                                           axi_rd_req              <= 1'b0;
                                                           axi_wr_req              <= 1'b1;
                                                         end
-
+*/
                                               default : begin
                                                            axi_wr_data             <= 32'h0;
                                                            axi_wr_addr             <= 32'h0;
@@ -444,7 +441,7 @@ module xxv_ethernet_0_axi4_lite_user_if
                                          endcase
 
 
-                                            if  (rd_wr_cntr == 8'd8)
+                                            if  (rd_wr_cntr == 8'd6)
 				            begin
                                               axi_user_prestate <= STATE_WAIT_RX_ALIGNED;
 					      init_rx_aligned   <= 1'b0;
