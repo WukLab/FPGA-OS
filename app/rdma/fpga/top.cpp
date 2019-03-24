@@ -35,6 +35,11 @@ static inline void inc_nr_requests(void) { }
 static inline unsigned long get_nr_requests(void) { return 0; }
 #endif
 
+//#define CONFIG_RDMA_LOOPBACK_TEST
+#ifdef CONFIG_RDMA_LOOPBACK_TEST
+# define RDM_FPGA_TEST_APP_ID	(1)
+#endif
+
 static void handle_error(void)
 {
 
@@ -89,7 +94,11 @@ static void handle_read(stream<struct request> *req_s,
 		read_state = READ_HDR_ETH;
 		break;
 	case READ_HDR_ETH:
-		/* Output Eth/IP/UDP/Lego header */
+#ifdef CONFIG_RDMA_LOOPBACK_TEST
+		/* loopback test, output to rdm_fpga_test */
+		set_app_id(&(req.eth_header), RDM_FPGA_TEST_APP_ID);
+#endif
+
 		to_net->write(req.eth_header);
 
 		read_state = READ_HDR_APP;
@@ -111,8 +120,12 @@ static void handle_read(stream<struct request> *req_s,
 		}
 		break;
 	case READ_DATAFLOW:
-		tmp.keep(NR_BYTES_AXIS_512 - 1, 0) = 0xffffffffffffffff;
+#ifdef CONFIG_RDMA_LOOPBACK_TEST
+		tmp.data = offset + 1;
+#else
 		tmp.data = dram[start_index + offset];
+#endif
+		tmp.keep(NR_BYTES_AXIS_512 - 1, 0) = 0xffffffffffffffff;
 		offset++;
 
 		if (length == NR_BYTES_AXIS_512)
@@ -206,7 +219,9 @@ static void handle_write(stream<struct request> *req_s,
 		index = start_index + offset;
 		offset++;
 
+#ifndef CONFIG_RDMA_LOOPBACK_TEST
 		dram[index] = data.data;
+#endif
 		if (data.last)
 			write_state = WRITE_IDLE;
 		break;

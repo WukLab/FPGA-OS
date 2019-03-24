@@ -69,4 +69,6 @@
 #define offsetofend(TYPE, MEMBER) \
 	(offsetof(TYPE, MEMBER)	+ sizeof(((TYPE *)0)->MEMBER))
 
+#define ARRAY_SIZE(x)		(sizeof(x) / sizeof((x)[0]))
+
 #endif /* _LEGOFPGA_COMPILER_H_ */

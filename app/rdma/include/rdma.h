@@ -10,6 +10,8 @@
 #ifndef _APP_RDMA_RDMA_H_
 #define _APP_RDMA_RDMA_H_
 
+#include <fpga/axis_net.h>
+
 enum APP_RDMA_OPCODE {
 	/* Parsed by FPGA side */
 	APP_RDMA_OPCODE_READ,
@@ -26,6 +28,18 @@ struct app_rdma_header {
 	unsigned long address;
 	unsigned long length;
 } __attribute__((packed));
+
+static inline char *app_rdma_opcode_to_string(char opcode)
+{
+	switch (opcode) {
+	case APP_RDMA_OPCODE_READ:		return (char *)"READ";
+	case APP_RDMA_OPCODE_WRITE:		return (char *)"WRITE";
+	case APP_RDMA_OPCODE_REPLY_READ:	return (char *)"READ REPLY";
+	case APP_RDMA_OPCODE_REPLY_READ_ERROR:	return (char *)"READ REPLY ERROR";
+	default:				return (char *)"Unknown";
+	}
+	return (char *)"BUG";
+}
 
 /*
  * The first two 64B units are for headers
@@ -51,6 +65,24 @@ static inline void set_hdr_length(struct net_axis_512 *hdr,
 {
 #pragma HLS INLINE
 	hdr->data(135, 72) = length;
+}
+
+static inline unsigned char get_hdr_opcode(struct net_axis_512 *hdr)
+{
+#pragma HLS INLINE
+	return hdr->data(7, 0);
+}
+
+static inline unsigned long get_hdr_address(struct net_axis_512 *hdr)
+{
+#pragma HLS INLINE
+	return hdr->data(71, 8);
+}
+
+static inline unsigned long get_hdr_length(struct net_axis_512 *hdr)
+{
+#pragma HLS INLINE
+	return hdr->data(135, 72);
 }
 
 #endif /* _APP_RDMA_RDMA_H_ */
