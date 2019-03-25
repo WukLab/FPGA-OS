@@ -814,14 +814,15 @@ proc cr_bd_LegoFPGA_axis64 { parentCell } {
   set bCheckIPs 1
   if { $bCheckIPs == 1 } {
      set list_check_ips "\ 
+  wuklab:hls:app_rdma_test:1.0\
   xilinx.com:ip:ila:6.2\
   xilinx.com:ip:jtag_axi:1.2\
   xilinx.com:ip:vio:3.0\
-  wuklab:hls:app_rdma_test:1.0\
-  xilinx.com:ip:ddr4:2.2\
+  wuklab:hls:global_timestamp:1.0\
   xilinx.com:ip:util_vector_logic:2.0\
   wuklab:hls:app_rdma:1.0\
   xilinx.com:ip:xlconstant:1.1\
+  xilinx.com:ip:ddr4:2.2\
   wuklab:hls:sysnet_rx_512:1.0\
   xilinx.com:ip:axis_data_fifo:1.1\
   wuklab:hls:sysnet_tx_512:1.0\
@@ -1002,13 +1003,88 @@ proc create_hier_cell_sysnet_rx_top { parentCell nameHier } {
   current_bd_instance $oldCurInst
 }
   
-# Hierarchical cell: app_rdm_top
-proc create_hier_cell_app_rdm_top { parentCell nameHier } {
+# Hierarchical cell: mc_ddr4_wrapper
+proc create_hier_cell_mc_ddr4_wrapper { parentCell nameHier } {
 
   variable script_folder
 
   if { $parentCell eq "" || $nameHier eq "" } {
-     catch {common::send_msg_id "BD_TCL-102" "ERROR" "create_hier_cell_app_rdm_top() - Empty argument(s)!"}
+     catch {common::send_msg_id "BD_TCL-102" "ERROR" "create_hier_cell_mc_ddr4_wrapper() - Empty argument(s)!"}
+     return
+  }
+
+  # Get object for parentCell
+  set parentObj [get_bd_cells $parentCell]
+  if { $parentObj == "" } {
+     catch {common::send_msg_id "BD_TCL-100" "ERROR" "Unable to find parent cell <$parentCell>!"}
+     return
+  }
+
+  # Make sure parentObj is hier blk
+  set parentType [get_property TYPE $parentObj]
+  if { $parentType ne "hier" } {
+     catch {common::send_msg_id "BD_TCL-101" "ERROR" "Parent <$parentObj> has TYPE = <$parentType>. Expected to be <hier>."}
+     return
+  }
+
+  # Save current instance; Restore later
+  set oldCurInst [current_bd_instance .]
+
+  # Set parent object as current
+  current_bd_instance $parentObj
+
+  # Create cell and set as current instance
+  set hier_obj [create_bd_cell -type hier $nameHier]
+  current_bd_instance $hier_obj
+
+  # Create interface pins
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 C0_DDR4_S_AXI
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 C0_SYS_CLK_0
+  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 ddr4_sdram_c1
+
+  # Create pins
+  create_bd_pin -dir O -type clk c0_ddr4_ui_clk
+  create_bd_pin -dir O -from 0 -to 0 -type rst c0_ddr4_ui_clk_rstn
+  create_bd_pin -dir I -type rst sys_rst
+
+  # Create instance: mc_ddr4_core, and set properties
+  set mc_ddr4_core [ create_bd_cell -type ip -vlnv xilinx.com:ip:ddr4:2.2 mc_ddr4_core ]
+  set_property -dict [ list \
+   CONFIG.C0_CLOCK_BOARD_INTERFACE {default_sysclk1_300} \
+   CONFIG.C0_DDR4_BOARD_INTERFACE {ddr4_sdram_c1} \
+   CONFIG.System_Clock {Differential} \
+ ] $mc_ddr4_core
+
+  # Create instance: util_vector_logic_0, and set properties
+  set util_vector_logic_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_0 ]
+  set_property -dict [ list \
+   CONFIG.C_OPERATION {not} \
+   CONFIG.C_SIZE {1} \
+   CONFIG.LOGO_FILE {data/sym_notgate.png} \
+ ] $util_vector_logic_0
+
+  # Create interface connections
+  connect_bd_intf_net -intf_net C0_SYS_CLK_0_1 [get_bd_intf_pins C0_SYS_CLK_0] [get_bd_intf_pins mc_ddr4_core/C0_SYS_CLK]
+  connect_bd_intf_net -intf_net axi_interconnect_0_M00_AXI [get_bd_intf_pins C0_DDR4_S_AXI] [get_bd_intf_pins mc_ddr4_core/C0_DDR4_S_AXI]
+  connect_bd_intf_net -intf_net ddr4_0_C0_DDR4 [get_bd_intf_pins ddr4_sdram_c1] [get_bd_intf_pins mc_ddr4_core/C0_DDR4]
+
+  # Create port connections
+  connect_bd_net -net c0_ddr4_ui_clk_rstn [get_bd_pins c0_ddr4_ui_clk_rstn] [get_bd_pins mc_ddr4_core/c0_ddr4_aresetn] [get_bd_pins util_vector_logic_0/Res]
+  connect_bd_net -net c0_ddr4_ui_clk_rstn_1 [get_bd_pins mc_ddr4_core/c0_ddr4_ui_clk_sync_rst] [get_bd_pins util_vector_logic_0/Op1]
+  connect_bd_net -net mc_ddr4_0_c0_ddr4_ui_clk [get_bd_pins c0_ddr4_ui_clk] [get_bd_pins mc_ddr4_core/c0_ddr4_ui_clk]
+  connect_bd_net -net sys_rst_0_1 [get_bd_pins sys_rst] [get_bd_pins mc_ddr4_core/sys_rst]
+
+  # Restore current instance
+  current_bd_instance $oldCurInst
+}
+  
+# Hierarchical cell: app_rdma_wrapper
+proc create_hier_cell_app_rdma_wrapper { parentCell nameHier } {
+
+  variable script_folder
+
+  if { $parentCell eq "" || $nameHier eq "" } {
+     catch {common::send_msg_id "BD_TCL-102" "ERROR" "create_hier_cell_app_rdma_wrapper() - Empty argument(s)!"}
      return
   }
 
@@ -1044,6 +1120,8 @@ proc create_hier_cell_app_rdm_top { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk clk_125
   create_bd_pin -dir I -type rst clk_125_rst_n
+  create_bd_pin -dir O -from 63 -to 0 -type data stats_nr_read
+  create_bd_pin -dir O -from 63 -to 0 -type data stats_nr_write
 
   # Create instance: app_rdma_0, and set properties
   set app_rdma_0 [ create_bd_cell -type ip -vlnv wuklab:hls:app_rdma:1.0 app_rdma_0 ]
@@ -1063,6 +1141,8 @@ proc create_hier_cell_app_rdm_top { parentCell nameHier } {
   # Create port connections
   connect_bd_net -net ACLK_0_1 [get_bd_pins clk_125] [get_bd_pins app_rdma_0/ap_clk]
   connect_bd_net -net ARESETN_0_1 [get_bd_pins clk_125_rst_n] [get_bd_pins app_rdma_0/ap_rst_n]
+  connect_bd_net -net app_rdma_0_stats_nr_read [get_bd_pins stats_nr_read] [get_bd_pins app_rdma_0/stats_nr_read]
+  connect_bd_net -net app_rdma_0_stats_nr_write [get_bd_pins stats_nr_write] [get_bd_pins app_rdma_0/stats_nr_write]
   connect_bd_net -net xlconstant_0_dout [get_bd_pins app_rdma_0/dram_in_V] [get_bd_pins app_rdma_0/dram_out_V] [get_bd_pins xlconstant_0/dout]
 
   # Restore current instance
@@ -1145,13 +1225,13 @@ proc create_hier_cell_Top_Network { parentCell nameHier } {
   current_bd_instance $oldCurInst
 }
   
-# Hierarchical cell: Top_Memory
-proc create_hier_cell_Top_Memory { parentCell nameHier } {
+# Hierarchical cell: Global_TSC
+proc create_hier_cell_Global_TSC { parentCell nameHier } {
 
   variable script_folder
 
   if { $parentCell eq "" || $nameHier eq "" } {
-     catch {common::send_msg_id "BD_TCL-102" "ERROR" "create_hier_cell_Top_Memory() - Empty argument(s)!"}
+     catch {common::send_msg_id "BD_TCL-102" "ERROR" "create_hier_cell_Global_TSC() - Empty argument(s)!"}
      return
   }
 
@@ -1180,31 +1260,14 @@ proc create_hier_cell_Top_Memory { parentCell nameHier } {
   current_bd_instance $hier_obj
 
   # Create interface pins
-  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S00_AXI
-  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S01_AXI
-  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S02_AXI
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 ddr4_sdram_c1
 
   # Create pins
-  create_bd_pin -dir O -type rst ARESETN
   create_bd_pin -dir I -type clk clk_125
-  create_bd_pin -dir I -type rst clk_125_rst_n
-  create_bd_pin -dir I -type clk clk_300
-  create_bd_pin -dir I -type rst clk_300_rst_n
-  create_bd_pin -dir I -type rst sys_rst
+  create_bd_pin -dir I -from 0 -to 0 clk_125_rst_n
+  create_bd_pin -dir O -from 63 -to 0 -type data tsc
 
-  # Create instance: axi_interconnect_0, and set properties
-  set axi_interconnect_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_interconnect_0 ]
-  set_property -dict [ list \
-   CONFIG.NUM_MI {1} \
-   CONFIG.NUM_SI {3} \
- ] $axi_interconnect_0
-
-  # Create instance: mc_ddr4_0, and set properties
-  set mc_ddr4_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:ddr4:2.2 mc_ddr4_0 ]
-  set_property -dict [ list \
-   CONFIG.C0_DDR4_BOARD_INTERFACE {ddr4_sdram_c1} \
- ] $mc_ddr4_0
+  # Create instance: global_timestamp_0, and set properties
+  set global_timestamp_0 [ create_bd_cell -type ip -vlnv wuklab:hls:global_timestamp:1.0 global_timestamp_0 ]
 
   # Create instance: util_vector_logic_0, and set properties
   set util_vector_logic_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_0 ]
@@ -1214,168 +1277,11 @@ proc create_hier_cell_Top_Memory { parentCell nameHier } {
    CONFIG.LOGO_FILE {data/sym_notgate.png} \
  ] $util_vector_logic_0
 
-  # Create interface connections
-  connect_bd_intf_net -intf_net app_rdma_0_m_axi_MEM [get_bd_intf_pins S00_AXI] [get_bd_intf_pins axi_interconnect_0/S00_AXI]
-  connect_bd_intf_net -intf_net app_rdma_test_0_m_axi_dram [get_bd_intf_pins S02_AXI] [get_bd_intf_pins axi_interconnect_0/S02_AXI]
-  connect_bd_intf_net -intf_net axi_interconnect_0_M00_AXI [get_bd_intf_pins axi_interconnect_0/M00_AXI] [get_bd_intf_pins mc_ddr4_0/C0_DDR4_S_AXI]
-  connect_bd_intf_net -intf_net ddr4_0_C0_DDR4 [get_bd_intf_pins ddr4_sdram_c1] [get_bd_intf_pins mc_ddr4_0/C0_DDR4]
-  connect_bd_intf_net -intf_net jtag_axi_0_M_AXI [get_bd_intf_pins S01_AXI] [get_bd_intf_pins axi_interconnect_0/S01_AXI]
-
   # Create port connections
-  connect_bd_net -net ACLK_0_1 [get_bd_pins clk_125] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axi_interconnect_0/S01_ACLK] [get_bd_pins axi_interconnect_0/S02_ACLK]
-  connect_bd_net -net ARESETN_0_1 [get_bd_pins clk_125_rst_n] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axi_interconnect_0/S01_ARESETN] [get_bd_pins axi_interconnect_0/S02_ARESETN]
-  connect_bd_net -net c0_ddr4_aresetn_0_1 [get_bd_pins clk_300_rst_n] [get_bd_pins mc_ddr4_0/c0_ddr4_aresetn]
-  connect_bd_net -net c0_ddr4_ui_clk_rstn [get_bd_pins ARESETN] [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins util_vector_logic_0/Res]
-  connect_bd_net -net c0_ddr4_ui_clk_rstn_1 [get_bd_pins mc_ddr4_0/c0_ddr4_ui_clk_sync_rst] [get_bd_pins util_vector_logic_0/Op1]
-  connect_bd_net -net c0_sys_clk_i_0_1 [get_bd_pins clk_300] [get_bd_pins mc_ddr4_0/c0_sys_clk_i]
-  connect_bd_net -net mc_ddr4_0_c0_ddr4_ui_clk [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins mc_ddr4_0/c0_ddr4_ui_clk]
-  connect_bd_net -net sys_rst_0_1 [get_bd_pins sys_rst] [get_bd_pins mc_ddr4_0/sys_rst]
-
-  # Restore current instance
-  current_bd_instance $oldCurInst
-}
-  
-# Hierarchical cell: Top_App_RDM
-proc create_hier_cell_Top_App_RDM { parentCell nameHier } {
-
-  variable script_folder
-
-  if { $parentCell eq "" || $nameHier eq "" } {
-     catch {common::send_msg_id "BD_TCL-102" "ERROR" "create_hier_cell_Top_App_RDM() - Empty argument(s)!"}
-     return
-  }
-
-  # Get object for parentCell
-  set parentObj [get_bd_cells $parentCell]
-  if { $parentObj == "" } {
-     catch {common::send_msg_id "BD_TCL-100" "ERROR" "Unable to find parent cell <$parentCell>!"}
-     return
-  }
-
-  # Make sure parentObj is hier blk
-  set parentType [get_property TYPE $parentObj]
-  if { $parentType ne "hier" } {
-     catch {common::send_msg_id "BD_TCL-101" "ERROR" "Parent <$parentObj> has TYPE = <$parentType>. Expected to be <hier>."}
-     return
-  }
-
-  # Save current instance; Restore later
-  set oldCurInst [current_bd_instance .]
-
-  # Set parent object as current
-  current_bd_instance $parentObj
-
-  # Create cell and set as current instance
-  set hier_obj [create_bd_cell -type hier $nameHier]
-  current_bd_instance $hier_obj
-
-  # Create interface pins
-  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 from_net
-  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 from_net1
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 m_axi_MEM
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 m_axi_dram
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 to_net
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 to_net1
-
-  # Create pins
-  create_bd_pin -dir I ap_start
-  create_bd_pin -dir I -type clk clk_125
-  create_bd_pin -dir I -type rst clk_125_rst_n
-
-  # Create instance: app_rdm_top
-  create_hier_cell_app_rdm_top $hier_obj app_rdm_top
-
-  # Create instance: app_rdma_test_0, and set properties
-  set app_rdma_test_0 [ create_bd_cell -type ip -vlnv wuklab:hls:app_rdma_test:1.0 app_rdma_test_0 ]
-
-  # Create interface connections
-  connect_bd_intf_net -intf_net app_rdma_0_m_axi_MEM [get_bd_intf_pins m_axi_MEM] [get_bd_intf_pins app_rdm_top/m_axi_MEM]
-  connect_bd_intf_net -intf_net app_rdma_0_to_net [get_bd_intf_pins to_net1] [get_bd_intf_pins app_rdm_top/to_net]
-  connect_bd_intf_net -intf_net app_rdma_test_0_m_axi_dram [get_bd_intf_pins m_axi_dram] [get_bd_intf_pins app_rdma_test_0/m_axi_dram]
-  connect_bd_intf_net -intf_net app_rdma_test_0_to_net [get_bd_intf_pins to_net] [get_bd_intf_pins app_rdma_test_0/to_net]
-  connect_bd_intf_net -intf_net sysnet_rx_512_0_output_0 [get_bd_intf_pins from_net1] [get_bd_intf_pins app_rdm_top/from_net]
-  connect_bd_intf_net -intf_net sysnet_rx_top_output_1 [get_bd_intf_pins from_net] [get_bd_intf_pins app_rdma_test_0/from_net]
-
-  # Create port connections
-  connect_bd_net -net ACLK_0_1 [get_bd_pins clk_125] [get_bd_pins app_rdm_top/clk_125] [get_bd_pins app_rdma_test_0/ap_clk]
-  connect_bd_net -net ARESETN_0_1 [get_bd_pins clk_125_rst_n] [get_bd_pins app_rdm_top/clk_125_rst_n] [get_bd_pins app_rdma_test_0/ap_rst_n]
-  connect_bd_net -net ap_start_1 [get_bd_pins ap_start] [get_bd_pins app_rdma_test_0/ap_start]
-
-  # Restore current instance
-  current_bd_instance $oldCurInst
-}
-  
-# Hierarchical cell: Debug
-proc create_hier_cell_Debug { parentCell nameHier } {
-
-  variable script_folder
-
-  if { $parentCell eq "" || $nameHier eq "" } {
-     catch {common::send_msg_id "BD_TCL-102" "ERROR" "create_hier_cell_Debug() - Empty argument(s)!"}
-     return
-  }
-
-  # Get object for parentCell
-  set parentObj [get_bd_cells $parentCell]
-  if { $parentObj == "" } {
-     catch {common::send_msg_id "BD_TCL-100" "ERROR" "Unable to find parent cell <$parentCell>!"}
-     return
-  }
-
-  # Make sure parentObj is hier blk
-  set parentType [get_property TYPE $parentObj]
-  if { $parentType ne "hier" } {
-     catch {common::send_msg_id "BD_TCL-101" "ERROR" "Parent <$parentObj> has TYPE = <$parentType>. Expected to be <hier>."}
-     return
-  }
-
-  # Save current instance; Restore later
-  set oldCurInst [current_bd_instance .]
-
-  # Set parent object as current
-  current_bd_instance $parentObj
-
-  # Create cell and set as current instance
-  set hier_obj [create_bd_cell -type hier $nameHier]
-  current_bd_instance $hier_obj
-
-  # Create interface pins
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 M_AXI
-
-  # Create pins
-  create_bd_pin -dir I -type clk clk_125
-  create_bd_pin -dir I -type rst clk_125_rst_n
-  create_bd_pin -dir I -from 0 -to 0 mac_ready
-  create_bd_pin -dir I -from 0 -to 0 probe0
-  create_bd_pin -dir O -from 0 -to 0 probe_out0
-
-  # Create instance: ila_0, and set properties
-  set ila_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:ila:6.2 ila_0 ]
-  set_property -dict [ list \
-   CONFIG.C_ENABLE_ILA_AXI_MON {false} \
-   CONFIG.C_MONITOR_TYPE {Native} \
-   CONFIG.C_NUM_OF_PROBES {2} \
- ] $ila_0
-
-  # Create instance: jtag_axi_0, and set properties
-  set jtag_axi_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:jtag_axi:1.2 jtag_axi_0 ]
-
-  # Create instance: vio_0, and set properties
-  set vio_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:vio:3.0 vio_0 ]
-  set_property -dict [ list \
-   CONFIG.C_EN_PROBE_IN_ACTIVITY {0} \
-   CONFIG.C_NUM_PROBE_IN {0} \
- ] $vio_0
-
-  # Create interface connections
-  connect_bd_intf_net -intf_net jtag_axi_0_M_AXI [get_bd_intf_pins M_AXI] [get_bd_intf_pins jtag_axi_0/M_AXI]
-
-  # Create port connections
-  connect_bd_net -net ACLK_0_1 [get_bd_pins clk_125] [get_bd_pins ila_0/clk] [get_bd_pins jtag_axi_0/aclk] [get_bd_pins vio_0/clk]
-  connect_bd_net -net ARESETN_0_1 [get_bd_pins clk_125_rst_n] [get_bd_pins jtag_axi_0/aresetn]
-  connect_bd_net -net c0_ddr4_ui_clk_rstn [get_bd_pins probe0] [get_bd_pins ila_0/probe0]
-  connect_bd_net -net mac_ready_1 [get_bd_pins mac_ready] [get_bd_pins ila_0/probe1]
-  connect_bd_net -net vio_0_probe_out0 [get_bd_pins probe_out0] [get_bd_pins vio_0/probe_out0]
+  connect_bd_net -net ACLK_0_1 [get_bd_pins clk_125] [get_bd_pins global_timestamp_0/ap_clk]
+  connect_bd_net -net ARESETN_0_1 [get_bd_pins clk_125_rst_n] [get_bd_pins util_vector_logic_0/Op1]
+  connect_bd_net -net global_timestamp_0_tsc [get_bd_pins tsc] [get_bd_pins global_timestamp_0/tsc]
+  connect_bd_net -net util_vector_logic_0_Res [get_bd_pins global_timestamp_0/ap_rst] [get_bd_pins util_vector_logic_0/Res]
 
   # Restore current instance
   current_bd_instance $oldCurInst
@@ -1408,6 +1314,10 @@ proc create_hier_cell_Debug { parentCell nameHier } {
 
 
   # Create interface ports
+  set C0_SYS_CLK_0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 C0_SYS_CLK_0 ]
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {300000000} \
+   ] $C0_SYS_CLK_0
   set ddr4_sdram_c1 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 ddr4_sdram_c1 ]
   set from_net [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 from_net ]
   set_property -dict [ list \
@@ -1434,12 +1344,6 @@ proc create_hier_cell_Debug { parentCell nameHier } {
    CONFIG.FREQ_HZ {125000000} \
  ] $clk_125
   set clk_125_rst_n [ create_bd_port -dir I -type rst clk_125_rst_n ]
-  set clk_300 [ create_bd_port -dir I -type clk clk_300 ]
-  set_property -dict [ list \
-   CONFIG.ASSOCIATED_RESET {clk_300_rst_n} \
-   CONFIG.FREQ_HZ {300000000} \
- ] $clk_300
-  set clk_300_rst_n [ create_bd_port -dir I -type rst clk_300_rst_n ]
   set from_net_clk_390 [ create_bd_port -dir I -type clk from_net_clk_390 ]
   set_property -dict [ list \
    CONFIG.ASSOCIATED_BUSIF {from_net} \
@@ -1461,56 +1365,102 @@ proc create_hier_cell_Debug { parentCell nameHier } {
  ] $to_net_clk_390
   set to_net_clk_390_rst_n [ create_bd_port -dir I -type rst to_net_clk_390_rst_n ]
 
-  # Create instance: Debug
-  create_hier_cell_Debug [current_bd_instance .] Debug
-
-  # Create instance: Top_App_RDM
-  create_hier_cell_Top_App_RDM [current_bd_instance .] Top_App_RDM
-
-  # Create instance: Top_Memory
-  create_hier_cell_Top_Memory [current_bd_instance .] Top_Memory
+  # Create instance: Global_TSC
+  create_hier_cell_Global_TSC [current_bd_instance .] Global_TSC
 
   # Create instance: Top_Network
   create_hier_cell_Top_Network [current_bd_instance .] Top_Network
 
+  # Create instance: app_rdma_test_0, and set properties
+  set app_rdma_test_0 [ create_bd_cell -type ip -vlnv wuklab:hls:app_rdma_test:1.0 app_rdma_test_0 ]
+  set_property -dict [ list \
+   CONFIG.C_M_AXI_DRAM_DATA_WIDTH {32} \
+ ] $app_rdma_test_0
+
+  # Create instance: app_rdma_wrapper
+  create_hier_cell_app_rdma_wrapper [current_bd_instance .] app_rdma_wrapper
+
+  # Create instance: axi_interconnect_0, and set properties
+  set axi_interconnect_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_interconnect_0 ]
+  set_property -dict [ list \
+   CONFIG.NUM_MI {1} \
+   CONFIG.NUM_SI {3} \
+ ] $axi_interconnect_0
+
+  # Create instance: ila_0, and set properties
+  set ila_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:ila:6.2 ila_0 ]
+  set_property -dict [ list \
+   CONFIG.C_ENABLE_ILA_AXI_MON {false} \
+   CONFIG.C_MONITOR_TYPE {Native} \
+   CONFIG.C_NUM_OF_PROBES {9} \
+   CONFIG.C_PROBE2_WIDTH {64} \
+   CONFIG.C_PROBE4_WIDTH {64} \
+   CONFIG.C_PROBE5_WIDTH {64} \
+   CONFIG.C_PROBE6_WIDTH {64} \
+   CONFIG.C_PROBE7_WIDTH {64} \
+   CONFIG.C_PROBE8_WIDTH {32} \
+ ] $ila_0
+
+  # Create instance: ila_1, and set properties
+  set ila_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:ila:6.2 ila_1 ]
+
+  # Create instance: jtag_axi_0, and set properties
+  set jtag_axi_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:jtag_axi:1.2 jtag_axi_0 ]
+
+  # Create instance: mc_ddr4_wrapper
+  create_hier_cell_mc_ddr4_wrapper [current_bd_instance .] mc_ddr4_wrapper
+
+  # Create instance: vio_0, and set properties
+  set vio_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:vio:3.0 vio_0 ]
+  set_property -dict [ list \
+   CONFIG.C_EN_PROBE_IN_ACTIVITY {0} \
+   CONFIG.C_NUM_PROBE_IN {0} \
+ ] $vio_0
+
   # Create interface connections
+  connect_bd_intf_net -intf_net C0_SYS_CLK_0_1 [get_bd_intf_ports C0_SYS_CLK_0] [get_bd_intf_pins mc_ddr4_wrapper/C0_SYS_CLK_0]
   connect_bd_intf_net -intf_net S00_AXIS_0_1 [get_bd_intf_ports from_net] [get_bd_intf_pins Top_Network/from_net]
-  connect_bd_intf_net -intf_net app_rdma_0_m_axi_MEM [get_bd_intf_pins Top_App_RDM/m_axi_MEM] [get_bd_intf_pins Top_Memory/S00_AXI]
-  connect_bd_intf_net -intf_net app_rdma_0_to_net [get_bd_intf_pins Top_App_RDM/to_net1] [get_bd_intf_pins Top_Network/input_0]
-  connect_bd_intf_net -intf_net app_rdma_test_0_m_axi_dram [get_bd_intf_pins Top_App_RDM/m_axi_dram] [get_bd_intf_pins Top_Memory/S02_AXI]
-  connect_bd_intf_net -intf_net app_rdma_test_0_to_net [get_bd_intf_pins Top_App_RDM/to_net] [get_bd_intf_pins Top_Network/input_1]
+  connect_bd_intf_net -intf_net app_rdma_0_m_axi_MEM [get_bd_intf_pins app_rdma_wrapper/m_axi_MEM] [get_bd_intf_pins axi_interconnect_0/S00_AXI]
+connect_bd_intf_net -intf_net [get_bd_intf_nets app_rdma_0_m_axi_MEM] [get_bd_intf_pins axi_interconnect_0/S00_AXI] [get_bd_intf_pins ila_1/SLOT_0_AXI]
+  connect_bd_intf_net -intf_net app_rdma_0_to_net [get_bd_intf_pins Top_Network/input_0] [get_bd_intf_pins app_rdma_wrapper/to_net]
+  connect_bd_intf_net -intf_net app_rdma_test_0_m_axi_dram [get_bd_intf_pins app_rdma_test_0/m_axi_dram] [get_bd_intf_pins axi_interconnect_0/S02_AXI]
+  connect_bd_intf_net -intf_net app_rdma_test_0_to_net [get_bd_intf_pins Top_Network/input_1] [get_bd_intf_pins app_rdma_test_0/to_net]
+  connect_bd_intf_net -intf_net axi_interconnect_0_M00_AXI [get_bd_intf_pins axi_interconnect_0/M00_AXI] [get_bd_intf_pins mc_ddr4_wrapper/C0_DDR4_S_AXI]
   connect_bd_intf_net -intf_net axis_data_fifo_0_M_AXIS [get_bd_intf_ports to_net] [get_bd_intf_pins Top_Network/to_net]
-  connect_bd_intf_net -intf_net ddr4_0_C0_DDR4 [get_bd_intf_ports ddr4_sdram_c1] [get_bd_intf_pins Top_Memory/ddr4_sdram_c1]
-  connect_bd_intf_net -intf_net jtag_axi_0_M_AXI [get_bd_intf_pins Debug/M_AXI] [get_bd_intf_pins Top_Memory/S01_AXI]
-  connect_bd_intf_net -intf_net sysnet_rx_512_0_output_0 [get_bd_intf_pins Top_App_RDM/from_net1] [get_bd_intf_pins Top_Network/output_0]
-  connect_bd_intf_net -intf_net sysnet_rx_top_output_1 [get_bd_intf_pins Top_App_RDM/from_net] [get_bd_intf_pins Top_Network/output_1]
+  connect_bd_intf_net -intf_net ddr4_0_C0_DDR4 [get_bd_intf_ports ddr4_sdram_c1] [get_bd_intf_pins mc_ddr4_wrapper/ddr4_sdram_c1]
+  connect_bd_intf_net -intf_net jtag_axi_0_M_AXI [get_bd_intf_pins axi_interconnect_0/S01_AXI] [get_bd_intf_pins jtag_axi_0/M_AXI]
+  connect_bd_intf_net -intf_net sysnet_rx_512_0_output_0 [get_bd_intf_pins Top_Network/output_0] [get_bd_intf_pins app_rdma_wrapper/from_net]
+  connect_bd_intf_net -intf_net sysnet_rx_top_output_1 [get_bd_intf_pins Top_Network/output_1] [get_bd_intf_pins app_rdma_test_0/from_net]
 
   # Create port connections
-  connect_bd_net -net ACLK_0_1 [get_bd_ports clk_125] [get_bd_pins Debug/clk_125] [get_bd_pins Top_App_RDM/clk_125] [get_bd_pins Top_Memory/clk_125] [get_bd_pins Top_Network/clk_125]
-  connect_bd_net -net ARESETN_0_1 [get_bd_ports clk_125_rst_n] [get_bd_pins Debug/clk_125_rst_n] [get_bd_pins Top_App_RDM/clk_125_rst_n] [get_bd_pins Top_Memory/clk_125_rst_n] [get_bd_pins Top_Network/clk_125_rst_n]
+  connect_bd_net -net ACLK_0_1 [get_bd_ports clk_125] [get_bd_pins Global_TSC/clk_125] [get_bd_pins Top_Network/clk_125] [get_bd_pins app_rdma_test_0/ap_clk] [get_bd_pins app_rdma_wrapper/clk_125] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axi_interconnect_0/S01_ACLK] [get_bd_pins axi_interconnect_0/S02_ACLK] [get_bd_pins ila_0/clk] [get_bd_pins ila_1/clk] [get_bd_pins jtag_axi_0/aclk] [get_bd_pins vio_0/clk]
+  connect_bd_net -net ARESETN_0_1 [get_bd_ports clk_125_rst_n] [get_bd_pins Global_TSC/clk_125_rst_n] [get_bd_pins Top_Network/clk_125_rst_n] [get_bd_pins app_rdma_test_0/ap_rst_n] [get_bd_pins app_rdma_wrapper/clk_125_rst_n] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axi_interconnect_0/S01_ARESETN] [get_bd_pins axi_interconnect_0/S02_ARESETN] [get_bd_pins ila_0/probe3] [get_bd_pins jtag_axi_0/aresetn]
   connect_bd_net -net S00_AXIS_ACLK_0_1 [get_bd_ports from_net_clk_390] [get_bd_pins Top_Network/from_net_clk_390]
   connect_bd_net -net S00_AXIS_ARESETN_0_1 [get_bd_ports from_net_clk_390_rst_n] [get_bd_pins Top_Network/from_net_clk_390_rst_n]
-  connect_bd_net -net c0_ddr4_aresetn_0_1 [get_bd_ports clk_300_rst_n] [get_bd_pins Top_Memory/clk_300_rst_n]
-  connect_bd_net -net c0_ddr4_ui_clk_rstn [get_bd_pins Debug/probe0] [get_bd_pins Top_Memory/ARESETN]
-  connect_bd_net -net c0_sys_clk_i_0_1 [get_bd_ports clk_300] [get_bd_pins Top_Memory/clk_300]
-  connect_bd_net -net mac_ready_1 [get_bd_ports mac_ready] [get_bd_pins Debug/mac_ready]
-  connect_bd_net -net sys_rst_0_1 [get_bd_ports sys_rst] [get_bd_pins Top_Memory/sys_rst]
+  connect_bd_net -net app_rdma_0_stats_nr_read [get_bd_pins app_rdma_wrapper/stats_nr_read] [get_bd_pins ila_0/probe4]
+  connect_bd_net -net app_rdma_0_stats_nr_write [get_bd_pins app_rdma_wrapper/stats_nr_write] [get_bd_pins ila_0/probe5]
+  connect_bd_net -net app_rdma_test_0_stats_nr_read [get_bd_pins app_rdma_test_0/stats_nr_read] [get_bd_pins ila_0/probe6]
+  connect_bd_net -net app_rdma_test_0_stats_nr_write [get_bd_pins app_rdma_test_0/stats_nr_write] [get_bd_pins ila_0/probe7]
+  connect_bd_net -net app_rdma_test_0_test_state [get_bd_pins app_rdma_test_0/test_state] [get_bd_pins ila_0/probe8]
+  connect_bd_net -net c0_ddr4_ui_clk_rstn [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins ila_0/probe0] [get_bd_pins mc_ddr4_wrapper/c0_ddr4_ui_clk_rstn]
+  connect_bd_net -net global_timestamp_0_tsc [get_bd_pins Global_TSC/tsc] [get_bd_pins app_rdma_test_0/tsc] [get_bd_pins ila_0/probe2]
+  connect_bd_net -net mac_ready_1 [get_bd_ports mac_ready] [get_bd_pins ila_0/probe1]
+  connect_bd_net -net mc_ddr4_0_c0_ddr4_ui_clk [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins mc_ddr4_wrapper/c0_ddr4_ui_clk]
+  connect_bd_net -net sys_rst_0_1 [get_bd_ports sys_rst] [get_bd_pins mc_ddr4_wrapper/sys_rst]
   connect_bd_net -net to_net_clk_390_1 [get_bd_ports to_net_clk_390] [get_bd_pins Top_Network/to_net_clk_390]
   connect_bd_net -net to_net_clk_390_rst_n_1 [get_bd_ports to_net_clk_390_rst_n] [get_bd_pins Top_Network/to_net_clk_390_rst_n]
-  connect_bd_net -net vio_0_probe_out0 [get_bd_pins Debug/probe_out0] [get_bd_pins Top_App_RDM/ap_start]
+  connect_bd_net -net vio_0_probe_out0 [get_bd_pins app_rdma_test_0/ap_start] [get_bd_pins vio_0/probe_out0]
 
   # Create address segments
-  create_bd_addr_seg -range 0x000100000000 -offset 0x00000000 [get_bd_addr_spaces Debug/jtag_axi_0/Data] [get_bd_addr_segs Top_Memory/mc_ddr4_0/C0_DDR4_MEMORY_MAP/C0_DDR4_ADDRESS_BLOCK] SEG_mc_ddr4_0_C0_DDR4_ADDRESS_BLOCK
-  create_bd_addr_seg -range 0x000100000000 -offset 0x00000000 [get_bd_addr_spaces Top_App_RDM/app_rdma_test_0/Data_m_axi_dram] [get_bd_addr_segs Top_Memory/mc_ddr4_0/C0_DDR4_MEMORY_MAP/C0_DDR4_ADDRESS_BLOCK] SEG_mc_ddr4_0_C0_DDR4_ADDRESS_BLOCK
-  create_bd_addr_seg -range 0x000100000000 -offset 0x00000000 [get_bd_addr_spaces Top_App_RDM/app_rdm_top/app_rdma_0/Data_m_axi_MEM] [get_bd_addr_segs Top_Memory/mc_ddr4_0/C0_DDR4_MEMORY_MAP/C0_DDR4_ADDRESS_BLOCK] SEG_mc_ddr4_0_C0_DDR4_ADDRESS_BLOCK
+  create_bd_addr_seg -range 0x000100000000 -offset 0x00000000 [get_bd_addr_spaces app_rdma_test_0/Data_m_axi_dram] [get_bd_addr_segs mc_ddr4_wrapper/mc_ddr4_core/C0_DDR4_MEMORY_MAP/C0_DDR4_ADDRESS_BLOCK] SEG_mc_ddr4_0_C0_DDR4_ADDRESS_BLOCK
+  create_bd_addr_seg -range 0x000100000000 -offset 0x00000000 [get_bd_addr_spaces jtag_axi_0/Data] [get_bd_addr_segs mc_ddr4_wrapper/mc_ddr4_core/C0_DDR4_MEMORY_MAP/C0_DDR4_ADDRESS_BLOCK] SEG_mc_ddr4_0_C0_DDR4_ADDRESS_BLOCK
+  create_bd_addr_seg -range 0x000100000000 -offset 0x00000000 [get_bd_addr_spaces app_rdma_wrapper/app_rdma_0/Data_m_axi_MEM] [get_bd_addr_segs mc_ddr4_wrapper/mc_ddr4_core/C0_DDR4_MEMORY_MAP/C0_DDR4_ADDRESS_BLOCK] SEG_mc_ddr4_0_C0_DDR4_ADDRESS_BLOCK
 
 
   # Restore current instance
   current_bd_instance $oldCurInst
 
   save_bd_design
-common::send_msg_id "BD_TCL-1000" "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
-
   close_bd_design $design_name 
 }
 # End of cr_bd_LegoFPGA_axis64()

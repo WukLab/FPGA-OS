@@ -14,7 +14,7 @@
 set_property PACKAGE_PIN AF38 [get_ports default_sysclk_161_clk_p]
 set_property PACKAGE_PIN AF39 [get_ports default_sysclk_161_clk_n]
 
-create_clock -name default_sysclk_300_clk_p -period 3.333 [get_ports default_sysclk_300_clk_p]
+#create_clock -name default_sysclk_300_clk_p -period 3.333 [get_ports default_sysclk_300_clk_p]
 set_property PACKAGE_PIN G31 [get_ports default_sysclk_300_clk_p]
 set_property PACKAGE_PIN F31 [get_ports default_sysclk_300_clk_n]
 set_property IOSTANDARD DIFF_SSTL12 [get_ports default_sysclk_300_clk_p]

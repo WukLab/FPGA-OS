@@ -281,7 +281,7 @@ module legofpga_mac_qsfp
 
 	assign rx_block_lock_led_0 = block_lock_led_0 & stat_rx_status_0;
 
-	wire an_clk, dclk, clk_100, clk_125, _clk_300, clk_300, clk_locked;
+	wire an_clk, dclk, clk_100, clk_125, clk_locked;
 
 	/* 100MHZ is used in the reference design */
 	assign dclk = clk_100;
@@ -311,23 +311,6 @@ module legofpga_mac_qsfp
 		.clk_locked		(clk_locked)
 	);
 
-	IBUFDS #
-	  (
-	   .IBUF_LOW_PWR ("FALSE")
-	   )
-	  u_ibufg_sys_clk_300
-	    (
-	     .I  (default_sysclk_300_clk_p),
-	     .IB (default_sysclk_300_clk_n),
-	     .O  (_clk_300)
-	     );
-
-	BUFG u__bufg_backbone
-	  (
-	   .O (clk_300),
-	   .I (_clk_300)
-	   );
-
 	/*
 	 * mac_ready indicate the the MAC layer is ready
 	 * to be used by LegoFPGA layer. We got these
@@ -346,7 +329,7 @@ module legofpga_mac_qsfp
 	wire from_net_tready;
 
 	wire from_net_clk_390_rst_n, to_net_clk_390_rst_n;
-	wire clk_300_rst_n, clk_125_rst_n;
+	wire clk_125_rst_n;
 
 	/*
 	 * Those output reset from MAC are already synced to
@@ -361,12 +344,6 @@ module legofpga_mac_qsfp
 		.signal_out          (clk_125_rst_n)
 	);
 
-	user_cdc_sync u_sync_clk_300_rst_N (
-		.clk                 (clk_300),
-		.signal_in           (from_net_clk_390_rst_n),
-		.signal_out          (clk_300_rst_n)
-	);
-
 	LegoFPGA_axis64 u_LegoFPGA (
 		.sys_rst		(sys_reset),
 
@@ -374,8 +351,8 @@ module legofpga_mac_qsfp
 		.clk_125_rst_n		(clk_125_rst_n),
 
 		// For MC
-		.clk_300		(clk_300),
-		.clk_300_rst_n		(clk_300_rst_n),
+		.C0_SYS_CLK_0_clk_n		(default_sysclk_300_clk_n),
+		.C0_SYS_CLK_0_clk_p		(default_sysclk_300_clk_p),
 
 		.mac_ready		(mac_ready),
 
