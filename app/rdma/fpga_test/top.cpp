@@ -138,7 +138,7 @@ void test_read(stream<struct net_axis_512> *from_net, stream<struct net_axis_512
 		}
 	}
 
-#if 1
+#ifndef DISABLE_DRAM_ACCESS
 	for (i = 0; i < NR_DIFF_LENGTH; i++)
 		dram[i] = acc_tsc_read[i];
 #endif
@@ -164,7 +164,7 @@ void test_write(stream<struct net_axis_512> *from_net, stream<struct net_axis_51
 		}
 	}
 
-#if 1
+#ifndef DISABLE_DRAM_ACCESS
 	/* First portion is used by read stats */
 	for (i = 0; i < NR_DIFF_LENGTH; i++)
 		dram[i + NR_DIFF_LENGTH] = acc_tsc_write[i];
@@ -174,7 +174,8 @@ void test_write(stream<struct net_axis_512> *from_net, stream<struct net_axis_51
 void app_rdma_test(hls::stream<struct net_axis_512> *from_net,
 		   hls::stream<struct net_axis_512> *to_net,
 		   unsigned long *dram, volatile unsigned long *tsc,
-		   volatile struct app_rdma_stats *stats)
+		   volatile struct app_rdma_stats *stats,
+		   volatile unsigned int *test_state)
 {
 #pragma HLS INTERFACE ap_ctrl_hs port=return
 #pragma HLS PIPELINE
@@ -184,6 +185,7 @@ void app_rdma_test(hls::stream<struct net_axis_512> *from_net,
 #pragma HLS INTERFACE m_axi depth=256 port=dram offset=off
 #pragma HLS INTERFACE ap_none port=tsc
 #pragma HLS INTERFACE ap_none port=stats
+#pragma HLS INTERFACE ap_none port=test_state
 
 	static bool tested = false;
 	int i;
@@ -221,9 +223,11 @@ void app_rdma_test(hls::stream<struct net_axis_512> *from_net,
 	app_header_write.keep = 0xffffffffffffffff;
 	set_hdr_opcode(&app_header_write, APP_RDMA_OPCODE_WRITE);
 
-	dram[0] = 0x65;
+	*test_state = 1;
 	test_read(from_net, to_net, dram, tsc, stats);
+	*test_state = 2;
 	test_write(from_net, to_net, dram, tsc, stats);
-	dram[0] = 0x66;
+	*test_state = 3;
+
 	tested = true;
 }

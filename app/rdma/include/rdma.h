@@ -12,6 +12,15 @@
 
 #include <fpga/axis_net.h>
 
+/*
+ * This config affects both RDM and RDM_test.
+ * If this option is enabled, DRAM access will be disabled.
+ * This is useful if there is no DRAM tb.
+ */
+#if 0
+# define DISABLE_DRAM_ACCESS
+#endif
+
 enum APP_RDMA_OPCODE {
 	/* Parsed by FPGA side */
 	APP_RDMA_OPCODE_READ,

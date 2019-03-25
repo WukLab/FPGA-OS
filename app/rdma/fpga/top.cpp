@@ -37,8 +37,6 @@ static inline void inc_nr_write(void)
 #define CONFIG_RDMA_LOOPBACK_TEST
 #define RDM_FPGA_TEST_APP_ID	(1)
 
-#define DISABLE_DRAM_ACCESS
-
 static void handle_error(void)
 {
 
@@ -220,8 +218,9 @@ static void handle_write(stream<struct request> *req_s,
 		start_index = req.address / NR_BYTES_AXIS_512;
 		offset = 0;
 
-		if (address % NR_BYTES_AXIS_512 == 0)
+		if (address % NR_BYTES_AXIS_512 == 0) {
 			write_state = WRITE_DATAFLOW;
+		}
 		break;
 	case WRITE_DATAFLOW:
 		if (data_s->empty())
@@ -261,7 +260,7 @@ static void parser(stream<struct net_axis_512> *from_net,
 	static struct request req;
 	static struct net_axis_512 eth_header, app_header;
 
-	char opcode;
+	static char opcode;
 	struct net_axis_512 current;
 	static bool write_req_pushed = false;
 
