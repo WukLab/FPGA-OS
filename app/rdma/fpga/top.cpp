@@ -37,7 +37,7 @@ static inline void inc_nr_write(void)
 #define CONFIG_RDMA_LOOPBACK_TEST
 #define RDM_FPGA_TEST_APP_ID	(1)
 
-//#define DISABLE_DRAM_ACCESS
+#define DISABLE_DRAM_ACCESS
 
 static void handle_error(void)
 {
@@ -65,7 +65,8 @@ enum handle_read_state {
 template <int _unused>
 static void handle_read(stream<struct request> *req_s,
 			stream<struct net_axis_512> *to_net,
-			ap_uint<512> *dram)
+			ap_uint<512> *dram,
+			volatile struct app_rdma_stats *stats)
 {
 #if 1
 #pragma HLS PIPELINE
@@ -84,6 +85,9 @@ static void handle_read(stream<struct request> *req_s,
 		if (req_s->empty())
 			return;
 		req = req_s->read();
+
+		inc_nr_read();
+		stats->nr_read = cached_stats.nr_read;
 
 		length = req.length;
 		address = req.address;
@@ -184,7 +188,8 @@ enum handle_write_state {
  */
 static void handle_write(stream<struct request> *req_s,
 			 stream<struct net_axis_512> *data_s,
-			 ap_uint<512> *dram)
+			 ap_uint<512> *dram,
+			 volatile struct app_rdma_stats *stats)
 {
 #pragma HLS PIPELINE II=1
 #pragma INLINE
@@ -205,6 +210,9 @@ static void handle_write(stream<struct request> *req_s,
 		if (req_s->empty())
 			return;
 		req = req_s->read();
+
+		inc_nr_write();
+		stats->nr_write = cached_stats.nr_write;
 
 		length = req.length;
 		nr_max_units = (length + NR_BYTES_AXIS_512 - 1) / NR_BYTES_AXIS_512;
@@ -283,9 +291,6 @@ static void parser(stream<struct net_axis_512> *from_net,
 		switch (opcode) {
 		case APP_RDMA_OPCODE_READ:
 			if (app_header.last) {
-				inc_nr_read();
-				stats->nr_read = cached_stats.nr_read;
-
 				s_req_read->write(req);
 				app_state = APP_RDMA_ETH_HEADER;
 			} else
@@ -318,8 +323,6 @@ static void parser(stream<struct net_axis_512> *from_net,
 		switch (opcode) {
 		case APP_RDMA_OPCODE_WRITE:
 			if (!write_req_pushed) {
-				inc_nr_write();
-				stats->nr_write = cached_stats.nr_write;
 				s_req_write->write(req);
 
 				write_req_pushed = true;
@@ -380,8 +383,8 @@ void app_rdma(hls::stream<struct net_axis_512> *from_net,
 
 	parser(from_net, &s_req_read, &s_req_write, &s_data_write, stats);
 
-	handle_read<1>(&s_req_read, &s_data_read, dram_in);
-	handle_write(&s_req_write, &s_data_write, dram_out);
+	handle_read<1>(&s_req_read, &s_data_read, dram_in, stats);
+	handle_write(&s_req_write, &s_data_write, dram_out, stats);
 
 	merger(to_net, &s_data_read);
 }
