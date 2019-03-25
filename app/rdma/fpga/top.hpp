@@ -20,7 +20,10 @@ struct request {
 	struct net_axis_512 app_header;
 };
 
+
 void app_rdma(hls::stream<struct net_axis_512> *from_net,
 	      hls::stream<struct net_axis_512> *to_net,
-	      ap_uint<512> *dram_in, ap_uint<512> *dram_out);
+	      ap_uint<512> *dram_in, ap_uint<512> *dram_out,
+	      volatile struct app_rdma_stats *stats);
+
 #endif /* _APP_RDMA_TOP_HPP_ */

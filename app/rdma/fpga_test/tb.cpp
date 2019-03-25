@@ -10,7 +10,8 @@ using namespace hls;
 
 void app_rdma_test(hls::stream<struct net_axis_512> *from_net,
 		   hls::stream<struct net_axis_512> *to_net,
-		   unsigned long *dram, volatile unsigned long *tsc);
+		   unsigned long *dram, volatile unsigned long *tsc,
+		   volatile struct app_rdma_stats *stats);
 
 /*
  * Packet
@@ -29,6 +30,7 @@ int main(void)
 	stream<struct net_axis_512> input, output;
 	volatile unsigned long tsc = 0;
 	bool app_hdr, eth_hdr;
+	struct app_rdma_stats stats;
 
 	dram = (unsigned long *)malloc(10000);
 
@@ -42,7 +44,7 @@ int main(void)
 	}
 
 	j = 0;
-	app_rdma_test(&input, &output, dram, &tsc);
+	app_rdma_test(&input, &output, dram, &tsc, &stats);
 
 	printf("DRAM Contents:\n");
 	for (i = 0; i < 32; i++)

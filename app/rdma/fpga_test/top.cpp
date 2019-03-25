@@ -29,6 +29,20 @@ static unsigned long test_length[NR_DIFF_LENGTH] = {64, 128, 256, 512, 1024, 204
 static unsigned long acc_tsc_read[NR_DIFF_LENGTH];
 static unsigned long acc_tsc_write[NR_DIFF_LENGTH];
 
+static struct app_rdma_stats cached_stats = {0, 0};
+
+static inline void inc_nr_read(void)
+{
+#pragma HLS INLINE
+	cached_stats.nr_read++;
+}
+
+static inline void inc_nr_write(void)
+{
+#pragma HLS INLINE
+	cached_stats.nr_write++;
+}
+
 /*
  * Packet Format
  * 	64B | Eth | IP | UDP | Lego |
@@ -104,8 +118,9 @@ void send_read(stream<struct net_axis_512> *from_net, stream<struct net_axis_512
 	acc_tsc_read[index] += (end_tsc - start_tsc);
 }
 
-void test_send(stream<struct net_axis_512> *from_net, stream<struct net_axis_512> *to_net,
-	       unsigned long *dram, volatile unsigned long *tsc)
+void test_read(stream<struct net_axis_512> *from_net, stream<struct net_axis_512> *to_net,
+	       unsigned long *dram, volatile unsigned long *tsc,
+	       volatile struct app_rdma_stats *stats)
 {
 	unsigned long address, length;
 	int i, j;
@@ -116,16 +131,22 @@ void test_send(stream<struct net_axis_512> *from_net, stream<struct net_axis_512
 		if (test_length[i] == 0)
 			continue;
 
-		for (j = 0; j < NR_ROUNDS; j++)
+		for (j = 0; j < NR_ROUNDS; j++) {
+			inc_nr_read();
+			stats->nr_read = cached_stats.nr_read;
 			send_read(from_net, to_net, address, test_length[i], tsc, i);
+		}
 	}
 
+#if 1
 	for (i = 0; i < NR_DIFF_LENGTH; i++)
-		dram[i] = acc_tsc_read[i] + 1;
+		dram[i] = acc_tsc_read[i];
+#endif
 }
 
 void test_write(stream<struct net_axis_512> *from_net, stream<struct net_axis_512> *to_net,
-		unsigned long *dram, volatile unsigned long *tsc)
+		unsigned long *dram, volatile unsigned long *tsc,
+		volatile struct app_rdma_stats *stats)
 {
 	unsigned long address, length;
 	int i, j;
@@ -136,18 +157,24 @@ void test_write(stream<struct net_axis_512> *from_net, stream<struct net_axis_51
 		if (test_length[i] == 0)
 			continue;
 
-		for (j = 0; j < NR_ROUNDS; j++)
+		for (j = 0; j < NR_ROUNDS; j++) {
+			inc_nr_write();
+			stats->nr_write = cached_stats.nr_write;
 			send_write(from_net, to_net, address, test_length[i], tsc, i);
+		}
 	}
 
+#if 1
 	/* First portion is used by read stats */
 	for (i = 0; i < NR_DIFF_LENGTH; i++)
-		dram[i + NR_DIFF_LENGTH] = acc_tsc_write[i] + 1;
+		dram[i + NR_DIFF_LENGTH] = acc_tsc_write[i];
+#endif
 }
 
 void app_rdma_test(hls::stream<struct net_axis_512> *from_net,
 		   hls::stream<struct net_axis_512> *to_net,
-		   unsigned long *dram, volatile unsigned long *tsc)
+		   unsigned long *dram, volatile unsigned long *tsc,
+		   volatile struct app_rdma_stats *stats)
 {
 #pragma HLS INTERFACE ap_ctrl_hs port=return
 #pragma HLS PIPELINE
@@ -156,14 +183,16 @@ void app_rdma_test(hls::stream<struct net_axis_512> *from_net,
 #pragma HLS INTERFACE axis register both port=to_net
 #pragma HLS INTERFACE m_axi depth=256 port=dram offset=off
 #pragma HLS INTERFACE ap_none port=tsc
+#pragma HLS INTERFACE ap_none port=stats
 
 	static bool tested = false;
 	int i;
 
-	if (tested == true)
+	if (tested == true) {
+		stats->nr_read = cached_stats.nr_read;
+		stats->nr_write = cached_stats.nr_write;
 		return;
-
-	dram[0] = 0x66;
+	}
 
 	for (i = 0; i < NR_DIFF_LENGTH; i++) {
 		acc_tsc_read[i] = 0;
@@ -192,7 +221,9 @@ void app_rdma_test(hls::stream<struct net_axis_512> *from_net,
 	app_header_write.keep = 0xffffffffffffffff;
 	set_hdr_opcode(&app_header_write, APP_RDMA_OPCODE_WRITE);
 
-	test_send(from_net, to_net, dram, tsc);
-	test_write(from_net, to_net, dram, tsc);
+	dram[0] = 0x65;
+	test_read(from_net, to_net, dram, tsc, stats);
+	test_write(from_net, to_net, dram, tsc, stats);
+	dram[0] = 0x66;
 	tested = true;
 }

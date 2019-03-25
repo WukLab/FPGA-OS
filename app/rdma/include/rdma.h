@@ -29,6 +29,11 @@ struct app_rdma_header {
 	unsigned long length;
 } __attribute__((packed));
 
+struct app_rdma_stats {
+	unsigned long nr_read;
+	unsigned long nr_write;
+} __attribute__ ((packed));
+
 static inline char *app_rdma_opcode_to_string(char opcode)
 {
 	switch (opcode) {

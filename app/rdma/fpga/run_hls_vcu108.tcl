@@ -28,7 +28,7 @@ create_clock -period 8 -name default
 set_clock_uncertainty 1.25
 
 # Simulate the C code 
-#csim_design
+csim_design
 
 # Synthesis the C code
 csynth_design

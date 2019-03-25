@@ -16,8 +16,8 @@ using namespace hls;
 
 /* must >= 2 */
 #define NR_UNITS_PER_PKT	(4)
-#define NR_PACKETS		(2)
-#define BUF_SIZE		(256)
+#define NR_PACKETS		(5)
+#define BUF_SIZE		(1024)
 
 int main(void)
 {
@@ -25,6 +25,7 @@ int main(void)
 	int i, j, k;
 	struct net_axis_512 tmp;
 	stream<struct net_axis_512> input, output;
+	struct app_rdma_stats stats = {0, 0};
 
 	dram = (char *)malloc(BUF_SIZE);
 	if (!dram) {
@@ -68,7 +69,7 @@ next_pkt:
 			}
 
 			/* The first packet: WRITE */
-			if (i == 0) {
+			if (i != 1 && i != 2) {
 				/* The first unit is eth/ip/udp/lego header */
 				if (j == 0) {
 					tmp.data(47, 0) = 0xAABBCCDDEEFF;
@@ -76,20 +77,22 @@ next_pkt:
 				/* The second unit is app header */
 				if (j == 1) {
 					tmp.data(7, 0) = APP_RDMA_OPCODE_WRITE;
-					tmp.data(71, 8) = 0;
-					tmp.data(135, 72) = 65;
+					tmp.data(71, 8) = i * 64 *2;
+					tmp.data(135, 72) = 6;
+					printf("write %llu\n", i * 64 *2);
 				}
 			}
 			/* The second packet: READ */
-			if (i == 1) {
+			if (i == 1 || i == 2) {
 				/* The first unit is eth/ip/udp/lego header */
 				if (j == 0) {
 					tmp.data(47, 0) = 0xAABBCCDDEEFF;
 				} else if (j == 1) {
 				/* The second unit is app header */
 					tmp.data(7, 0) = APP_RDMA_OPCODE_READ;
-					tmp.data(71, 8) = 0x0;
+					tmp.data(71, 8) = 0;
 					tmp.data(135, 72) = 64;
+					printf("read %llu\n", i * 64 *2);
 
 					/* Read should only have two units */
 					tmp.last = 1;
@@ -108,8 +111,12 @@ next_pkt:
 		}
 	}
 
+	printf("before stat: %d %d\n", stats.nr_read, stats.nr_write);
 	for (i = 0; i < NR_PACKETS * NR_UNITS_PER_PKT * 100; i++)
-		app_rdma(&input, &output, (ap_uint<512> *)dram, (ap_uint<512> *)dram);
+		app_rdma(&input, &output, (ap_uint<512> *)dram, (ap_uint<512> *)dram,
+			 &stats);
+
+	printf("after stat: %d %d\n", stats.nr_read, stats.nr_write);
 
 	/*
 	 * Verilog results
