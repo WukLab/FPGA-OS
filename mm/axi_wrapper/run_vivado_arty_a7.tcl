@@ -148,10 +148,19 @@ set_property "ip_repo_paths" "[file normalize "$origin_dir/../../generated_ip"]"
 # Rebuild user ip_repo's index before adding any source files
 update_ip_catalog -rebuild
 
+#[file normalize "${origin_dir}/top.v"] 
 # Set 'sources_1' fileset object
+# Translator is a temporary one
 set obj [get_filesets sources_1]
 set files [list \
- [file normalize "${origin_dir}/top.v"] \
+ [file normalize "${origin_dir}/rtl_single_clock/axi_mmu_wrapper_sync.v"] \
+ [file normalize "${origin_dir}/rtl_single_clock/axi_addr_ch_rxs.v"] \
+ [file normalize "${origin_dir}/rtl_single_clock/axi_addr_ch_txs.v"] \
+ [file normalize "${origin_dir}/rtl_single_clock/axi_wdata_chs.v"] \
+ [file normalize "${origin_dir}/rtl_single_clock/axi_rdata_chs.v"] \
+ [file normalize "${origin_dir}/rtl_single_clock/axi_bresp_chs.v"] \
+ [file normalize "${origin_dir}/rtl/synch_fifo.v"]   \
+ [file normalize "${origin_dir}/tb/translator.v"] \
 ]
 add_files -norecurse -fileset $obj $files
 
@@ -192,7 +201,7 @@ if {[string equal [get_filesets -quiet sim_1] ""]} {
 # Set 'sim_1' fileset object
 set obj [get_filesets sim_1]
 set files [list \
- [file normalize "${origin_dir}/tb.v"] \
+ [file normalize "${origin_dir}/tb/sim_tb_top.sv"] \
 ]
 add_files -norecurse -fileset $obj $files
 

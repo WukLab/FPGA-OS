@@ -12,7 +12,7 @@
 
 `timescale 1ns / 1ps
 
-module axi_addr_ch_rx #(
+module axi_addr_ch_rxs #(
     parameter BUF_SZ = 64,
     parameter ADDR_WIDTH = 32,
     parameter ID_WIDTH   = 8,
@@ -41,6 +41,7 @@ module axi_addr_ch_rx #(
     output            [3:0] out_cache,
     output [USER_WIDTH-1:0] out_user,
     output                  out_lock,
+    output                  buf_empty,
     input                   i_buf_rd
 );
 
@@ -53,7 +54,7 @@ wire wr_en, rd_en, empty, full;
 reg  wvalid_d, rvalid_d, i_buf_rd_d;  
 
 assign out_ready  = ~full;
-
+assign buf_empty  = empty;
 
 assign data_in[7:0]                = in_len;
 assign data_in[10:8]               = in_size;
@@ -65,15 +66,15 @@ assign data_in[ID_END-1:21]        = in_id;
 assign data_in[ADDR_END-1:ID_END]  = in_addr;
 assign data_in[BUF_WID-1:ADDR_END] = in_user;
 
-assign out_len   = ~empty ? data_out[7:0]               : out_len  ;
-assign out_size  = ~empty ? data_out[10:8]              : out_size ;
-assign out_burst = ~empty ? data_out[12:11]             : out_burst;
-assign out_prot  = ~empty ? data_out[15:13]             : out_prot ;
-assign out_cache = ~empty ? data_out[19:16]             : out_cache;
-assign out_lock  = ~empty ? data_out[20:20]             : out_lock ;
-assign out_id    = ~empty ? data_out[ID_END-1:21]       : out_id   ;
-assign out_addr  = ~empty ? data_out[ADDR_END-1:ID_END] : out_addr ;
-assign out_user  = ~empty ? data_out[BUF_WID-1:ADDR_END]: out_user ;
+assign out_len   = ~reset_ ?'b0 : ~empty ? data_out[7:0]               : out_len  ;
+assign out_size  = ~reset_ ?'b0 : ~empty ? data_out[10:8]              : out_size ;
+assign out_burst = ~reset_ ?'b0 : ~empty ? data_out[12:11]             : out_burst;
+assign out_prot  = ~reset_ ?'b0 : ~empty ? data_out[15:13]             : out_prot ;
+assign out_cache = ~reset_ ?'b0 : ~empty ? data_out[19:16]             : out_cache;
+assign out_lock  = ~reset_ ?'b0 : ~empty ? data_out[20:20]             : out_lock ;
+assign out_id    = ~reset_ ?'b0 : ~empty ? data_out[ID_END-1:21]       : out_id   ;
+assign out_addr  = ~reset_ ?'b0 : ~empty ? data_out[ADDR_END-1:ID_END] : out_addr ;
+assign out_user  = ~reset_ ?'b0 : ~empty ? data_out[BUF_WID-1:ADDR_END]: out_user ;
 
 assign wr_en = in_valid & out_ready;
 assign rd_en = i_buf_rd  & ~i_buf_rd_d;

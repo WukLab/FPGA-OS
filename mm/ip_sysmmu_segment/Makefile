@@ -1,17 +1,33 @@
-VIVADO = vivado
-VIVADO_PRJ = generated_vivado_project/generated_vivado_project.xpr
+PROJ_DIR      = generated_vivado_project
+TB_DIR        = generated_tb
+PROJ_NAME     = generated_vivado_project.xpr
+VIVADO_PRJ    = $(PROJ_DIR)/$(PROJ_NAME)
+VIVADO_TB_PRJ = $(TB_DIR)/$(PROJ_NAME)
+
+VIVADO        = vivado
 
 ifeq ($(TARGET_BOARD), )
-  TARGET_BOARD = vcu108
+  TARGET_BOARD = arty_a7
 endif
 
-all:
+all: ip testbench 
+.PHONY: all
+
+ip:
 	$(VIVADO) -mode tcl -source run_vivado_$(TARGET_BOARD).tcl
 
 g:
 	$(VIVADO) $(VIVADO_PRJ)
 
+testbench: 
+	$(VIVADO) -mode tcl -source run_vivado_$(TARGET_BOARD)_tb.tcl
+
+gtb:
+	$(VIVADO) $(VIVADO_TB_PRJ)
+
 clean:
+	rm -rf $(PROJ_DIR)
+	rm -rf $(TB_DIR)
 	find ./ -name "generated_ip" | xargs rm -rf
 	find ./ -name "generated_hls_project" | xargs rm -rf
 	find ./ -name "generated_vivado_project" | xargs rm -rf
@@ -19,3 +35,12 @@ clean:
 	find ./ -name "*.jou" | xargs rm -rf
 	find ./ -name "*.str" | xargs rm -rf
 	find ./ -name ".Xil" | xargs rm -rf
+
+help:
+	@echo "Help"
+	@echo "  # make ip        <- make the sys memory management ip with axi wrapper , sys memory management unit"
+	@echo "  # make testbench <- Make a sub-unit testbench projects with axi traffic gen and memory interface and a dram model"
+	@echo "  # make all       <- make both the ip and the testbench"
+	@echo "  # make g         <- Open GUI for the sys mm IP"
+	@echo "  # make gtb       <- Open GUI for the sys mm sub-unit TB"
+

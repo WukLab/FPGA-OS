@@ -1,5 +1,6 @@
-VIVADO = vivado
-VIVADO_PRJ = generated_vivado_project/generated_vivado_project.xpr
+VIVADO         = vivado
+VIVADO_PRJ_DIR = generated_vivado_project
+VIVADO_PRJ     = $(VIVADO_PROJ_DIR)/generated_vivado_project.xpr
 
 ifeq ($(TARGET_BOARD), )
   TARGET_BOARD = arty_a7
@@ -10,3 +11,7 @@ all:
 
 g:
 	$(VIVADO) $(VIVADO_PRJ)
+
+clean:
+	rm -rf $(VIVADO_PRJ_DIR)
+	rm vivado*
