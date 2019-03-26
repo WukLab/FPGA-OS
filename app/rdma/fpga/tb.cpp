@@ -91,7 +91,7 @@ next_pkt:
 				/* The second unit is app header */
 					tmp.data(7, 0) = APP_RDMA_OPCODE_READ;
 					tmp.data(71, 8) = 0;
-					tmp.data(135, 72) = 64;
+					tmp.data(135, 72) = 128;
 					printf("read %llu\n", i * 64 *2);
 
 					/* Read should only have two units */
@@ -111,12 +111,14 @@ next_pkt:
 		}
 	}
 
-	printf("before stat: %d %d\n", stats.nr_read, stats.nr_write);
+	printf("before stat: %d %d %d %d\n", stats.nr_read, stats.nr_write,
+			stats.nr_read_units, stats.nr_write_units);
 	for (i = 0; i < NR_PACKETS * NR_UNITS_PER_PKT * 100; i++)
 		app_rdma(&input, &output, (ap_uint<512> *)dram, (ap_uint<512> *)dram,
 			 &stats);
 
-	printf("after stat: %d %d\n", stats.nr_read, stats.nr_write);
+	printf("after stat: %d %d %d %d\n", stats.nr_read, stats.nr_write,
+			stats.nr_read_units, stats.nr_write_units);
 
 	/*
 	 * Verilog results

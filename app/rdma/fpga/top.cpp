@@ -20,18 +20,34 @@ enum APP_RDMA_STATE {
 	APP_RDMA_APP_DATA,
 };
 
-static struct app_rdma_stats cached_stats = {0, 0};
+static struct app_rdma_stats cached_stats = {0, 0, 0, 0};
 
-static inline void inc_nr_read(void)
+static inline void inc_nr_read(volatile struct app_rdma_stats *stats)
 {
 #pragma HLS INLINE
 	cached_stats.nr_read++;
+	stats->nr_read = cached_stats.nr_read;
 }
 
-static inline void inc_nr_write(void)
+static inline void inc_nr_write(volatile struct app_rdma_stats *stats)
 {
 #pragma HLS INLINE
 	cached_stats.nr_write++;
+	stats->nr_write = cached_stats.nr_write;
+}
+
+static inline void inc_nr_read_units(volatile struct app_rdma_stats *stats)
+{
+#pragma HLS INLINE
+	cached_stats.nr_read_units++;
+	stats->nr_read_units = cached_stats.nr_read_units;
+}
+
+static inline void inc_nr_write_units(volatile struct app_rdma_stats *stats)
+{
+#pragma HLS INLINE
+	cached_stats.nr_write_units++;
+	stats->nr_write_units = cached_stats.nr_write_units;
 }
 
 #define CONFIG_RDMA_LOOPBACK_TEST
@@ -84,8 +100,7 @@ static void handle_read(stream<struct request> *req_s,
 			return;
 		req = req_s->read();
 
-		inc_nr_read();
-		stats->nr_read = cached_stats.nr_read;
+		inc_nr_read(stats);
 
 		length = req.length;
 		address = req.address;
@@ -130,6 +145,8 @@ static void handle_read(stream<struct request> *req_s,
 		tmp.data = offset + 1;
 #endif
 		offset++;
+
+		inc_nr_read_units(stats);
 
 		if (length == NR_BYTES_AXIS_512)
 			tmp.last = 1;
@@ -209,8 +226,7 @@ static void handle_write(stream<struct request> *req_s,
 			return;
 		req = req_s->read();
 
-		inc_nr_write();
-		stats->nr_write = cached_stats.nr_write;
+		inc_nr_write(stats);
 
 		length = req.length;
 		nr_max_units = (length + NR_BYTES_AXIS_512 - 1) / NR_BYTES_AXIS_512;
@@ -230,9 +246,12 @@ static void handle_write(stream<struct request> *req_s,
 		index = start_index + offset;
 
 #ifndef DISABLE_DRAM_ACCESS
-		if (offset < nr_max_units)
+		if (offset < nr_max_units) {
 			dram[index] = data.data;
+		}
 #endif
+		inc_nr_write_units(stats);
+
 		offset++;
 		if (data.last)
 			write_state = WRITE_IDLE;
@@ -368,8 +387,8 @@ void app_rdma(hls::stream<struct net_axis_512> *from_net,
 #pragma HLS INTERFACE axis both port=from_net
 #pragma HLS INTERFACE axis both port=to_net
 #pragma HLS INTERFACE ap_none port=stats
-#pragma HLS INTERFACE m_axi depth=64 port=dram_in offset=direct bundle=MEM
-#pragma HLS INTERFACE m_axi depth=64 port=dram_out offset=direct bundle=MEM
+#pragma HLS INTERFACE m_axi depth=64 port=dram_in  offset=off bundle=DRAM_IN  num_write_outstanding=1 max_write_burst_length=2
+#pragma HLS INTERFACE m_axi depth=64 port=dram_out offset=off bundle=DRAM_OUT num_read_outstanding=1 max_read_burst_length=2
 
 	static stream<struct request> s_req_read("s_req_read");
 	static stream<struct request> s_req_write("s_req_write");
