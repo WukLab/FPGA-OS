@@ -193,7 +193,10 @@ module legofpga_mac_qsfp
 	wire [2:0] txoutclksel_in_0;
 	wire [2:0] rxoutclksel_in_0;
 
-	/* AN/LT Stats Signals */
+	wire dclk, clk_100, clk_125, clk_locked;
+
+/*
+	// AN/LT Stats Signals
 	wire [1:0] stat_an_link_cntl_1000base_kx_0;
 	wire [1:0] stat_an_link_cntl_10gbase_kx4_0;
 	wire [1:0] stat_an_link_cntl_10gbase_kr_0;
@@ -260,13 +263,16 @@ module legofpga_mac_qsfp
 	wire [1:0] stat_lt_stat0_from_rx0_0;
 	wire [1:0] stat_lt_stat_m1_from_rx0_0;
 
-	/* AN/LT control */
 	wire [47:0]	an_loc_np_data_0 = 'b0;
 	wire [47:0]	an_lp_np_data_0;
 	wire		lt_tx_sof_0;
 
 	wire		ctl_an_loc_np_0;
 	wire		ctl_an_lp_np_ack_0;
+
+	wire		an_clk;
+	assign		an_clk = dclk;
+*/
 
 	assign txoutclksel_in_0 = 3'b101;    // this value should not be changed as per gtwizard 
 	assign rxoutclksel_in_0 = 3'b101;    // this value should not be changed as per gtwizard
@@ -281,11 +287,8 @@ module legofpga_mac_qsfp
 
 	assign rx_block_lock_led_0 = block_lock_led_0 & stat_rx_status_0;
 
-	wire an_clk, dclk, clk_100, clk_125, clk_locked;
-
 	/* 100MHZ is used in the reference design */
 	assign dclk = clk_100;
-	assign an_clk = dclk;
 
 	wire _sys_reset, sys_reset;
 	assign _sys_reset = ~clk_locked;
@@ -392,21 +395,23 @@ module legofpga_mac_qsfp
 		.ddr4_sdram_c1_reset_n	(ddr4_sdram_c1_reset_n)
 	);
 
-	/*
-	 * ANLT module can be validated on board by peer to peer connection,
-	 * it cannot be tested in loopback mode.
-	 *
-	 * For simulation ANLT congfiguration is tested bypassing the ANLT
-	 * funtionality by making the ctl_autoneg_bypass = 1'b1
-	 */
+/*
+	//
+	// ANLT module can be validated on board by peer to peer connection,
+	// it cannot be tested in loopback mode.
+	//
+	// For simulation ANLT congfiguration is tested bypassing the ANLT
+	// funtionality by making the ctl_autoneg_bypass = 1'b1
+	//
 	assign ctl_an_loc_np_0		= 1'b0;
 	assign ctl_an_lp_np_ack_0	= 1'b1; // For simulation this will be 0, board testing change it to 1
+*/
 
 	/*
 	 * This is a block diagram, which only has the xxv IP.
 	 * The BD is created from Board IP list.
 	 */
-	mac_qsfp u_mac_qsfp (
+	mac_qsfp_wrapper u_mac_qsfp (
 		.gt_serial_port_0_grx_p	(gt_rxp_in),
 		.gt_serial_port_0_grx_n	(gt_rxn_in),
 		.gt_serial_port_0_gtx_p	(gt_txp_out),
@@ -486,14 +491,15 @@ module legofpga_mac_qsfp
 		.txoutclksel_in_0			(txoutclksel_in_0),
 		.rxoutclksel_in_0			(rxoutclksel_in_0),
 
-		/* AN/LT (input) */
+/*
+		// AN/LT (input)
 		.an_clk					(an_clk),
 		.an_reset_0				(sys_reset),
 		.ctl_an_loc_np_0			(ctl_an_loc_np_0),
 		.ctl_an_lp_np_ack_0			(ctl_an_lp_np_ack_0),
 		.an_loc_np_data_0			(an_loc_np_data_0),
 
-		/* AN/LT (output) */
+		// AN/LT (output)
 		.lt_tx_sof_0				(lt_tx_sof_0),
 		.stat_an_start_an_good_check_0		(stat_an_start_an_good_check_0),
 		.AN_LT_an_lp_np_data			(an_lp_np_data_0),
@@ -561,6 +567,7 @@ module legofpga_mac_qsfp
 		.AN_LT_stat_lt_stat_p1_from_rx0		(stat_lt_stat_p1_from_rx0_0),
 		.AN_LT_stat_lt_stat0_from_rx0		(stat_lt_stat0_from_rx0_0),
 		.AN_LT_stat_lt_stat_m1_from_rx0		(stat_lt_stat_m1_from_rx0_0),
+*/
 
 		.stat_rx_stat_rx_block_lock		(stat_rx_block_lock_0),
 		.stat_rx_stat_rx_framing_err_valid	(stat_rx_framing_err_valid_0),
