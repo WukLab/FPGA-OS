@@ -75,11 +75,7 @@ set_property -dict [list \
 	CONFIG.Reset_Type {Asynchronous_Reset} \
 	CONFIG.Full_Flags_Reset_Value {0} \
 	CONFIG.Use_Dout_Reset {false} \
-	CONFIG.Data_Count_Width {4} \
-	CONFIG.Write_Data_Count_Width {4} \
-	CONFIG.Read_Data_Count_Width {4} \
-	CONFIG.Full_Threshold_Assert_Value {13} \
-	CONFIG.Full_Threshold_Negate_Value {12}] [get_ips singleSignalCDC]
+	] [get_ips singleSignalCDC]
 generate_target {instantiation_template} [get_files singleSignalCDC.xci]
 
 create_ip -name fifo_generator -vendor xilinx.com -library ip -module_name memMgmt_async_fifo
@@ -92,13 +88,7 @@ set_property -dict [list \
 	CONFIG.Output_Depth {16} \
 	CONFIG.Reset_Type {Asynchronous_Reset} \
 	CONFIG.Full_Flags_Reset_Value {1} \
-	CONFIG.Data_Count_Width {4} \
-	CONFIG.Write_Data_Count_Width {4} \
-	CONFIG.Read_Data_Count_Width {4} \
-	CONFIG.Full_Threshold_Assert_Value {15} \
-	CONFIG.Full_Threshold_Negate_Value {14} \
-	CONFIG.Empty_Threshold_Assert_Value {4} \
-	CONFIG.Empty_Threshold_Negate_Value {5}] [get_ips memMgmt_async_fifo]
+	] [get_ips memMgmt_async_fifo]
 generate_target {instantiation_template} [get_files memMgmt_async_fifo.xci]
 
 create_ip -name ten_gig_eth_pcs_pma -vendor xilinx.com -library ip -module_name ten_gig_eth_pcs_pma_ip

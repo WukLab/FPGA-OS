@@ -1,4 +1,4 @@
-HLS_PRJ      =generated_hls_project
+HLS_PRJ      = generated_hls_project
 VIV_PRJ_PATH = generated_vivado_project
 VIVADO_PRJ   = generated_vivado_project/memcached_pipeline.xpr
 
@@ -9,17 +9,21 @@ ifeq ($(TARGET_BOARD), )
   TARGET_BOARD = vcu108
 endif
 
-mcd_top: mcd_comp ip
-	$(VIVADO) -mode tcl -source run_vivado_mcd.tcl
+.DEFAULT_GOAL := mcd_top
+
+mcd_top: mcd_comp ip mcd_prj
 .PHONY: mcd_top
+
+mcd_prj:
+	$(VIVADO) -mode tcl -source run_vivado.tcl
 
 ip:
 	$(Q)./generate_hls.sh $(TARGET_BOARD)
 
 mcd_comp:
 	$(VIVADO_HLS) -f run_hls_mcd_$(TARGET_BOARD).tcl
-	$(VIVADO_HLS) -f run_hls.writeConverter.tcl
-	$(VIVADO_HLS) -f run_hls.readConverter.tcl
+	$(VIVADO_HLS) -f run_hls_writeConverter_$(TARGET_BOARD).tcl
+	$(VIVADO_HLS) -f run_hls_readConverter_$(TARGET_BOARD).tcl
 
 dummy:
 	$(VIVADO_HLS) -f run_hls_flash_$(TARGET_BOARD).tcl
@@ -36,6 +40,11 @@ clean:
 	rm -rf $(HLS_PRJ)
 	rm -rf $(VIV_PRJ_PATH)
 	find . -name "*_prj" -type d | xargs rm -rf
+	find . -name "*_project" -type d | xargs rm -rf
+	find . -name "vivado*.jou" -type f | xargs rm -rf
+	find . -name "vivado*.log" -type f | xargs rm -rf
+
+all: mcd_top dummy
 
 help:
 	@echo "Help"

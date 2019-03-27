@@ -90,7 +90,7 @@ done
 #done
 
 # Hardcoded through projects
-GENERATED_HLS_PROJECT="readConverter_prj"
+GENERATED_HLS_PROJECT="readConverter_project"
 HLS_DIR="$PWD"
 
 # Customize: new IP folder prefix
@@ -126,7 +126,7 @@ for ip in "${HLS_IP_CORES[@]}"; do
 done
 
 # Hardcoded through projects
-GENERATED_HLS_PROJECT="writeConverter_prj"
+GENERATED_HLS_PROJECT="writeConverter_project"
 HLS_DIR="$PWD"
 
 # Customize: new IP folder prefix

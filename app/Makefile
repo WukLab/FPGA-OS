@@ -11,3 +11,4 @@ all:
 	$(Q)make -C rdma
 	$(Q)make -C kvs
 	$(Q)make -C timestamp
+	$(Q)make -C memcached
