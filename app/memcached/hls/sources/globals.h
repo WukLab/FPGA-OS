@@ -38,8 +38,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.// Copyright (c) 2015 Xilinx, 
 #include "ap_int.h"
 #include <stdint.h>
 #include <vector>
-#include <fpga/axis_buddy.h>
-#include <fpga/log2.h>
+#include "../../../../include/fpga/axis_buddy.h"
+#include "../../../../include/fpga/log2.h"
 //#include "ap_cint.h"
 
 using namespace hls;
