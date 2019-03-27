@@ -15,12 +15,12 @@ typedef enum {
 	ERROR = 1,
 } RET_STATUS;
 
-#define PID_SHIFT			10	/* pid width */
-#define PA_SHIFT			32	/* address width */
-#define BLOCK_SHIFT			28	/* minimum chunk granularity */
+#define PID_SHIFT		10	/* pid width */
+#define PA_SHIFT		32	/* address width */
+#define BLOCK_SHIFT		32	/* minimum chunk granularity */
 #define BUDDY_MIN_SHIFT		12	/* minimum size of buddy allocator */
 
-#define SIZE(shift)			(1UL << shift)
+#define SIZE(shift)		(1UL << shift)
 #define IDX(addr, shift)	(addr >> shift)
 #define ADDR(idx ,shift)	(idx << shift)
 

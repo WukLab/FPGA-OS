@@ -22,7 +22,7 @@ add_files	buddy.cpp	-cflags "-I../../include"
 add_files -tb	core_tb.cpp	-cflags "-I../../include"
 
 # Specify the top-level function for synthesis
-set_top		core
+set_top		buddy_allocator
 
 ###########################
 # Solution settings
@@ -37,7 +37,7 @@ open_solution -reset solution1
 #
 set_part {xcvu095-ffva2104-2-e}
 create_clock -period 8 -name default
-config_rtl  -encoding onehot -reset control  -reset_level high  -vivado_impl_strategy default -vivado_phys_opt place -vivado_synth_design_args {-directive sdx_optimization_effort_high} -vivado_synth_strategy default
+config_rtl -encoding onehot -reset all -reset_level high -reset_async -vivado_impl_strategy default -vivado_phys_opt place -vivado_synth_design_args {-directive sdx_optimization_effort_high} -vivado_synth_strategy default
 set_clock_uncertainty 1.25
 
 # Simulate the C code 

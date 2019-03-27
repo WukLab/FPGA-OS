@@ -7,9 +7,55 @@
 #include <bitset>
 #include <vector>
 #include <utility>
+#include <fpga/log2.h>
 
 #define TEST_MACRO 0
-#define TEST_PRINT 1
+#define TEST_PRINT 0
+
+static void test_log2()
+{
+#if TEST_MACRO
+	bool success=true;
+	ap_uint<8> result1;
+	ap_uint<16> result2;
+	ap_uint<32> result3;
+	ap_uint<64> result4;
+	ap_uint<128> result5;
+	ap_uint<128> result6;
+
+	std::cout << "\nTesting log2 helper function with different width" << std::endl;
+
+	for (int i = 0; i < 127; i++) {
+		result1 = order_base_2<8>(i);
+		result2 = order_base_2<16>(i);
+		result3 = order_base_2<32>(i);
+		result4 = order_base_2<64>(i);
+		result5 = order_base_2<128>(i);
+		result6 = order_base_2<256>(i);
+#if TEST_PRINT
+		std::cout << result1 << std::endl;
+		std::cout << result2 << std::endl;
+		std::cout << result3 << std::endl;
+		std::cout << result4 << std::endl;
+		std::cout << result5 << std::endl;
+		std::cout << result6 << std::endl;
+#endif
+		if (result1 == result2 && result1 == result3 &&
+			result1 == result4 && result1 == result5 &&
+			result1 == result6)
+			continue;
+		else
+			success=false;
+	}
+#if !TEST_PRINT
+	std::cout << "Detail Print is suppressed, enable TEST_PRINT for more info" << std::endl;
+#endif
+	if (success)
+		std::cout << "SUCCESS!!!" << std::endl;
+	else
+		std::cout << "ERROR!!!!!" << std::endl;
+#endif
+}
 
 static void order_to_sth()
 {
@@ -257,9 +303,6 @@ static void test_cache_set_operation()
 	ret = Buddy::tag_in_cache(*set1, (ap_uint<3>(3), ap_uint<ORDER_MAX-3>(0)), &nr_asso);
 	success &= (true == ret) && (3 == nr_asso);
 
-	result = Buddy::grandchildren_in_cache(*set1);
-	success &= (result == 0x1F);
-
 	if (success)
 		std::cout << "SUCCESS!!!" << std::endl;
 	else
@@ -271,9 +314,8 @@ static int core_test(OPCODE opcode, ap_uint<PA_SHIFT> addr, ap_uint<ORDER_MAX> o
 {
 	axis_buddy_alloc alloc;
 	axis_buddy_alloc_ret alloc_ret;
-	buddy_alloc_if req;
-	buddy_alloc_ret_if ret;
-	RET_STATUS stat;
+	buddy_alloc_if req = {BUDDY_ALLOC, 0, 0};
+	buddy_alloc_ret_if ret = {0,0};
 
 	req.opcode = opcode;
 	req.order = order;
@@ -287,9 +329,9 @@ static int core_test(OPCODE opcode, ap_uint<PA_SHIFT> addr, ap_uint<ORDER_MAX> o
 	std::cout << "Address:" << std::hex << std::setw(10) << addr
 			<< " Order:" << std::setw(ORDER_MAX) << order << std::endl;
 
-	core(alloc, &alloc_ret, dram, &stat);
+	buddy_allocator(alloc, alloc_ret, dram);
 
-	if (req.opcode == BUDDY_ALLOC && stat == SUCCESS) {
+	if (req.opcode == BUDDY_ALLOC) {
 		ret = alloc_ret.read();
 		*ret_addr = (unsigned long)ret.addr;
 	} else {
@@ -305,12 +347,12 @@ static int core_test(OPCODE opcode, ap_uint<PA_SHIFT> addr, ap_uint<ORDER_MAX> o
 #endif
 	std::cout << " " << std::bitset<BUDDY_MIN_SHIFT>(ret.addr(BUDDY_MIN_SHIFT-1, 0));
 
-	return stat ? -1 : 0;
+	return ret.stat ? -1 : 0;
 }
 
 static int print_result(int real, int expect)
 {
-	std::cout << " RET: " << std::setw(2) << real
+	std::cout << std::dec << " RET: " << std::setw(2) << real
 			  << " EXPT: " << std::setw(2) << expect;
 	if (real == expect) {
 		std::cout << "  SUCCESS!!" << std::endl;
@@ -330,6 +372,7 @@ int main()
 	std::vector< std::pair<unsigned long, int> > vectors, vectors2;
 
 	// helper function test
+	test_log2();
 	order_to_sth();
 	tag_addr_idx_translate();
 	tag_to_drambuddy();
