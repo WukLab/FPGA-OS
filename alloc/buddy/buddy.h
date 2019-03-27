@@ -45,7 +45,7 @@ class Buddy
 public:
 	Buddy();
 	~Buddy();
-	void handler(axis_buddy_alloc& alloc, axis_buddy_alloc_ret* alloc_ret, char* dram, RET_STATUS* stat);
+	void handler(axis_buddy_alloc& alloc, axis_buddy_alloc_ret& alloc_ret, char* dram);
 
 private:
 	unsigned long dram_addr;
@@ -55,6 +55,8 @@ private:
 	RET_STATUS alloc(ap_uint<ORDER_MAX> order, ap_uint<PA_SHIFT>* addr, char* dram);
 	RET_STATUS free(ap_uint<ORDER_MAX> order, ap_uint<PA_SHIFT> addr, char* dram);
 
+	void flush_line(BuddyCacheSet& set, ap_uint<LEVEL_MAX> level,
+			ap_uint<BUDDY_SET_TYPE> nr_asso, char* dram);
 	bool flush_set(BuddyCacheSet& set, ap_uint<LEVEL_MAX> level, ap_uint<3> flush_idx, char* dram);
 	void flush_children(BuddyCacheSet& set, ap_uint<BUDDY_SET_TYPE> which, char* dram);
 	bool choose_line(BuddyCacheSet& set, ap_uint<BUDDY_SET_TYPE>* nr_asso);
@@ -100,7 +102,5 @@ public:
 	 */
 	void dump_buddy_table();
 };
-
-void core(axis_buddy_alloc& alloc, axis_buddy_alloc_ret* alloc_ret, char* dram, RET_STATUS* stat);
 
 #endif /* _BUDDY_H_ */

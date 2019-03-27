@@ -22,7 +22,7 @@ struct buddy_alloc {
 	 * for certain opcode, see below for detail:
 	 *
 	 * opcode: ALLOC or FREE
-	 * addr:   address used for free, 
+	 * addr:   address used for free,
 	 *         if opcode is ALLOC, this field is useless
 	 * order:  size of request with order of 2, this field is available for
 	 * 	   both ALLOC and FREE, partial free is not allowed
@@ -38,8 +38,10 @@ struct buddy_alloc_ret {
 	 * buddy allocator return address, the return is only
 	 * meaningful for ALLOC request.
 	 *
+	 * stat: status of return
 	 * addr: address assigned, useless when request is FREE
 	 */
+	ap_uint<1>		stat;
 	ap_uint<ADDR_WIDTH>	addr;
 };
 
@@ -48,5 +50,7 @@ typedef struct buddy_alloc_ret<PA_SHIFT>	buddy_alloc_ret_if;
 
 typedef hls::stream<buddy_alloc_if>		axis_buddy_alloc;
 typedef hls::stream<buddy_alloc_ret_if>		axis_buddy_alloc_ret;
+
+void buddy_allocator(axis_buddy_alloc& alloc, axis_buddy_alloc_ret& alloc_ret, char* dram);
 
 #endif /* _LEGO_FPGA_AXIS_SYSMMU_ALLOC_ */

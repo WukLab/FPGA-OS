@@ -17,15 +17,16 @@ typedef enum {
 	BUDDY_FREE = 1,
 } OPCODE;
 
-#define BUDDY_SET_ORDER			4
+#define BUDDY_SET_ORDER			1
 #define BUDDY_SET_TYPE			(BUDDY_SET_ORDER + 1)
 #define BUDDY_SET_SIZE			(1 << BUDDY_SET_ORDER)
 
-#define ORDER_MAX				(BLOCK_SHIFT - BUDDY_MIN_SHIFT)
+#define ORDER_MAX			(BLOCK_SHIFT - BUDDY_MIN_SHIFT)
 #define ORDER_PAD_BITS			((ORDER_MAX % 3) ? (3 - ORDER_MAX % 3) : 0)
 #define ORDER_MAX_PAD			(ORDER_MAX + ORDER_PAD_BITS)
-#define LEVEL_MAX				(ORDER_MAX_PAD / 3)
-#define SMALL_ORDER_IDX(order)	((ORDER_MAX - order - 9) / 3)
+#define LEVEL_MAX			(ORDER_MAX_PAD / 3)
+#define SMALL_ORDER_IDX(order)		((ORDER_MAX - order - 9) / 3)
+#define LENGTH_TO_ORDER(len)		(len >> BUDDY_MIN_SHIFT)
 
 /*
  * some define for simulation use
