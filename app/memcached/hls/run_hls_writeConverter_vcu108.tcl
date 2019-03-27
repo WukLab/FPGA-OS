@@ -1,4 +1,4 @@
-open_project writeConverter_project
+open_project generated_writeConverter_project
 
 set_top writeConverter
 

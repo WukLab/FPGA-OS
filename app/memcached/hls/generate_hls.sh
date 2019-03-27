@@ -27,7 +27,7 @@ HLS_IP_CORES=hls
 GENERATED_IP_FOLDER="${HLS_DIR}/../../../generated_ip"
 
 # Customize: new IP folder prefix
-PREFIX=mcd_core_pipeline
+PREFIX=app_mcd_core_pipeline
 
 # Check if the shared IP repo exists
 if [ ! -d "$GENERATED_IP_FOLDER" ]; then
@@ -90,11 +90,11 @@ done
 #done
 
 # Hardcoded through projects
-GENERATED_HLS_PROJECT="readConverter_project"
+GENERATED_HLS_PROJECT="generated_readConverter_project"
 HLS_DIR="$PWD"
 
 # Customize: new IP folder prefix
-PREFIX=mcd_rdConverter
+PREFIX=app_mcd_rdConverter
 
 # Check if the shared IP repo exists
 if [ ! -d "$GENERATED_IP_FOLDER" ]; then
@@ -126,11 +126,11 @@ for ip in "${HLS_IP_CORES[@]}"; do
 done
 
 # Hardcoded through projects
-GENERATED_HLS_PROJECT="writeConverter_project"
+GENERATED_HLS_PROJECT="generated_writeConverter_project"
 HLS_DIR="$PWD"
 
 # Customize: new IP folder prefix
-PREFIX=mcd_wrConverter
+PREFIX=app_mcd_wrConverter
 
 # Check if the shared IP repo exists
 if [ ! -d "$GENERATED_IP_FOLDER" ]; then

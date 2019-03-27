@@ -39,6 +39,8 @@ g_prj:
 clean:
 	rm -rf $(HLS_PRJ)
 	rm -rf $(VIV_PRJ_PATH)
+	rm -rf generated_readConverter_project/
+	rm -rf generated_writeConverter_project/
 	find . -name "*_prj" -type d | xargs rm -rf
 	find . -name "*_project" -type d | xargs rm -rf
 	find . -name "vivado*.jou" -type f | xargs rm -rf

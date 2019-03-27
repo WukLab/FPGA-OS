@@ -1,4 +1,4 @@
-open_project readConverter_project
+open_project generated_readConverter_project
 
 set_top readConverter
 
