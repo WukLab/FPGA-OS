@@ -1675,8 +1675,8 @@ proc create_hier_cell_Global_TSC { parentCell nameHier } {
   connect_bd_intf_net -intf_net net_output_1 [get_bd_intf_pins rdm/S_AXIS1] [get_bd_intf_pins sysnet/output_1]
 
   # Create port connections
-  connect_bd_net -net ACLK_0_1 [get_bd_ports clk_125] [get_bd_pins Global_TSC/clk_125] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axi_interconnect_0/S01_ACLK] [get_bd_pins axi_interconnect_0/S02_ACLK] [get_bd_pins axi_interconnect_0/S03_ACLK] [get_bd_pins ila_0/clk] [get_bd_pins jtag_axi_0/aclk] [get_bd_pins rdm/clk_125] [get_bd_pins sysnet/clk_125]
-  connect_bd_net -net ARESETN_0_1 [get_bd_ports clk_125_rst_n] [get_bd_pins Global_TSC/clk_125_rst_n] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axi_interconnect_0/S01_ARESETN] [get_bd_pins axi_interconnect_0/S02_ARESETN] [get_bd_pins axi_interconnect_0/S03_ARESETN] [get_bd_pins ila_0/probe3] [get_bd_pins jtag_axi_0/aresetn] [get_bd_pins rdm/clk_125_rst_n] [get_bd_pins sysnet/clk_125_rst_n]
+  connect_bd_net -net ACLK_0_1 [get_bd_ports clk_125] [get_bd_pins Global_TSC/clk_125] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axi_interconnect_0/S01_ACLK] [get_bd_pins axi_interconnect_0/S02_ACLK] [get_bd_pins axi_interconnect_0/S03_ACLK] [get_bd_pins ila_0/clk] [get_bd_pins jtag_axi_0/aclk] [get_bd_pins rdm/clk_125] [get_bd_pins sysnet/clk_125]
+  connect_bd_net -net ARESETN_0_1 [get_bd_ports clk_125_rst_n] [get_bd_pins Global_TSC/clk_125_rst_n] [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axi_interconnect_0/S01_ARESETN] [get_bd_pins axi_interconnect_0/S02_ARESETN] [get_bd_pins axi_interconnect_0/S03_ARESETN] [get_bd_pins ila_0/probe3] [get_bd_pins jtag_axi_0/aresetn] [get_bd_pins rdm/clk_125_rst_n] [get_bd_pins sysnet/clk_125_rst_n]
   connect_bd_net -net S00_AXIS_ACLK_0_1 [get_bd_ports from_net_clk_390] [get_bd_pins sysnet/from_net_clk_390]
   connect_bd_net -net S00_AXIS_ARESETN_0_1 [get_bd_ports from_net_clk_390_rst_n] [get_bd_pins sysnet/from_net_clk_390_rst_n]
   connect_bd_net -net app_rdma_0_stats_nr_read [get_bd_pins ila_0/probe4] [get_bd_pins rdm/stats_nr_read]
@@ -1686,10 +1686,10 @@ proc create_hier_cell_Global_TSC { parentCell nameHier } {
   connect_bd_net -net app_rdma_test_0_stats_nr_read [get_bd_pins ila_0/probe6] [get_bd_pins rdm/stats_nr_read1]
   connect_bd_net -net app_rdma_test_0_stats_nr_write [get_bd_pins ila_0/probe7] [get_bd_pins rdm/stats_nr_write1]
   connect_bd_net -net app_rdma_test_0_test_state [get_bd_pins ila_0/probe8] [get_bd_pins rdm/test_state]
-  connect_bd_net -net c0_ddr4_ui_clk_rstn [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins ila_0/probe0] [get_bd_pins mc_ddr4_wrapper/c0_ddr4_ui_clk_rstn]
+  connect_bd_net -net c0_ddr4_ui_clk_rstn [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins ila_0/probe0] [get_bd_pins mc_ddr4_wrapper/c0_ddr4_ui_clk_rstn]
   connect_bd_net -net global_timestamp_0_tsc [get_bd_pins Global_TSC/tsc] [get_bd_pins ila_0/probe2] [get_bd_pins rdm/tsc]
   connect_bd_net -net mac_ready_1 [get_bd_ports mac_ready] [get_bd_pins ila_0/probe1] [get_bd_pins rdm/mac_ready]
-  connect_bd_net -net mc_ddr4_0_c0_ddr4_ui_clk [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins mc_ddr4_wrapper/c0_ddr4_ui_clk]
+  connect_bd_net -net mc_ddr4_0_c0_ddr4_ui_clk [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins mc_ddr4_wrapper/c0_ddr4_ui_clk]
   connect_bd_net -net sys_rst_0_1 [get_bd_ports sys_rst] [get_bd_pins mc_ddr4_wrapper/sys_rst]
   connect_bd_net -net to_net_clk_390_1 [get_bd_ports to_net_clk_390] [get_bd_pins sysnet/to_net_clk_390]
   connect_bd_net -net to_net_clk_390_rst_n_1 [get_bd_ports to_net_clk_390_rst_n] [get_bd_pins sysnet/to_net_clk_390_rst_n]
@@ -1705,6 +1705,7 @@ proc create_hier_cell_Global_TSC { parentCell nameHier } {
   current_bd_instance $oldCurInst
 
   save_bd_design
+
   close_bd_design $design_name 
 }
 # End of cr_bd_LegoFPGA_axis64()
@@ -1901,6 +1902,7 @@ proc cr_bd_mac_qsfp { parentCell } {
   set xxv_ethernet_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xxv_ethernet:2.4 xxv_ethernet_0 ]
   set_property -dict [ list \
    CONFIG.DIFFCLK_BOARD_INTERFACE {qsfp_mgt_si570_clock2} \
+   CONFIG.ENABLE_PIPELINE_REG {1} \
    CONFIG.ETHERNET_BOARD_INTERFACE {qsfp_1x} \
    CONFIG.INCLUDE_AUTO_NEG_LT_LOGIC {None} \
    CONFIG.USE_BOARD_FLOW {true} \
@@ -1950,6 +1952,7 @@ proc cr_bd_mac_qsfp { parentCell } {
   current_bd_instance $oldCurInst
 
   save_bd_design
+
   close_bd_design $design_name 
 }
 # End of cr_bd_mac_qsfp()
