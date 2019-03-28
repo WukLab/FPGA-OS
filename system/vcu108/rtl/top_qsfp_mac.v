@@ -411,7 +411,7 @@ module legofpga_mac_qsfp
 	 * This is a block diagram, which only has the xxv IP.
 	 * The BD is created from Board IP list.
 	 */
-	mac_qsfp_wrapper u_mac_qsfp (
+	mac_qsfp u_mac_qsfp (
 		.gt_serial_port_0_grx_p	(gt_rxp_in),
 		.gt_serial_port_0_grx_n	(gt_rxn_in),
 		.gt_serial_port_0_gtx_p	(gt_txp_out),

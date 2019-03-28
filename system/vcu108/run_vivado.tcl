@@ -275,6 +275,291 @@ set obj [get_filesets sim_2]
 # Create Block Diagrams
 #
 
+# Proc to create BD LegoFPGA_axis64_KVS
+proc cr_bd_LegoFPGA_axis64_KVS { parentCell } {
+
+  # CHANGE DESIGN NAME HERE
+  set design_name LegoFPGA_axis64_KVS
+
+  common::send_msg_id "BD_TCL-003" "INFO" "Currently there is no design <$design_name> in project, so creating one..."
+
+  create_bd_design $design_name
+
+  set bCheckIPsPassed 1
+  ##################################################################
+  # CHECK IPs
+  ##################################################################
+  set bCheckIPs 1
+  if { $bCheckIPs == 1 } {
+     set list_check_ips "\ 
+  xilinx.com:ip:axis_data_fifo:1.1\
+  xilinx.com:ip:jtag_axi:1.2\
+  wuklab:user:memcachedPipeline_top:1.0\
+  xilinx.com:ip:ddr4:2.2\
+  xilinx.com:ip:util_vector_logic:2.0\
+  "
+
+   set list_ips_missing ""
+   common::send_msg_id "BD_TCL-006" "INFO" "Checking if the following IPs exist in the project's IP catalog: $list_check_ips ."
+
+   foreach ip_vlnv $list_check_ips {
+      set ip_obj [get_ipdefs -all $ip_vlnv]
+      if { $ip_obj eq "" } {
+         lappend list_ips_missing $ip_vlnv
+      }
+   }
+
+   if { $list_ips_missing ne "" } {
+      catch {common::send_msg_id "BD_TCL-115" "ERROR" "The following IPs are not found in the IP Catalog:\n  $list_ips_missing\n\nResolution: Please add the repository containing the IP(s) to the project." }
+      set bCheckIPsPassed 0
+   }
+
+  }
+
+  if { $bCheckIPsPassed != 1 } {
+    common::send_msg_id "BD_TCL-1003" "WARNING" "Will not continue with creation of design due to the error(s) above."
+    return 3
+  }
+
+  
+# Hierarchical cell: mc_ddr4_wrapper
+proc create_hier_cell_mc_ddr4_wrapper { parentCell nameHier } {
+
+  variable script_folder
+
+  if { $parentCell eq "" || $nameHier eq "" } {
+     catch {common::send_msg_id "BD_TCL-102" "ERROR" "create_hier_cell_mc_ddr4_wrapper() - Empty argument(s)!"}
+     return
+  }
+
+  # Get object for parentCell
+  set parentObj [get_bd_cells $parentCell]
+  if { $parentObj == "" } {
+     catch {common::send_msg_id "BD_TCL-100" "ERROR" "Unable to find parent cell <$parentCell>!"}
+     return
+  }
+
+  # Make sure parentObj is hier blk
+  set parentType [get_property TYPE $parentObj]
+  if { $parentType ne "hier" } {
+     catch {common::send_msg_id "BD_TCL-101" "ERROR" "Parent <$parentObj> has TYPE = <$parentType>. Expected to be <hier>."}
+     return
+  }
+
+  # Save current instance; Restore later
+  set oldCurInst [current_bd_instance .]
+
+  # Set parent object as current
+  current_bd_instance $parentObj
+
+  # Create cell and set as current instance
+  set hier_obj [create_bd_cell -type hier $nameHier]
+  current_bd_instance $hier_obj
+
+  # Create interface pins
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 C0_DDR4_S_AXI
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 C0_SYS_CLK_0
+  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 ddr4_sdram_c1
+
+  # Create pins
+  create_bd_pin -dir O -type clk c0_ddr4_ui_clk
+  create_bd_pin -dir O -from 0 -to 0 -type rst c0_ddr4_ui_clk_rstn
+  create_bd_pin -dir I -type rst sys_rst
+
+  # Create instance: mc_ddr4_core, and set properties
+  set mc_ddr4_core [ create_bd_cell -type ip -vlnv xilinx.com:ip:ddr4:2.2 mc_ddr4_core ]
+  set_property -dict [ list \
+   CONFIG.C0_CLOCK_BOARD_INTERFACE {default_sysclk1_300} \
+   CONFIG.C0_DDR4_BOARD_INTERFACE {ddr4_sdram_c1} \
+   CONFIG.System_Clock {Differential} \
+ ] $mc_ddr4_core
+
+  # Create instance: util_vector_logic_0, and set properties
+  set util_vector_logic_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_0 ]
+  set_property -dict [ list \
+   CONFIG.C_OPERATION {not} \
+   CONFIG.C_SIZE {1} \
+   CONFIG.LOGO_FILE {data/sym_notgate.png} \
+ ] $util_vector_logic_0
+
+  # Create interface connections
+  connect_bd_intf_net -intf_net C0_SYS_CLK_0_1 [get_bd_intf_pins C0_SYS_CLK_0] [get_bd_intf_pins mc_ddr4_core/C0_SYS_CLK]
+  connect_bd_intf_net -intf_net axi_interconnect_0_M00_AXI [get_bd_intf_pins C0_DDR4_S_AXI] [get_bd_intf_pins mc_ddr4_core/C0_DDR4_S_AXI]
+  connect_bd_intf_net -intf_net ddr4_0_C0_DDR4 [get_bd_intf_pins ddr4_sdram_c1] [get_bd_intf_pins mc_ddr4_core/C0_DDR4]
+
+  # Create port connections
+  connect_bd_net -net c0_ddr4_ui_clk_rstn [get_bd_pins c0_ddr4_ui_clk_rstn] [get_bd_pins mc_ddr4_core/c0_ddr4_aresetn] [get_bd_pins util_vector_logic_0/Res]
+  connect_bd_net -net c0_ddr4_ui_clk_rstn_1 [get_bd_pins mc_ddr4_core/c0_ddr4_ui_clk_sync_rst] [get_bd_pins util_vector_logic_0/Op1]
+  connect_bd_net -net mc_ddr4_0_c0_ddr4_ui_clk [get_bd_pins c0_ddr4_ui_clk] [get_bd_pins mc_ddr4_core/c0_ddr4_ui_clk]
+  connect_bd_net -net sys_rst_0_1 [get_bd_pins sys_rst] [get_bd_pins mc_ddr4_core/sys_rst]
+
+  # Restore current instance
+  current_bd_instance $oldCurInst
+}
+  variable script_folder
+
+  if { $parentCell eq "" } {
+     set parentCell [get_bd_cells /]
+  }
+
+  # Get object for parentCell
+  set parentObj [get_bd_cells $parentCell]
+  if { $parentObj == "" } {
+     catch {common::send_msg_id "BD_TCL-100" "ERROR" "Unable to find parent cell <$parentCell>!"}
+     return
+  }
+
+  # Make sure parentObj is hier blk
+  set parentType [get_property TYPE $parentObj]
+  if { $parentType ne "hier" } {
+     catch {common::send_msg_id "BD_TCL-101" "ERROR" "Parent <$parentObj> has TYPE = <$parentType>. Expected to be <hier>."}
+     return
+  }
+
+  # Save current instance; Restore later
+  set oldCurInst [current_bd_instance .]
+
+  # Set parent object as current
+  current_bd_instance $parentObj
+
+
+  # Create interface ports
+  set C0_SYS_CLK_0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 C0_SYS_CLK_0 ]
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {300000000} \
+   ] $C0_SYS_CLK_0
+  set ddr4_sdram_c1 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 ddr4_sdram_c1 ]
+  set from_net [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 from_net ]
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {390000000} \
+   CONFIG.HAS_TKEEP {1} \
+   CONFIG.HAS_TLAST {1} \
+   CONFIG.HAS_TREADY {1} \
+   CONFIG.HAS_TSTRB {0} \
+   CONFIG.LAYERED_METADATA {undef} \
+   CONFIG.TDATA_NUM_BYTES {8} \
+   CONFIG.TDEST_WIDTH {0} \
+   CONFIG.TID_WIDTH {0} \
+   CONFIG.TUSER_WIDTH {64} \
+   ] $from_net
+  set to_net [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 to_net ]
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {390000000} \
+   ] $to_net
+
+  # Create ports
+  set clk_125 [ create_bd_port -dir I -type clk clk_125 ]
+  set_property -dict [ list \
+   CONFIG.ASSOCIATED_RESET {clk_125_rst_n} \
+   CONFIG.FREQ_HZ {125000000} \
+ ] $clk_125
+  set clk_125_rst_n [ create_bd_port -dir I -type rst clk_125_rst_n ]
+  set from_net_clk_390 [ create_bd_port -dir I -type clk from_net_clk_390 ]
+  set_property -dict [ list \
+   CONFIG.ASSOCIATED_BUSIF {from_net} \
+   CONFIG.ASSOCIATED_RESET {from_net_clk_390_rst_n} \
+   CONFIG.FREQ_HZ {390000000} \
+ ] $from_net_clk_390
+  set from_net_clk_390_rst_n [ create_bd_port -dir I -type rst from_net_clk_390_rst_n ]
+  set mac_ready [ create_bd_port -dir I -from 0 -to 0 -type data mac_ready ]
+  set_property -dict [ list \
+   CONFIG.LAYERED_METADATA {xilinx.com:interface:datatypes:1.0 {DATA {datatype {name {attribs {resolve_type immediate dependency {} format string minimum {} maximum {}} value {}} bitwidth {attribs {resolve_type immediate dependency {} format long minimum {} maximum {}} value 1} bitoffset {attribs {resolve_type immediate dependency {} format long minimum {} maximum {}} value 0} integer {signed {attribs {resolve_type immediate dependency {} format bool minimum {} maximum {}} value false}}}}}} \
+ ] $mac_ready
+  set sys_rst [ create_bd_port -dir I -type rst sys_rst ]
+  set_property -dict [ list \
+   CONFIG.POLARITY {ACTIVE_HIGH} \
+ ] $sys_rst
+  set to_net_clk_390 [ create_bd_port -dir I -type clk to_net_clk_390 ]
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {390000000} \
+ ] $to_net_clk_390
+  set to_net_clk_390_rst_n [ create_bd_port -dir I -type rst to_net_clk_390_rst_n ]
+
+  # Create instance: axi_interconnect_0, and set properties
+  set axi_interconnect_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_interconnect_0 ]
+  set_property -dict [ list \
+   CONFIG.ENABLE_ADVANCED_OPTIONS {1} \
+   CONFIG.M00_HAS_DATA_FIFO {1} \
+   CONFIG.M00_HAS_REGSLICE {3} \
+   CONFIG.NUM_MI {1} \
+   CONFIG.NUM_SI {2} \
+   CONFIG.S00_HAS_DATA_FIFO {2} \
+   CONFIG.S00_HAS_REGSLICE {3} \
+   CONFIG.S01_HAS_DATA_FIFO {2} \
+   CONFIG.S01_HAS_REGSLICE {3} \
+   CONFIG.S02_HAS_DATA_FIFO {2} \
+   CONFIG.S02_HAS_REGSLICE {3} \
+   CONFIG.S03_HAS_DATA_FIFO {2} \
+   CONFIG.S03_HAS_REGSLICE {3} \
+   CONFIG.STRATEGY {2} \
+   CONFIG.SYNCHRONIZATION_STAGES {3} \
+ ] $axi_interconnect_0
+
+  # Create instance: axis_data_fifo_0, and set properties
+  set axis_data_fifo_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_data_fifo:1.1 axis_data_fifo_0 ]
+  set_property -dict [ list \
+   CONFIG.FIFO_DEPTH {4096} \
+   CONFIG.IS_ACLK_ASYNC {1} \
+   CONFIG.SYNCHRONIZATION_STAGES {3} \
+ ] $axis_data_fifo_0
+
+  # Create instance: axis_data_fifo_1, and set properties
+  set axis_data_fifo_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_data_fifo:1.1 axis_data_fifo_1 ]
+  set_property -dict [ list \
+   CONFIG.FIFO_DEPTH {4096} \
+   CONFIG.IS_ACLK_ASYNC {1} \
+   CONFIG.SYNCHRONIZATION_STAGES {3} \
+ ] $axis_data_fifo_1
+
+  # Create instance: jtag_axi_0, and set properties
+  set jtag_axi_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:jtag_axi:1.2 jtag_axi_0 ]
+
+  # Create instance: mc_ddr4_wrapper
+  create_hier_cell_mc_ddr4_wrapper [current_bd_instance .] mc_ddr4_wrapper
+
+  # Create instance: memcachedPipeline_top_0, and set properties
+  set memcachedPipeline_top_0 [ create_bd_cell -type ip -vlnv wuklab:user:memcachedPipeline_top:1.0 memcachedPipeline_top_0 ]
+
+  # Create interface connections
+  connect_bd_intf_net -intf_net C0_SYS_CLK_0_1 [get_bd_intf_ports C0_SYS_CLK_0] [get_bd_intf_pins mc_ddr4_wrapper/C0_SYS_CLK_0]
+  connect_bd_intf_net -intf_net axi_interconnect_0_M00_AXI [get_bd_intf_pins axi_interconnect_0/M00_AXI] [get_bd_intf_pins mc_ddr4_wrapper/C0_DDR4_S_AXI]
+  connect_bd_intf_net -intf_net axis_data_fifo_0_M_AXIS1 [get_bd_intf_pins axis_data_fifo_0/M_AXIS] [get_bd_intf_pins memcachedPipeline_top_0/from_net]
+  connect_bd_intf_net -intf_net axis_data_fifo_1_M_AXIS [get_bd_intf_ports to_net] [get_bd_intf_pins axis_data_fifo_1/M_AXIS]
+  connect_bd_intf_net -intf_net ddr4_0_C0_DDR4 [get_bd_intf_ports ddr4_sdram_c1] [get_bd_intf_pins mc_ddr4_wrapper/ddr4_sdram_c1]
+  connect_bd_intf_net -intf_net from_net_1 [get_bd_intf_ports from_net] [get_bd_intf_pins axis_data_fifo_0/S_AXIS]
+  connect_bd_intf_net -intf_net jtag_axi_0_M_AXI [get_bd_intf_pins axi_interconnect_0/S00_AXI] [get_bd_intf_pins jtag_axi_0/M_AXI]
+  connect_bd_intf_net -intf_net memcachedPipeline_top_0_toDRAM [get_bd_intf_pins axi_interconnect_0/S01_AXI] [get_bd_intf_pins memcachedPipeline_top_0/toDRAM]
+  connect_bd_intf_net -intf_net memcachedPipeline_top_0_to_net [get_bd_intf_pins axis_data_fifo_1/S_AXIS] [get_bd_intf_pins memcachedPipeline_top_0/to_net]
+
+  # Create port connections
+  connect_bd_net -net ACLK_0_1 [get_bd_ports clk_125] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axi_interconnect_0/S01_ACLK] [get_bd_pins axis_data_fifo_0/m_axis_aclk] [get_bd_pins axis_data_fifo_1/s_axis_aclk] [get_bd_pins jtag_axi_0/aclk] [get_bd_pins memcachedPipeline_top_0/apclk] [get_bd_pins memcachedPipeline_top_0/mem_clk]
+  connect_bd_net -net ARESETN_0_1 [get_bd_ports clk_125_rst_n] [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axi_interconnect_0/S01_ARESETN] [get_bd_pins axis_data_fifo_0/m_axis_aresetn] [get_bd_pins axis_data_fifo_1/s_axis_aresetn] [get_bd_pins jtag_axi_0/aresetn] [get_bd_pins memcachedPipeline_top_0/apresetn] [get_bd_pins memcachedPipeline_top_0/mem_resetn]
+  connect_bd_net -net S00_AXIS_ACLK_0_1 [get_bd_ports from_net_clk_390] [get_bd_pins axis_data_fifo_0/s_axis_aclk]
+  connect_bd_net -net S00_AXIS_ARESETN_0_1 [get_bd_ports from_net_clk_390_rst_n] [get_bd_pins axis_data_fifo_0/s_axis_aresetn]
+  connect_bd_net -net c0_ddr4_ui_clk_rstn [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins mc_ddr4_wrapper/c0_ddr4_ui_clk_rstn]
+  connect_bd_net -net mc_ddr4_0_c0_ddr4_ui_clk [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins mc_ddr4_wrapper/c0_ddr4_ui_clk]
+  connect_bd_net -net sys_rst_0_1 [get_bd_ports sys_rst] [get_bd_pins mc_ddr4_wrapper/sys_rst]
+  connect_bd_net -net to_net_clk_390_1 [get_bd_ports to_net_clk_390] [get_bd_pins axis_data_fifo_1/m_axis_aclk]
+  connect_bd_net -net to_net_clk_390_rst_n_1 [get_bd_ports to_net_clk_390_rst_n] [get_bd_pins axis_data_fifo_1/m_axis_aresetn]
+
+  # Create address segments
+  create_bd_addr_seg -range 0x000100000000 -offset 0x00000000 [get_bd_addr_spaces jtag_axi_0/Data] [get_bd_addr_segs mc_ddr4_wrapper/mc_ddr4_core/C0_DDR4_MEMORY_MAP/C0_DDR4_ADDRESS_BLOCK] SEG_mc_ddr4_0_C0_DDR4_ADDRESS_BLOCK
+  create_bd_addr_seg -range 0x000100000000 -offset 0x00000000 [get_bd_addr_spaces memcachedPipeline_top_0/toDRAM] [get_bd_addr_segs mc_ddr4_wrapper/mc_ddr4_core/C0_DDR4_MEMORY_MAP/C0_DDR4_ADDRESS_BLOCK] SEG_mc_ddr4_core_C0_DDR4_ADDRESS_BLOCK
+
+
+  # Restore current instance
+  current_bd_instance $oldCurInst
+
+  save_bd_design
+  close_bd_design $design_name 
+}
+# End of cr_bd_LegoFPGA_axis64_KVS()
+cr_bd_LegoFPGA_axis64_KVS ""
+set_property IS_MANAGED "0" [get_files LegoFPGA_axis64_KVS.bd ] 
+set_property REGISTERED_WITH_MANAGER "1" [get_files LegoFPGA_axis64_KVS.bd ] 
+set_property SYNTH_CHECKPOINT_MODE "Hierarchical" [get_files LegoFPGA_axis64_KVS.bd ] 
+
+
 # Proc to create BD LegoFPGA_axis8
 proc cr_bd_LegoFPGA_axis8 { parentCell } {
 
