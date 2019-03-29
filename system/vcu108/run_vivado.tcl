@@ -232,7 +232,7 @@ if {[string equal [get_filesets -quiet sim_1] ""]} {
 set obj [get_filesets sim_1]
 # Import local files from the original project
 set files [list \
- [file normalize "${origin_dir}/tb/top_qsfp_mac_ddr4_tb.v"] \
+ [file normalize "${origin_dir}/tb/top_qsfp_mac_tb.v"] \
  [file normalize "${origin_dir}/tb/ddr4_model/MemoryArray.sv"] \
  [file normalize "${origin_dir}/tb/ddr4_model/StateTableCore.sv"] \
  [file normalize "${origin_dir}/tb/ddr4_model/StateTable.sv"] \
@@ -315,7 +315,7 @@ set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
 
 # Set 'sim_1' fileset properties
 set obj [get_filesets sim_1]
-set_property -name "top" -value "legofpga_mac_qsfp_ddr4_tb" -objects $obj
+set_property -name "top" -value "legofpga_mac_qsfp_tb" -objects $obj
 set_property -name "top_auto_set" -value "0" -objects $obj
 set_property -name "top_lib" -value "xil_defaultlib" -objects $obj
 
