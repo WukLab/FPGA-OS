@@ -102,6 +102,8 @@ set_property -name "ip_output_repo" -value "$proj_dir/${_xil_proj_name_}.cache/i
 set_property -name "mem.enable_memory_map_generation" -value "1" -objects $obj
 set_property -name "sim.central_dir" -value "$proj_dir/${_xil_proj_name_}.ip_user_files" -objects $obj
 set_property -name "sim.ip.auto_export_scripts" -value "1" -objects $obj
+set_property -name "sim.ipstatic.use_precompiled_libs" -value "0" -objects $obj
+set_property -name "sim.use_ip_compiled_libs" -value "0" -objects $obj
 set_property -name "simulator_language" -value "Mixed" -objects $obj
 set_property -name "webtalk.activehdl_export_sim" -value "6" -objects $obj
 set_property -name "webtalk.ies_export_sim" -value "6" -objects $obj
@@ -161,7 +163,7 @@ set_property -name "registered_with_manager" -value "1" -objects $file_obj
 
 # Set 'sources_1' fileset properties
 set obj [get_filesets sources_1]
-set_property -name "top" -value "top" -objects $obj
+set_property -name "top" -value "legofpga_mac_qsfp" -objects $obj
 set_property -name "top_auto_set" -value "0" -objects $obj
 
 #
@@ -230,13 +232,90 @@ if {[string equal [get_filesets -quiet sim_1] ""]} {
 set obj [get_filesets sim_1]
 # Import local files from the original project
 set files [list \
- [file normalize "${origin_dir}/tb/top_qsfp_mac_tb.v" ]\
+ [file normalize "${origin_dir}/tb/top_qsfp_mac_ddr4_tb.v"] \
+ [file normalize "${origin_dir}/tb/ddr4_model/MemoryArray.sv"] \
+ [file normalize "${origin_dir}/tb/ddr4_model/StateTableCore.sv"] \
+ [file normalize "${origin_dir}/tb/ddr4_model/StateTable.sv"] \
+ [file normalize "${origin_dir}/tb/ddr4_model/arch_defines.v"] \
+ [file normalize "${origin_dir}/tb/ddr4_model/arch_package.sv"] \
+ [file normalize "${origin_dir}/tb/ddr4_model/ddr4_sdram_model_wrapper.sv"] \
+ [file normalize "${origin_dir}/tb/ddr4_model/proj_package.sv"] \
+ [file normalize "${origin_dir}/tb/ddr4_model/timing_tasks.sv"] \
+ [file normalize "${origin_dir}/tb/ddr4_model/ddr4_model.sv"] \
+ [file normalize "${origin_dir}/tb/ddr4_model/ddr4_tb_top.sv"] \
+ [file normalize "${origin_dir}/tb/ddr4_model/interface.sv"] \
+ [file normalize "${origin_dir}/tb/ddr4_model/glbl.v"] \
+ [file normalize "${origin_dir}/tb/ddr4_model/temp_mem.txt"] \
+ [file normalize "${origin_dir}/tb/ddr4_model/temp_second_mem.txt"] \
+ [file normalize "${origin_dir}/tb/ddr4_model/microblaze_mcs_0.sv"] \
 ]
 add_files -norecurse -fileset $obj $files
 
+# Set 'sim_1' fileset file properties for remote files
+set file "$origin_dir/tb/ddr4_model/MemoryArray.sv"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sim_1] [list "*$file"]]
+set_property -name "file_type" -value "Verilog Header" -objects $file_obj
+
+set file "$origin_dir/tb/ddr4_model/StateTableCore.sv"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sim_1] [list "*$file"]]
+set_property -name "file_type" -value "Verilog Header" -objects $file_obj
+
+set file "$origin_dir/tb/ddr4_model/StateTable.sv"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sim_1] [list "*$file"]]
+set_property -name "file_type" -value "Verilog Header" -objects $file_obj
+
+set file "$origin_dir/tb/ddr4_model/arch_defines.v"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sim_1] [list "*$file"]]
+set_property -name "file_type" -value "Verilog Header" -objects $file_obj
+
+set file "$origin_dir/tb/ddr4_model/arch_package.sv"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sim_1] [list "*$file"]]
+set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
+
+set file "$origin_dir/tb/ddr4_model/ddr4_sdram_model_wrapper.sv"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sim_1] [list "*$file"]]
+set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
+
+set file "$origin_dir/tb/ddr4_model/proj_package.sv"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sim_1] [list "*$file"]]
+set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
+
+set file "$origin_dir/tb/ddr4_model/timing_tasks.sv"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sim_1] [list "*$file"]]
+set_property -name "file_type" -value "Verilog Header" -objects $file_obj
+
+set file "$origin_dir/tb/ddr4_model/ddr4_model.sv"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sim_1] [list "*$file"]]
+set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
+
+set file "$origin_dir/tb/ddr4_model/ddr4_tb_top.sv"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sim_1] [list "*$file"]]
+set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
+
+set file "$origin_dir/tb/ddr4_model/interface.sv"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sim_1] [list "*$file"]]
+set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
+
+set file "$origin_dir/tb/ddr4_model/microblaze_mcs_0.sv"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sim_1] [list "*$file"]]
+set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
+
+
 # Set 'sim_1' fileset properties
 set obj [get_filesets sim_1]
-set_property -name "top" -value "legofpga_mac_qsfp_tb" -objects $obj
+set_property -name "top" -value "legofpga_mac_qsfp_ddr4_tb" -objects $obj
 set_property -name "top_auto_set" -value "0" -objects $obj
 set_property -name "top_lib" -value "xil_defaultlib" -objects $obj
 
