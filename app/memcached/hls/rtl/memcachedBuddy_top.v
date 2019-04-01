@@ -163,7 +163,7 @@ wire        axi2dram_buddy_wready;
 wire [63:0] axi2dram_buddy_wstrb;
 wire        axi2dram_buddy_wvalid;
 
-memcached_pipeline u_mcd_buddy(
+memcached_pipeline_wrapper u_mcd_buddy(
      .MCD_AXI2DRAM_RD_C0_araddr     (axi2dram_ht_araddr),
      .MCD_AXI2DRAM_RD_C0_arburst    (axi2dram_ht_arburst),
      .MCD_AXI2DRAM_RD_C0_arcache    (axi2dram_ht_arcache),
@@ -248,7 +248,7 @@ memcached_pipeline u_mcd_buddy(
      .toNet_tvalid                  (to_net_tvalid)
 );
 
-axi_interconnect u_ht_vs_interconnect(
+axi_interconnect_wrapper u_ht_vs_interconnect(
  .APCLK_0            (apclk),
  .ARESETN_0          (apresetn),
  .M00_AXI_0_araddr   (toDRAM_araddr),

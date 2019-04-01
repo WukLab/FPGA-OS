@@ -436,8 +436,8 @@ set_property SYNTH_CHECKPOINT_MODE "Hierarchical" [get_files axi_interconnect.bd
 ##################################################################
 # Make wrappers so that these IPs can be treated as black boxes 
 ##################################################################
-#make_wrapper -files [get_files ${origin_dir}/generated_vivado_buddy_project/memcached_pipeline.srcs/sources_1/bd/axi_interconnect/axi_interconnect.bd] -top
-#add_files -norecurse ${origin_dir}/generated_vivado_buddy_project/memcached_pipeline.srcs/sources_1/bd/axi_interconnect/hdl/axi_interconnect_wrapper.v
+make_wrapper -files [get_files ${origin_dir}/generated_vivado_buddy_project/memcached_buddy.srcs/sources_1/bd/axi_interconnect/axi_interconnect.bd] -top
+add_files -norecurse ${origin_dir}/generated_vivado_buddy_project/memcached_buddy.srcs/sources_1/bd/axi_interconnect/hdl/axi_interconnect_wrapper.v
 
 # Proc to create BD memcached_pipeline
 proc cr_bd_memcached_pipeline { parentCell } {
@@ -778,8 +778,8 @@ set_property SYNTH_CHECKPOINT_MODE "Hierarchical" [get_files memcached_pipeline.
 ##################################################################
 # Make wrappers so that these IPs can be treated as black boxes 
 ##################################################################
-#make_wrapper -files [get_files ${origin_dir}/generated_vivado_buddy_project/memcached_pipeline.srcs/sources_1/bd/memcached_pipeline/memcached_pipeline.bd] -top
-#add_files -norecurse ${origin_dir}/generated_vivado_buddy_project/memcached_pipeline.srcs/sources_1/bd/memcached_pipeline/hdl/memcached_pipeline_wrapper.v
+make_wrapper -files [get_files ${origin_dir}/generated_vivado_buddy_project/memcached_buddy.srcs/sources_1/bd/memcached_pipeline/memcached_pipeline.bd] -top
+add_files -norecurse ${origin_dir}/generated_vivado_buddy_project/memcached_buddy.srcs/sources_1/bd/memcached_pipeline/hdl/memcached_pipeline_wrapper.v
 
 # Create 'synth_1' run (if not found)
 if {[string equal [get_runs -quiet synth_1] ""]} {
