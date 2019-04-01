@@ -11,6 +11,7 @@
 #define _LEGO_FPGA_AXIS_SYSMMU_ALLOC_
 
 #include "sysmmu_type.h"
+#include <fpga/axis_sysmmu_ctrl.h>
 
 template <int PID_WIDTH, int ADDR_WIDTH>
 struct sysmmu_alloc {
@@ -50,5 +51,9 @@ typedef struct sysmmu_alloc_ret<PA_SHIFT>		sysmmu_alloc_ret_if;
 
 typedef hls::stream<sysmmu_alloc_if>			axis_sysmmu_alloc;
 typedef hls::stream<sysmmu_alloc_ret_if>		axis_sysmmu_alloc_ret;
+
+
+void chunk_alloc(axis_sysmmu_alloc& alloc, axis_sysmmu_alloc_ret& alloc_ret, axis_sysmmu_ctrl& ctrl,
+		RET_STATUS& ctrl_ret, RET_STATUS* stat);
 
 #endif /* _LEGO_FPGA_AXIS_SYSMMU_ALLOC_ */

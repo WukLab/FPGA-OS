@@ -31,8 +31,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.// Copyright (c) 2015 Xilinx, 
 
 void memWriteWithBuddy(stream<hashTableInternalWord> &comp2memWrKey, stream<internalMdWord> &comp2memWrMd, stream<comp2decWord> &comp2memWrKeyStatus, stream<ap_uint<512> > &comp2memWrMemData,
 			  stream<memCtrlWord> &memWrCtrl, stream<ap_uint<512> > &memWrData, stream<decideResultWord> &memWr2out, stream<ap_uint<1> > &memWr2cc,
-			  axis_buddy_alloc& alloc, axis_buddy_alloc_ret& alloc_ret,
-			  ap_uint<1> &flushReq, ap_uint<1> flushAck, ap_uint<1> &flushDone) {
+			  axis_buddy_alloc& alloc, axis_buddy_alloc_ret& alloc_ret) {
 	#pragma HLS INLINE off
 	#pragma HLS pipeline II=1 enable_flush
 
@@ -49,8 +48,6 @@ void memWriteWithBuddy(stream<hashTableInternalWord> &comp2memWrKey, stream<inte
 	static ap_uint<8>					memWr_keyLength				= 0;
 	static ap_uint<16>					memWr_valueLength			= 0;
 	static enum							mwState {MW_IDLE = 0, MW_EVAL, MW_SET_REST, MW_CONSUME, MW_BUDDY_WAIT, MW_FLUSH_WAIT, MW_FLUSH, MW_FLUSH_CONSUME_KEY, MW_INIT_MEM} memWrState;
-	static ap_uint<1>					memWr_flushReq 				= 0;
-	static ap_uint<1>					memWr_flushDone				= 0;
 	static bool							memWr_memInitialized		= false;
 	/* --- START Buddy Allocator --- */
 	static buddy_alloc_if					buddy_req				= {BUDDY_ALLOC, 0, 0};
@@ -69,6 +66,7 @@ void memWriteWithBuddy(stream<hashTableInternalWord> &comp2memWrKey, stream<inte
 					memWriteAddress = 0;
 					comp2memWrKeyStatus.read(htMemWriteInputStatusWord);
 					comp2memWrMd.read(htMemWriteInputWordMd);
+#if 0
 					if (htMemWriteInputWordMd.operation == 8) {
 						memWrState = MW_FLUSH_WAIT;
 						//outputWord.operation = htMemWriteInputWordMd.operation;
@@ -77,6 +75,7 @@ void memWriteWithBuddy(stream<hashTableInternalWord> &comp2memWrKey, stream<inte
 						memWr_flushDone	= 0; // Set the Flush Request signal and wait for acknowledgement from the host
 					}
 					else
+#endif
 						memWrState = MW_EVAL;
 				}
 			}
@@ -131,14 +130,7 @@ void memWriteWithBuddy(stream<hashTableInternalWord> &comp2memWrKey, stream<inte
 							memWr_replaceLocation = i-1;
 						}
 					}
-					/* --- START Buddy Allocator --- */
-					if (!replace) {
-						buddy_req.opcode = BUDDY_ALLOC;
-						buddy_req.addr = 0;
-						buddy_req.order = order_base_2<16>(LENGTH_TO_ORDER(memWr_valueLength));
-						alloc.write(buddy_req);
-					}
-					/* --- END Buddy Allocator --- */
+
 					if ((found == false && replace == false)) {
 					//	|| (htMemWriteInputWordMd.valueLength >= splitLength && addressAssignFlashIn.empty()))) {	// Failed Set // Add stuff here
 						outputWord.status = 1;
@@ -147,13 +139,25 @@ void memWriteWithBuddy(stream<hashTableInternalWord> &comp2memWrKey, stream<inte
 						memWrState = MW_CONSUME;
 					}
 					else if (found == true)	{
+						/* --- START Buddy Allocator --- */
+						if (!replace) {
+							buddy_req.opcode = BUDDY_ALLOC;
+							buddy_req.addr = 0;
+							buddy_req.order = order_base_2<16>(LENGTH_TO_ORDER(memWr_valueLength));
+							alloc.write(buddy_req);
+						}
+						/* --- END Buddy Allocator --- */
+
 						if (replace == true)
 							memWr_location = memWr_replaceLocation;
 						outputWordMemCtrl.count	= htMemWriteInputWordMd.keyLength/16;
+						std::cout << "Count1: " << outputWordMemCtrl.count << std::endl;
 						if (htMemWriteInputWordMd.keyLength > (outputWordMemCtrl.count*16))
 							outputWordMemCtrl.count += 2;
 						else
 							outputWordMemCtrl.count += 1;
+						std::cout << "Count2: " << outputWordMemCtrl.count
+								<< " htMemWriteInputWordMd.keyLength: " << htMemWriteInputWordMd.keyLength << std::endl;
 						//ap_uint<7> tempAddress = htMemWriteInputWordMd.metadata.range(noOfHashTableEntries + 4, 8);	// Plus 5 here is to shift the 8 LSBs of the address.
 						ap_uint<32> tempAddress = htMemWriteInputWordMd.metadata;
 						outputWordMemCtrl.address.range(noOfHashTableEntries - 1, 3) = tempAddress.range(6, 0);
@@ -171,7 +175,7 @@ void memWriteWithBuddy(stream<hashTableInternalWord> &comp2memWrKey, stream<inte
 							while(alloc_ret.empty());
 							buddy_ret = alloc_ret.read();
 							if (buddy_ret.stat == SUCCESS)
-								addressPointer = buddy_ret.addr;
+								addressPointer = buddy_ret.addr >> 8;
 							//std::cout << "ADDR: " << std::hex << buddy_ret.addr << " " << std::bitset<32>(buddy_ret.addr) << std::endl;
 						}
 						inputWordMem.range(((bitsPerBin*memWr_location)+88)-1, (bitsPerBin*memWr_location)+56) = addressPointer;
@@ -234,8 +238,8 @@ void memWriteWithBuddy(stream<hashTableInternalWord> &comp2memWrKey, stream<inte
 		case MW_FLUSH_WAIT:
 		{
 			std::cout << "State: MW_FLUSH_WAIT" << std::endl;
-			if (flushAck == 1)
-				memWrState = MW_FLUSH;
+			//if (flushAck == 1)
+			//	memWrState = MW_FLUSH;
 			break;
 		}
 		case MW_FLUSH:
@@ -247,8 +251,8 @@ void memWriteWithBuddy(stream<hashTableInternalWord> &comp2memWrKey, stream<inte
 			memWrData.write(0);
 			if (memWriteAddress == myPow(noOfHashTableEntries) - 1) {
 				memWr2cc.write(1);
-				memWr_flushDone	= 1;
-				memWr_flushReq	= 0;
+				//memWr_flushDone	= 1;
+				//memWr_flushReq	= 0;
 				outputWord.operation = htMemWriteInputWordMd.operation;
 				memWr2out.write(outputWord);
 				memWrState = MW_FLUSH_CONSUME_KEY;
@@ -287,6 +291,6 @@ void memWriteWithBuddy(stream<hashTableInternalWord> &comp2memWrKey, stream<inte
 			break;
 		}
 	}
-	flushReq = memWr_flushReq;
-	flushDone = memWr_flushDone;
+	//flushReq = memWr_flushReq;
+	//flushDone = memWr_flushDone;
 }

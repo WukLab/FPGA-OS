@@ -14,7 +14,7 @@
 # 4) Change exported IP parameters
 
 # Create a project
-open_project	-reset generated_hls_project
+open_project	-reset generated_mcd_buddy_project
 
 add_files sources/hashTable/cc.cpp                      -cflags "-I../../../include"
 add_files sources/hashTable/compare.cpp                 -cflags "-I../../../include"
@@ -52,5 +52,5 @@ set_clock_uncertainty 1.25
 # Synthesis the C code
 csynth_design
 
-export_design -format ip_catalog -display_name "Combined Binary DRAM Memcached Pipeline with Buddy Allocator" -description "A 4 stage memcached pipeline with DRAM value stores supporting only the binary protocol" -vendor "xilinx.labs" -version "1.07"
+export_design -format ip_catalog -display_name "Memcached Pipeline for Buddy" -description "A 4 stage memcached pipeline with DRAM value stores supporting only the binary protocol" -vendor "xilinx.labs" -version "1.07"
 exit

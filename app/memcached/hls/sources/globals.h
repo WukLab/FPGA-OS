@@ -136,7 +136,7 @@ struct metadataWord {
 
 struct internalMdWord {
 	ap_uint<8> 	operation;
-	ap_uint<32> metadata;
+	ap_uint<32> metadata;				// This field should call hash index
 	ap_uint<8>	keyLength;				// The key length here is stored in 192-bit words.
 	ap_uint<16>	valueLength;
 };
@@ -282,21 +282,18 @@ void memcachedPipeline(stream<extendedAxiWord> &inData, stream<extendedAxiWord> 
 
 void memWriteWithBuddy(stream<hashTableInternalWord> &comp2memWrKey, stream<internalMdWord> &comp2memWrMd, stream<comp2decWord> &comp2memWrKeyStatus, stream<ap_uint<512> > &comp2memWrMemData,
 			  stream<memCtrlWord> &memWrCtrl, stream<ap_uint<512> > &memWrData, stream<decideResultWord> &memWr2out, stream<ap_uint<1> > &memWr2cc,
-			  axis_buddy_alloc& alloc, axis_buddy_alloc_ret& alloc_ret,
-			  ap_uint<1> &flushReq, ap_uint<1> flushAck, ap_uint<1> &flushDone);
+			  axis_buddy_alloc& alloc, axis_buddy_alloc_ret& alloc_ret);
 
 void hashTableWithBuddy(stream<pipelineWord> &ht_inData, stream<pipelineWord> &ht_outData,
 						stream<ap_uint<512> > &memRdData, stream<memCtrlWord> &memRdCtrl,
 						stream<ap_uint<512> > &memWrData, stream<memCtrlWord> &memWrCtrl,
-						axis_buddy_alloc& alloc, axis_buddy_alloc_ret& alloc_ret,
-						ap_uint<1> &flushReq, ap_uint<1> flushAck, ap_uint<1> &flushDone);
+						axis_buddy_alloc& alloc, axis_buddy_alloc_ret& alloc_ret);
 
 void memcachedBuddy(stream<extendedAxiWord> &inData, stream<extendedAxiWord> &outData,
 					stream<memCtrlWord> &dramValueStoreMemRdCmd, stream<ap_uint<512> > &dramValueStoreMemRdData,
 					stream<memCtrlWord> &dramValueStoreMemWrCmd, stream<ap_uint<512> > &dramValueStoreMemWrData,
 					stream<ap_uint<512> > &hashTableMemRdData, stream<memCtrlWord> &hashTableMemRdCmd,
 					stream<ap_uint<512> > &hashTableMemWrData, stream<memCtrlWord> &hashTableMemWrCmd,
-					axis_buddy_alloc& alloc, axis_buddy_alloc_ret& alloc_ret,
-					ap_uint<1> &flushReq, ap_uint<1> flushAck, ap_uint<1> &flushDone);
+					axis_buddy_alloc& alloc, axis_buddy_alloc_ret& alloc_ret);
 
 #endif

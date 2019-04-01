@@ -6,7 +6,6 @@
 #define _CHUNK_ALLOC_H_
 
 #include <fpga/axis_sysmmu_alloc.h>
-#include <fpga/axis_sysmmu_ctrl.h>
 
 class Chunk_alloc
 {
@@ -26,8 +25,6 @@ private:
 			RET_STATUS& ctrl_ret, RET_STATUS* stat);
 };
 
-void core(axis_sysmmu_alloc& alloc, axis_sysmmu_alloc_ret& alloc_ret, axis_sysmmu_ctrl& ctrl,
-		RET_STATUS& ctrl_ret, RET_STATUS* stat);
 
 
 #endif /* _CHUNK_ALLOC_H_ */
