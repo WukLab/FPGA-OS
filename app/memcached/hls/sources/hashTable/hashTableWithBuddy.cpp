@@ -266,8 +266,7 @@ void ht_outputLogic(stream<decideResultWord> &memWr2out, stream<ap_uint<64> > &k
 void hashTableWithBuddy(stream<pipelineWord> &ht_inData, stream<pipelineWord> &ht_outData,
 						stream<ap_uint<512> > &memRdData, stream<memCtrlWord> &memRdCtrl,
 						stream<ap_uint<512> > &memWrData, stream<memCtrlWord> &memWrCtrl,
-						axis_buddy_alloc& alloc, axis_buddy_alloc_ret& alloc_ret,
-						ap_uint<1> &flushReq, ap_uint<1> flushAck, ap_uint<1> &flushDone) {
+						axis_buddy_alloc& alloc, axis_buddy_alloc_ret& alloc_ret) {
 
 	#pragma HLS INTERFACE ap_ctrl_none port=return
 	#pragma HLS INLINE
@@ -327,7 +326,6 @@ void hashTableWithBuddy(stream<pipelineWord> &ht_inData, stream<pipelineWord> &h
 	memWriteWithBuddy(comp2memWrKey,comp2memWrMd,comp2memWrStatus, comp2memWrMemData,
              memWrCtrl, memWrData, memWr2out,
              dec2cc,
-             alloc, alloc_ret,
-             flushReq, flushAck, flushDone);
+             alloc, alloc_ret);
 	ht_outputLogic(memWr2out, hashKeyBuffer, hashValueBuffer, hashMdBuffer, ht_outData);
 }

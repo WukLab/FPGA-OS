@@ -31,8 +31,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.// Copyright (c) 2015 Xilinx, 
 
 void memWriteWithBuddy(stream<hashTableInternalWord> &comp2memWrKey, stream<internalMdWord> &comp2memWrMd, stream<comp2decWord> &comp2memWrKeyStatus, stream<ap_uint<512> > &comp2memWrMemData,
 			  stream<memCtrlWord> &memWrCtrl, stream<ap_uint<512> > &memWrData, stream<decideResultWord> &memWr2out, stream<ap_uint<1> > &memWr2cc,
-			  axis_buddy_alloc& alloc, axis_buddy_alloc_ret& alloc_ret,
-			  ap_uint<1> &flushReq, ap_uint<1> flushAck, ap_uint<1> &flushDone) {
+			  axis_buddy_alloc& alloc, axis_buddy_alloc_ret& alloc_ret) {
 	#pragma HLS INLINE off
 	#pragma HLS pipeline II=1 enable_flush
 
@@ -49,8 +48,6 @@ void memWriteWithBuddy(stream<hashTableInternalWord> &comp2memWrKey, stream<inte
 	static ap_uint<8>					memWr_keyLength				= 0;
 	static ap_uint<16>					memWr_valueLength			= 0;
 	static enum							mwState {MW_IDLE = 0, MW_EVAL, MW_SET_REST, MW_CONSUME, MW_BUDDY_WAIT, MW_FLUSH_WAIT, MW_FLUSH, MW_FLUSH_CONSUME_KEY, MW_INIT_MEM} memWrState;
-	static ap_uint<1>					memWr_flushReq 				= 0;
-	static ap_uint<1>					memWr_flushDone				= 0;
 	static bool							memWr_memInitialized		= false;
 	/* --- START Buddy Allocator --- */
 	static buddy_alloc_if					buddy_req				= {BUDDY_ALLOC, 0, 0};
@@ -69,6 +66,7 @@ void memWriteWithBuddy(stream<hashTableInternalWord> &comp2memWrKey, stream<inte
 					memWriteAddress = 0;
 					comp2memWrKeyStatus.read(htMemWriteInputStatusWord);
 					comp2memWrMd.read(htMemWriteInputWordMd);
+#if 0
 					if (htMemWriteInputWordMd.operation == 8) {
 						memWrState = MW_FLUSH_WAIT;
 						//outputWord.operation = htMemWriteInputWordMd.operation;
@@ -77,6 +75,7 @@ void memWriteWithBuddy(stream<hashTableInternalWord> &comp2memWrKey, stream<inte
 						memWr_flushDone	= 0; // Set the Flush Request signal and wait for acknowledgement from the host
 					}
 					else
+#endif
 						memWrState = MW_EVAL;
 				}
 			}
@@ -239,8 +238,8 @@ void memWriteWithBuddy(stream<hashTableInternalWord> &comp2memWrKey, stream<inte
 		case MW_FLUSH_WAIT:
 		{
 			std::cout << "State: MW_FLUSH_WAIT" << std::endl;
-			if (flushAck == 1)
-				memWrState = MW_FLUSH;
+			//if (flushAck == 1)
+			//	memWrState = MW_FLUSH;
 			break;
 		}
 		case MW_FLUSH:
@@ -252,8 +251,8 @@ void memWriteWithBuddy(stream<hashTableInternalWord> &comp2memWrKey, stream<inte
 			memWrData.write(0);
 			if (memWriteAddress == myPow(noOfHashTableEntries) - 1) {
 				memWr2cc.write(1);
-				memWr_flushDone	= 1;
-				memWr_flushReq	= 0;
+				//memWr_flushDone	= 1;
+				//memWr_flushReq	= 0;
 				outputWord.operation = htMemWriteInputWordMd.operation;
 				memWr2out.write(outputWord);
 				memWrState = MW_FLUSH_CONSUME_KEY;
@@ -292,6 +291,6 @@ void memWriteWithBuddy(stream<hashTableInternalWord> &comp2memWrKey, stream<inte
 			break;
 		}
 	}
-	flushReq = memWr_flushReq;
-	flushDone = memWr_flushDone;
+	//flushReq = memWr_flushReq;
+	//flushDone = memWr_flushDone;
 }

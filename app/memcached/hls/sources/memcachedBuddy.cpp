@@ -33,13 +33,9 @@ void memcachedBuddy(stream<extendedAxiWord> &inData, stream<extendedAxiWord> &ou
 					stream<memCtrlWord> &dramValueStoreMemWrCmd, stream<ap_uint<512> > &dramValueStoreMemWrData,
 					stream<ap_uint<512> > &hashTableMemRdData, stream<memCtrlWord> &hashTableMemRdCmd,
 					stream<ap_uint<512> > &hashTableMemWrData, stream<memCtrlWord> &hashTableMemWrCmd,
-					axis_buddy_alloc& alloc, axis_buddy_alloc_ret& alloc_ret,
-					ap_uint<1> &flushReq, ap_uint<1> flushAck, ap_uint<1> &flushDone) {
+					axis_buddy_alloc& alloc, axis_buddy_alloc_ret& alloc_ret) {
 
 	//#pragma HLS INTERFACE ap_ctrl_none port=return
-	#pragma HLS INTERFACE ap_none register port=flushReq
-	#pragma HLS INTERFACE ap_none register port=flushAck
-	#pragma HLS INTERFACE ap_none register port=flushDone
 
 	#pragma HLS DATA_PACK 	variable=hashTableMemRdData
 	#pragma HLS DATA_PACK 	variable=hashTableMemRdCmd
@@ -84,8 +80,7 @@ void memcachedBuddy(stream<extendedAxiWord> &inData, stream<extendedAxiWord> &ou
 	hashTableWithBuddy(requestParser2hashTable, hashTable2valueStoreDram,
 					hashTableMemRdData, hashTableMemRdCmd,
 					hashTableMemWrData, hashTableMemWrCmd,
-					alloc, alloc_ret,
-					flushReq, flushAck, flushDone);
+					alloc, alloc_ret);
 	valueStoreDram(hashTable2valueStoreDram, dramValueStoreMemRdCmd, dramValueStoreMemRdData, dramValueStoreMemWrCmd, dramValueStoreMemWrData,
 					valueStoreDram2responseFormatter);
 	binaryResponse(valueStoreDram2responseFormatter, outData);

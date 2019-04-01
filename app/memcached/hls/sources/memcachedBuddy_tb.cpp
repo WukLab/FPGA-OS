@@ -327,10 +327,6 @@ int main(int argc, char *argv[]) {
     stream<ap_uint<512> >       hashTableMemWrData("hashTableMemWrData");
     stream<memCtrlWord>         hashTableMemWrCmd("hashTableMemWrCmd");
 
-    ap_uint<1>                  flushReq     = 0;
-    ap_uint<1>                  flushAck     = 0;
-    ap_uint<1>                  flushDone    = 0;
-
     std::ifstream               inputFile;
     std::ofstream               outputFile;
     std::string                 mdString, valueString;
@@ -401,8 +397,7 @@ int main(int argc, char *argv[]) {
 		       valueStoreMemWrCmd, valueStoreMemWrData,
 		       hashTableMemRdData, hashTableMemRdCmd,
 		       hashTableMemWrData, hashTableMemWrCmd,
-		       alloc, alloc_ret,
-		       flushReq, flushAck, flushDone);
+		       alloc, alloc_ret);
 
         bramModelHash(hashTableMemRdCmd, hashTableMemRdData, hashTableMemWrCmd, hashTableMemWrData);
         bramModelValueStore(valueStoreMemRdCmd, valueStoreMemRdData, valueStoreMemWrCmd, valueStoreMemWrData);
