@@ -136,7 +136,7 @@ struct metadataWord {
 
 struct internalMdWord {
 	ap_uint<8> 	operation;
-	ap_uint<32> metadata;
+	ap_uint<32> metadata;				// This field should call hash index
 	ap_uint<8>	keyLength;				// The key length here is stored in 192-bit words.
 	ap_uint<16>	valueLength;
 };

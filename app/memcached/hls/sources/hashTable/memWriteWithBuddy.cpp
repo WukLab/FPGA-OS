@@ -131,14 +131,7 @@ void memWriteWithBuddy(stream<hashTableInternalWord> &comp2memWrKey, stream<inte
 							memWr_replaceLocation = i-1;
 						}
 					}
-					/* --- START Buddy Allocator --- */
-					if (!replace) {
-						buddy_req.opcode = BUDDY_ALLOC;
-						buddy_req.addr = 0;
-						buddy_req.order = order_base_2<16>(LENGTH_TO_ORDER(memWr_valueLength));
-						alloc.write(buddy_req);
-					}
-					/* --- END Buddy Allocator --- */
+
 					if ((found == false && replace == false)) {
 					//	|| (htMemWriteInputWordMd.valueLength >= splitLength && addressAssignFlashIn.empty()))) {	// Failed Set // Add stuff here
 						outputWord.status = 1;
@@ -147,13 +140,25 @@ void memWriteWithBuddy(stream<hashTableInternalWord> &comp2memWrKey, stream<inte
 						memWrState = MW_CONSUME;
 					}
 					else if (found == true)	{
+						/* --- START Buddy Allocator --- */
+						if (!replace) {
+							buddy_req.opcode = BUDDY_ALLOC;
+							buddy_req.addr = 0;
+							buddy_req.order = order_base_2<16>(LENGTH_TO_ORDER(memWr_valueLength));
+							alloc.write(buddy_req);
+						}
+						/* --- END Buddy Allocator --- */
+
 						if (replace == true)
 							memWr_location = memWr_replaceLocation;
 						outputWordMemCtrl.count	= htMemWriteInputWordMd.keyLength/16;
+						std::cout << "Count1: " << outputWordMemCtrl.count << std::endl;
 						if (htMemWriteInputWordMd.keyLength > (outputWordMemCtrl.count*16))
 							outputWordMemCtrl.count += 2;
 						else
 							outputWordMemCtrl.count += 1;
+						std::cout << "Count2: " << outputWordMemCtrl.count
+								<< " htMemWriteInputWordMd.keyLength: " << htMemWriteInputWordMd.keyLength << std::endl;
 						//ap_uint<7> tempAddress = htMemWriteInputWordMd.metadata.range(noOfHashTableEntries + 4, 8);	// Plus 5 here is to shift the 8 LSBs of the address.
 						ap_uint<32> tempAddress = htMemWriteInputWordMd.metadata;
 						outputWordMemCtrl.address.range(noOfHashTableEntries - 1, 3) = tempAddress.range(6, 0);
@@ -171,7 +176,7 @@ void memWriteWithBuddy(stream<hashTableInternalWord> &comp2memWrKey, stream<inte
 							while(alloc_ret.empty());
 							buddy_ret = alloc_ret.read();
 							if (buddy_ret.stat == SUCCESS)
-								addressPointer = buddy_ret.addr;
+								addressPointer = buddy_ret.addr >> 8;
 							//std::cout << "ADDR: " << std::hex << buddy_ret.addr << " " << std::bitset<32>(buddy_ret.addr) << std::endl;
 						}
 						inputWordMem.range(((bitsPerBin*memWr_location)+88)-1, (bitsPerBin*memWr_location)+56) = addressPointer;

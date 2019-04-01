@@ -36,7 +36,7 @@ void memcachedBuddy(stream<extendedAxiWord> &inData, stream<extendedAxiWord> &ou
 					axis_buddy_alloc& alloc, axis_buddy_alloc_ret& alloc_ret,
 					ap_uint<1> &flushReq, ap_uint<1> flushAck, ap_uint<1> &flushDone) {
 
-	#pragma HLS INTERFACE ap_ctrl_none port=return
+	//#pragma HLS INTERFACE ap_ctrl_none port=return
 	#pragma HLS INTERFACE ap_none register port=flushReq
 	#pragma HLS INTERFACE ap_none register port=flushAck
 	#pragma HLS INTERFACE ap_none register port=flushDone
