@@ -24,27 +24,27 @@ module legofpga_mac_qsfp_tb
 	wire            sysclk_161_clk_n;
 	wire            sysclk_161_clk_p;
 
-	wire	default_sysclk_300_clk_p;
-	wire	default_sysclk_300_clk_n;
+	wire		default_sysclk_300_clk_p;
+	wire		default_sysclk_300_clk_n;
     
-    reg         sysclk_125_clk_ref;
-    reg         sysclk_300_clk_ref;
-    reg         sysclk_161_clk_ref;
+	reg         	sysclk_125_clk_ref;
+	reg         	sysclk_300_clk_ref;
+	reg         	sysclk_161_clk_ref;
 
-    wire        ddr4_act_n;
-    wire [16:0] ddr4_adr;
-    wire [1:0]  ddr4_ba;
-    wire        ddr4_bg;
-    wire        ddr4_ck_c;
-    wire        ddr4_ck_t;
-    wire        ddr4_cke;
-    wire        ddr4_cs_n;
-    wire [7:0]  ddr4_dm_n;
-    wire [63:0] ddr4_dq;
-    wire [7:0]  ddr4_dqs_c;
-    wire [7:0]  ddr4_dqs_t;
-    wire        ddr4_odt;
-    wire        ddr4_reset_n;
+	wire        ddr4_act_n;
+	wire [16:0] ddr4_adr;
+	wire [1:0]  ddr4_ba;
+	wire        ddr4_bg;
+	wire        ddr4_ck_c;
+	wire        ddr4_ck_t;
+	wire        ddr4_cke;
+	wire        ddr4_cs_n;
+	wire [7:0]  ddr4_dm_n;
+	wire [63:0] ddr4_dq;
+	wire [7:0]  ddr4_dqs_c;
+	wire [7:0]  ddr4_dqs_t;
+	wire        ddr4_odt;
+	wire        ddr4_reset_n;
 
 	legofpga_mac_qsfp	DUT (
 		.default_sysclk_125_clk_n	(sysclk_125_clk_n),
@@ -60,23 +60,23 @@ module legofpga_mac_qsfp_tb
 		.gt_txn_out			(gt_txn_out),
 
 		.rx_gt_locked_led_0		(rx_gt_locked_led_0),
-		.rx_block_lock_led_0		(rx_block_lock_led_0)
+		.rx_block_lock_led_0		(rx_block_lock_led_0),
         
-        /* DRAM interface */ 
-        .ddr4_sdram_c1_act_n          (ddr4_act_n),
-        .ddr4_sdram_c1_adr	          (ddr4_adr),
-        .ddr4_sdram_c1_ba	          (ddr4_ba),
-        .ddr4_sdram_c1_bg	          (ddr4_bg),
-        .ddr4_sdram_c1_ck_c	          (ddr4_ck_c),
-        .ddr4_sdram_c1_ck_t	          (ddr4_ck_t),
-        .ddr4_sdram_c1_cke	          (ddr4_cke),
-        .ddr4_sdram_c1_cs_n	          (ddr4_cs_n),
-        .ddr4_sdram_c1_dm_n	          (ddr4_dm_n),
-        .ddr4_sdram_c1_dq	          (ddr4_dq),
-        .ddr4_sdram_c1_dqs_c          (ddr4_dqs_c),
-        .ddr4_sdram_c1_dqs_t          (ddr4_dqs_t),
-        .ddr4_sdram_c1_odt	          (ddr4_odt),
-        .ddr4_sdram_c1_reset_n        (ddr4_reset_n)
+		/* DRAM interface */
+		.ddr4_sdram_c1_act_n          (ddr4_act_n),
+		.ddr4_sdram_c1_adr	      (ddr4_adr),
+		.ddr4_sdram_c1_ba	      (ddr4_ba),
+		.ddr4_sdram_c1_bg	      (ddr4_bg),
+		.ddr4_sdram_c1_ck_c	      (ddr4_ck_c),
+		.ddr4_sdram_c1_ck_t	      (ddr4_ck_t),
+		.ddr4_sdram_c1_cke	      (ddr4_cke),
+		.ddr4_sdram_c1_cs_n	      (ddr4_cs_n),
+		.ddr4_sdram_c1_dm_n	      (ddr4_dm_n),
+		.ddr4_sdram_c1_dq	      (ddr4_dq),
+		.ddr4_sdram_c1_dqs_c          (ddr4_dqs_c),
+		.ddr4_sdram_c1_dqs_t          (ddr4_dqs_t),
+		.ddr4_sdram_c1_odt	      (ddr4_odt),
+		.ddr4_sdram_c1_reset_n        (ddr4_reset_n)
 	);
     
     ddr4_tb_top MEM_MODEL (
