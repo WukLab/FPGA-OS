@@ -41,7 +41,7 @@ static int test(OPCODE opcode, ap_uint<PA_SHIFT> addr, ap_uint<PID_SHIFT> pid, A
 			<< " PID:" << req.pid
 			<< " RW:" << req.rw;
 
-	core(alloc, ret_fifo, ctrl, expt_sysmmu_stat, &stat);
+	chunk_alloc(alloc, ret_fifo, ctrl, expt_sysmmu_stat, &stat);
 
 	if (expt_stat != 0) {
 		if (!ctrl.empty())

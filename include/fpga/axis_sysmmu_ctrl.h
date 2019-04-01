@@ -29,7 +29,7 @@ struct sysmmu_ctrl {
 	ap_uint<IDX_WIDTH>	idx;
 };
 
-typedef struct sysmmu_ctrl<PID_SHIFT, TABLE_SHIFT>	sysmmu_ctrl_if;
+typedef struct sysmmu_ctrl<PID_SHIFT, TABLE_TYPE>	sysmmu_ctrl_if;
 typedef hls::stream<sysmmu_ctrl_if>		axis_sysmmu_ctrl;
 
 #endif /* _LEGO_FPGA_AXIS_SYSMMU_CTRL_ */

@@ -26,6 +26,7 @@ typedef enum {
 
 #define BLOCK_SIZE			SIZE(BLOCK_SHIFT)
 #define TABLE_SHIFT			(PA_SHIFT - BLOCK_SHIFT)
+#define TABLE_TYPE			(TABLE_SHIFT + 1)
 #define TABLE_SIZE			SIZE(TABLE_SHIFT)
 #define BLOCK_IDX(addr)			IDX(addr, BLOCK_SHIFT)
 

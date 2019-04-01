@@ -2,7 +2,7 @@
 
 static Chunk_alloc chunk_allocator = Chunk_alloc();
 
-void core(axis_sysmmu_alloc& alloc, axis_sysmmu_alloc_ret& alloc_ret,
+void chunk_alloc(axis_sysmmu_alloc& alloc, axis_sysmmu_alloc_ret& alloc_ret,
 		axis_sysmmu_ctrl& ctrl, RET_STATUS& ctrl_ret, RET_STATUS* stat)
 {
 #pragma HLS PIPELINE

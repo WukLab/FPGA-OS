@@ -66,7 +66,7 @@ void Chunk_alloc::free(sysmmu_alloc_if& alloc, axis_sysmmu_alloc_ret& alloc_ret,
 #pragma HLS PIPELINE
 	sysmmu_ctrl_if req;
 	sysmmu_alloc_ret_if ret;
-	ap_uint<TABLE_SHIFT> idx = BLOCK_IDX(alloc.addr);
+	ap_uint<TABLE_TYPE> idx = BLOCK_IDX(alloc.addr);
 
 	if (chunk_bitmap.get_bit(idx)) {
 		req.opcode = SYSMMU_FREE;
