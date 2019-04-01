@@ -15,9 +15,9 @@ typedef enum {
 	ERROR = 1,
 } RET_STATUS;
 
-#define PID_SHIFT		10	/* pid width */
+#define PID_SHIFT		8	/* pid width */
 #define PA_SHIFT		32	/* address width */
-#define BLOCK_SHIFT		32	/* minimum chunk granularity */
+#define BLOCK_SHIFT		27	/* minimum chunk granularity */
 #define BUDDY_MIN_SHIFT		12	/* minimum size of buddy allocator */
 
 #define SIZE(shift)		(1UL << shift)

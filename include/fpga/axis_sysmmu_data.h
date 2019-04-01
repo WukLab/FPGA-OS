@@ -13,22 +13,41 @@
 #include "sysmmu_type.h"
 
 template <int PID_WIDTH, int ADDR_WIDTH>
-struct sysmmu_data {
+struct sysmmu_indata {
 	/*
-	 * physical memory datapath interface, only for permission check
+	 * physical memory datapath input interface, only for permission check
 	 *
-	 * pid: application id
-	 * rw:	application rw request
-	 * addr:application memory access address
-	 * size:application memory access size (in terms of bytes)
+	 * pid: 	application id
+	 * in_addr:	address in
+	 * in_size:	axi transfer burst size
+	 * in_len:	axi transfer burst length
+	 * start:	single that start process
 	 */
 	ap_uint<PID_WIDTH>	pid;
-	ACCESS_TYPE		rw;
-	ap_uint<ADDR_WIDTH>	addr;
-	ap_uint<ADDR_WIDTH>	size;
+	ap_uint<ADDR_WIDTH>	in_addr;
+	ap_uint<3>		in_size;
+	ap_uint<8>		in_len;
+	ap_uint<1>		start;
 };
 
-typedef struct sysmmu_data<PID_SHIFT, PA_SHIFT>	sysmmu_data_if;
-typedef hls::stream<sysmmu_data_if>		axis_sysmmu_data;
+template <int ADDR_WIDTH>
+struct sysmmu_outdata {
+	/*
+	 * physical memory datapath output interface, only for permission check
+	 *
+	 * out_addr: physical address out
+	 * done: check finished
+	 * drop: 1 if error occurs, 0 if success
+	 */
+	ap_uint<ADDR_WIDTH>	out_addr;
+	ap_uint<1>		done;
+	ap_uint<1>		drop;
+};
+
+/*
+ * read & write interface
+ */
+typedef struct sysmmu_indata<PID_SHIFT, PA_SHIFT>	sysmmu_indata_if;
+typedef struct sysmmu_outdata<PA_SHIFT>			sysmmu_outdata_if;
 
 #endif /* _LEGO_FPGA_AXIS_SYSMMU_DATA_ */
