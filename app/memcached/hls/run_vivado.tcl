@@ -997,7 +997,7 @@ set_property STEPS.POST_ROUTE_PHYS_OPT_DESIGN.ARGS.DIRECTIVE AggressiveExplore [
 ##################################################################
 # package and export  the design as IP 
 ##################################################################
-ipx::package_project -root_dir ${origin_dir}/../../../generated_ip/app_memcached_vcu108 -vendor wuklab -library user -taxonomy UserIP -import_files -set_current false -force -generated_files
+ipx::package_project -root_dir ${origin_dir}/../../../generated_ip/app_memcached_vcu108 -vendor wuklab -library user -taxonomy UserIP -import_files -set_current false -force
 
 update_ip_catalog -rebuild
 

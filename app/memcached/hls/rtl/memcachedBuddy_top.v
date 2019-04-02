@@ -60,7 +60,15 @@ module memcachedBuddy_top #(
  output         toDRAM_wlast,
  input          toDRAM_wready,
  output  [63:0] toDRAM_wstrb, 
- output         toDRAM_wvalid
+ output         toDRAM_wvalid,
+
+ input		[39:0]	alloc_ret_tdata,
+ input			alloc_ret_tvalid,
+ output			alloc_ret_tready,
+
+ output		[56:0]	alloc_tdata,
+ output			alloc_tvalid,
+ input			alloc_tready
 );
 
 wire [31:0] axi2dram_ht_araddr;
@@ -93,21 +101,6 @@ wire        axi2dram_vs_rlast;
 wire        axi2dram_vs_rready;
 wire [1:0]  axi2dram_vs_rresp;
 wire        axi2dram_vs_rvalid;
-wire [31:0] axi2dram_buddy_araddr;
-wire [1:0]  axi2dram_buddy_arburst;
-wire [3:0]  axi2dram_buddy_arcache;
-wire [4:0]  axi2dram_buddy_arid;
-wire [7:0]  axi2dram_buddy_arlen;
-wire [2:0]  axi2dram_buddy_arprot;
-wire        axi2dram_buddy_arready;
-wire [2:0]  axi2dram_buddy_arsize;
-wire [3:0]  axi2dram_buddy_aruser;
-wire        axi2dram_buddy_arvalid;
-wire [511:0]axi2dram_buddy_rdata;
-wire        axi2dram_buddy_rlast;
-wire        axi2dram_buddy_rready;
-wire [1:0]  axi2dram_buddy_rresp;
-wire        axi2dram_buddy_rvalid;
 wire [31:0] axi2dram_ht_awaddr;
 wire [1:0]  axi2dram_ht_awburst;
 wire [3:0]  axi2dram_ht_awcache;
@@ -144,26 +137,8 @@ wire        axi2dram_vs_wlast;
 wire        axi2dram_vs_wready;
 wire [63:0] axi2dram_vs_wstrb;
 wire        axi2dram_vs_wvalid;
-wire [31:0] axi2dram_buddy_awaddr;
-wire [1:0]  axi2dram_buddy_awburst;
-wire [3:0]  axi2dram_buddy_awcache;
-wire [4:0]  axi2dram_buddy_awid;
-wire [7:0]  axi2dram_buddy_awlen;
-wire [2:0]  axi2dram_buddy_awprot;
-wire        axi2dram_buddy_awready;
-wire [2:0]  axi2dram_buddy_awsize;
-wire [3:0]  axi2dram_buddy_awuser;
-wire        axi2dram_buddy_awvalid;
-wire        axi2dram_buddy_bready;
-wire [1:0]  axi2dram_buddy_bresp;
-wire        axi2dram_buddy_bvalid;
-wire [511:0]axi2dram_buddy_wdata;
-wire        axi2dram_buddy_wlast;
-wire        axi2dram_buddy_wready;
-wire [63:0] axi2dram_buddy_wstrb;
-wire        axi2dram_buddy_wvalid;
 
-memcached_pipeline_wrapper u_mcd_buddy(
+memcached_pipeline u_mcd_buddy(
      .MCD_AXI2DRAM_RD_C0_araddr     (axi2dram_ht_araddr),
      .MCD_AXI2DRAM_RD_C0_arburst    (axi2dram_ht_arburst),
      .MCD_AXI2DRAM_RD_C0_arcache    (axi2dram_ht_arcache),
@@ -230,6 +205,14 @@ memcached_pipeline_wrapper u_mcd_buddy(
      .MCD_AXI2DRAM_WR_C1_wready     (axi2dram_vs_wready),
      .MCD_AXI2DRAM_WR_C1_wstrb      (axi2dram_vs_wstrb),
      .MCD_AXI2DRAM_WR_C1_wvalid     (axi2dram_vs_wvalid),
+
+     .alloc_V_0_tdata		(alloc_tdata),
+     .alloc_V_0_tready		(alloc_tready),
+     .alloc_V_0_tvalid		(alloc_tvalid),
+     .alloc_ret_V_0_tdata	(alloc_ret_tdata),
+     .alloc_ret_V_0_tready	(alloc_ret_tready),
+     .alloc_ret_V_0_tvalid	(alloc_ret_tvalid),
+
      .aclk                          (apclk),
      .aresetn                       (apresetn),
      .fromNet_tdata                 (from_net_tdata),
@@ -248,7 +231,7 @@ memcached_pipeline_wrapper u_mcd_buddy(
      .toNet_tvalid                  (to_net_tvalid)
 );
 
-axi_interconnect_wrapper u_ht_vs_interconnect(
+axi_interconnect u_ht_vs_interconnect(
  .APCLK_0            (apclk),
  .ARESETN_0          (apresetn),
  .M00_AXI_0_araddr   (toDRAM_araddr),
@@ -356,39 +339,7 @@ axi_interconnect_wrapper u_ht_vs_interconnect(
  .S01_AXI_0_wready   (axi2dram_vs_wready),
  .S01_AXI_0_wstrb    (axi2dram_vs_wstrb),
  .S01_AXI_0_wvalid   (axi2dram_vs_wvalid),
- .S02_AXI_0_araddr   (axi2dram_buddy_araddr),
- .S02_AXI_0_arburst  (axi2dram_buddy_arburst),
- .S02_AXI_0_arcache  (axi2dram_buddy_arcache),
- .S02_AXI_0_arlen    (axi2dram_buddy_arlen),
- .S02_AXI_0_arlock   (),
- .S02_AXI_0_arprot   (axi2dram_buddy_arprot),
- .S02_AXI_0_arqos    (),
- .S02_AXI_0_arready  (axi2dram_buddy_arready),
- .S02_AXI_0_arsize   (axi2dram_buddy_arsize),
- .S02_AXI_0_arvalid  (axi2dram_buddy_arvalid),
- .S02_AXI_0_awaddr   (axi2dram_buddy_awaddr),
- .S02_AXI_0_awburst  (axi2dram_buddy_awburst),
- .S02_AXI_0_awcache  (axi2dram_buddy_awcache),
- .S02_AXI_0_awlen    (axi2dram_buddy_awlen),
- .S02_AXI_0_awlock   (),
- .S02_AXI_0_awprot   (axi2dram_buddy_awprot),
- .S02_AXI_0_awqos    (),
- .S02_AXI_0_awready  (axi2dram_buddy_awready),
- .S02_AXI_0_awsize   (axi2dram_buddy_awsize),
- .S02_AXI_0_awvalid  (axi2dram_buddy_awvalid),
- .S02_AXI_0_bready   (axi2dram_buddy_bready),
- .S02_AXI_0_bresp    (axi2dram_buddy_bresp),
- .S02_AXI_0_bvalid   (axi2dram_buddy_bvalid),
- .S02_AXI_0_rdata    (axi2dram_buddy_rdata),
- .S02_AXI_0_rlast    (axi2dram_buddy_rlast),
- .S02_AXI_0_rready   (axi2dram_buddy_rready),
- .S02_AXI_0_rresp    (axi2dram_buddy_rresp),
- .S02_AXI_0_rvalid   (axi2dram_buddy_rvalid),
- .S02_AXI_0_wdata    (axi2dram_buddy_wdata),
- .S02_AXI_0_wlast    (axi2dram_buddy_wlast),
- .S02_AXI_0_wready   (axi2dram_buddy_wready),
- .S02_AXI_0_wstrb    (axi2dram_buddy_wstrb),
- .S02_AXI_0_wvalid   (axi2dram_buddy_wvalid),
+
  .axi_clk            (mem_clk),
  .axi_resetn         (mem_resetn)
 );
