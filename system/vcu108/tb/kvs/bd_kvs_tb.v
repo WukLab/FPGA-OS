@@ -55,10 +55,18 @@ parameter TIMEOUT_THRESH = 100000000;
 	wire rx_tlast;
 	reg rx_tready;
 
+	wire mc_init_calib_complete;
+	wire mc_ddr4_ui_clk_rst_n;
+
+	reg start_send;
+
 	LegoFPGA_axis64_KVS	DUT (
 		// DDR4 MC
 		.C0_SYS_CLK_0_clk_n		(default_sysclk_300_clk_n),
 		.C0_SYS_CLK_0_clk_p		(default_sysclk_300_clk_p),
+
+		.mc_ddr4_ui_clk_rst_n		(mc_ddr4_ui_clk_rst_n),
+		.mc_init_calib_complete		(mc_init_calib_complete),
 
 		.sys_rst			(sys_reset),
 		.mac_ready			(1'b1),
@@ -125,19 +133,7 @@ parameter TIMEOUT_THRESH = 100000000;
 	integer pktlen, finished, timeout, timedout;
 
 	initial begin
-		// TODO
-		// sys_reset is for MC. Those hardcode #200 numbers
-		// are derived from the MC example design.
-		//
-		// But I'm not sure how long we should wait until
-		// MC is fully functional.
-		sys_reset = 1'b0;
-	        #200;
-	        sys_reset = 1'b1;
-	        #200
-	        sys_reset = 1'b0;
-		#100;
-
+		start_send = 1'b0;
 		sysclk_125_rst_n = 1'b1;
 		sysclk_390_rst_n = 1'b1;
 
@@ -145,24 +141,38 @@ parameter TIMEOUT_THRESH = 100000000;
 		sysclk_300_clk_ref = 1;
 		sysclk_390_clk_ref = 1;
 
+		sys_reset = 1'b0;
+	        #200;
+	        sys_reset = 1'b1;
+	        #200
+	        sys_reset = 1'b0;
+		#100;
+
+		wait(mc_init_calib_complete == 1'b1);
+		wait(mc_ddr4_ui_clk_rst_n == 1'b1);
+
 		// Generate reset signals
 		@(posedge sysclk_125_clk_ref);
 		sysclk_125_rst_n = 0;
-		#100
+		#200
 		@(posedge sysclk_125_clk_ref);
                 sysclk_125_rst_n = 1;
 
 	        @(posedge sysclk_390_clk_ref);
                 sysclk_390_rst_n = 0;
-                #100;
+                #200;
                 @(posedge sysclk_390_clk_ref);
                 sysclk_390_rst_n = 1;
+
+		#500
+		start_send = 1'b1;
 	end
 
   // Send Data to DUT
   initial begin
         finished = 0;
         pktlen = 1;
+	tx_tdata = 0;
         tx_tkeep = 8'hFF;
         tx_tuser = 8'h00;
         tx_tvalid = 0;
@@ -175,8 +185,8 @@ parameter TIMEOUT_THRESH = 100000000;
         end
         
         // Wait reset signals
-        #1000
-        
+	wait(start_send == 1'b1);
+
 	// Synchronize to network clk
         @(posedge sysclk_390_clk_ref);
 
@@ -225,8 +235,8 @@ parameter TIMEOUT_THRESH = 100000000;
         end
 
         // wait reset signals
-        #1000
-        
+	wait(start_send == 1'b1);
+
 	// Synchronize to network clk
         @(posedge sysclk_390_clk_ref);
 
