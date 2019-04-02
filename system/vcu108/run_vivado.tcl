@@ -233,6 +233,7 @@ set obj [get_filesets sim_1]
 # Import local files from the original project
 set files [list \
  [file normalize "${origin_dir}/tb/top_qsfp_mac_tb.v"] \
+ [file normalize "${origin_dir}/tb/kvs/bd_kvs_tb.v"] \
  [file normalize "${origin_dir}/tb/ddr4_model/MemoryArray.sv"] \
  [file normalize "${origin_dir}/tb/ddr4_model/StateTableCore.sv"] \
  [file normalize "${origin_dir}/tb/ddr4_model/StateTable.sv"] \
