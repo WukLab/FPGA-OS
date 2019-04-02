@@ -4,3 +4,8 @@
 
 all:
 	$(Q)make -C sysnet
+	$(Q)make -C libnet
+
+clean:
+	$(Q)make -C sysnet clean
+	$(Q)make -C libnet clean

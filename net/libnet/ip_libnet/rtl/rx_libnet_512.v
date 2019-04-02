@@ -27,18 +27,21 @@ module rx_libnet_512(
     output reg [63:0]       tx_tuser,
     output reg              tx_tlast,
     input  wire             tx_tready,
-    output reg [31:0]       seq_expected,
-    output reg              seq_valid,
-    input  wire             clk,
-    input  wire             resetn,
+
     input wire [511:0]      rx_tdata,
     input wire [63:0]       rx_tkeep,
     input wire              rx_tvalid,
     input wire [63:0]       rx_tuser,
     input wire              rx_tlast,
-    output reg              rx_tready
+    output reg              rx_tready,
+
+    input  wire             clk,
+    input  wire             resetn,
+
+    output reg [31:0]       seq_expected,
+    output reg              seq_valid
     );
-    
+
     parameter CURRENT_SEQ_LSB = 344;
     parameter CURRENT_SEQ_MSB = 375;
     parameter ACK_FLAG = 376;
@@ -49,7 +52,7 @@ module rx_libnet_512(
                      DROP_PACKET = 2'b10;
                      
      reg [1:0] state = PARSE_HEADER;
-                     
+
     always @(posedge clk) begin
         if (!resetn) begin
             tx_tvalid <= 1'b0;
