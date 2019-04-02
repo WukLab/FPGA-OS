@@ -310,11 +310,11 @@ static void test_cache_set_operation()
 #endif
 }
 
-static int core_test(OPCODE opcode, ap_uint<PA_SHIFT> addr, ap_uint<ORDER_MAX> order, char* dram, unsigned long* ret_addr)
+static int core_test(ap_uint<1> opcode, ap_uint<PA_SHIFT> addr, ap_uint<ORDER_MAX> order, char* dram, unsigned long* ret_addr)
 {
-	axis_buddy_alloc alloc;
-	axis_buddy_alloc_ret alloc_ret;
-	buddy_alloc_if req = {BUDDY_ALLOC, 0, 0};
+	hls::stream<buddy_alloc_if> alloc;
+	hls::stream<buddy_alloc_ret_if> alloc_ret;
+	buddy_alloc_if req = {0, 0, 0};
 	buddy_alloc_ret_if ret = {0,0};
 
 	req.opcode = opcode;
@@ -322,7 +322,7 @@ static int core_test(OPCODE opcode, ap_uint<PA_SHIFT> addr, ap_uint<ORDER_MAX> o
 	req.addr = addr;
 	alloc.write(req);
 
-	if (req.opcode == BUDDY_ALLOC)
+	if (req.opcode == 0)
 		std::cout << "[ALLOC]  ";
 	else
 		std::cout << "[FREE]   ";
@@ -331,7 +331,7 @@ static int core_test(OPCODE opcode, ap_uint<PA_SHIFT> addr, ap_uint<ORDER_MAX> o
 
 	buddy_allocator(alloc, alloc_ret, dram);
 
-	if (req.opcode == BUDDY_ALLOC) {
+	if (req.opcode == 0) {
 		ret = alloc_ret.read();
 		*ret_addr = (unsigned long)ret.addr;
 	} else {
@@ -380,40 +380,40 @@ int main()
 	test_cache_set_operation();
 
 	/* allocation test */
-	ret = core_test(BUDDY_ALLOC, 0, 0, dram, &addr);
+	ret = core_test(0, 0, 0, dram, &addr);
 	vectors.push_back(std::pair<unsigned long, int>(addr, 0));
 	err_cnt += print_result(ret, 0);
 
-	ret = core_test(BUDDY_ALLOC, 0, 0, dram, &addr);
+	ret = core_test(0, 0, 0, dram, &addr);
 	vectors.push_back(std::pair<unsigned long, int>(addr, 0));
 	err_cnt += print_result(ret, 0);
 
-	ret = core_test(BUDDY_ALLOC, 0, 3, dram, &addr);
+	ret = core_test(0, 0, 3, dram, &addr);
 	vectors.push_back(std::pair<unsigned long, int>(addr, 3));
 	err_cnt += print_result(ret, 0);
 
-	ret = core_test(BUDDY_ALLOC, 0, 3, dram, &addr);
+	ret = core_test(0, 0, 3, dram, &addr);
 	vectors.push_back(std::pair<unsigned long, int>(addr, 3));
 	err_cnt += print_result(ret, 0);
 
-	ret = core_test(BUDDY_ALLOC, 0, 3, dram, &addr);
+	ret = core_test(0, 0, 3, dram, &addr);
 	vectors.push_back(std::pair<unsigned long, int>(addr, 3));
 	err_cnt += print_result(ret, 0);
 
-	ret = core_test(BUDDY_ALLOC, 0, 3, dram, &addr);
+	ret = core_test(0, 0, 3, dram, &addr);
 	vectors.push_back(std::pair<unsigned long, int>(addr, 3));
 	err_cnt += print_result(ret, 0);
 
-	ret = core_test(BUDDY_ALLOC, 0, 7, dram, &addr);
+	ret = core_test(0, 0, 7, dram, &addr);
 	vectors.push_back(std::pair<unsigned long, int>(addr, 7));
 	err_cnt += print_result(ret, 0);
 
-	ret = core_test(BUDDY_ALLOC, 0, 12, dram, &addr);
+	ret = core_test(0, 0, 12, dram, &addr);
 	vectors.push_back(std::pair<unsigned long, int>(addr, 12));
 	err_cnt += print_result(ret, 0);
 
 	for (int i = 0; i < ORDER_MAX; i++) {
-		ret = core_test(BUDDY_ALLOC, 0, i, dram, &addr);
+		ret = core_test(0, 0, i, dram, &addr);
 		if (!ret)
 			vectors.push_back(std::pair<unsigned long, int>(addr, i));
 		err_cnt += print_result(ret, (i == ORDER_MAX - 1) ? -1 : 0);
@@ -423,7 +423,7 @@ int main()
 	addr = 0;
 	std::cout << std::endl;
 	for (std::vector<std::pair<unsigned long, int>>::iterator i = vectors.begin(); i != vectors.end(); i++) {
-		ret = core_test(BUDDY_FREE, i->first, i->second, dram, &addr);
+		ret = core_test(1, i->first, i->second, dram, &addr);
 		err_cnt += print_result(ret, 0);
 	}
 
@@ -431,7 +431,7 @@ int main()
 	addr = 0;
 	std::cout << std::endl;
 	for (std::vector<std::pair<unsigned long, int>>::reverse_iterator i = vectors.rbegin(); i != vectors.rend(); i++) {
-		ret = core_test(BUDDY_ALLOC, 0, i->second, dram, &addr);
+		ret = core_test(0, 0, i->second, dram, &addr);
 		vectors2.push_back(std::pair<unsigned long, int>(addr, i->second));
 		err_cnt += print_result(ret, 0);
 	}
@@ -440,7 +440,7 @@ int main()
 	addr = 0;
 	std::cout << std::endl;
 	for (std::vector<std::pair<unsigned long, int>>::iterator i = vectors2.begin(); i != vectors2.end(); i++) {
-		ret = core_test(BUDDY_FREE, i->first, i->second, dram, &addr);
+		ret = core_test(1, i->first, i->second, dram, &addr);
 		err_cnt += print_result(ret, 0);
 	}
 

@@ -14,7 +14,7 @@
 # 4) Change exported IP parameters
 
 # Create a project
-open_project	-reset generated_hls_project 
+open_project	-reset generated_hls_project
 
 # The source file and test bench
 add_files	core.cpp	-cflags "-I../../include"
@@ -40,10 +40,10 @@ set_part {xcvu095-ffva2104-2-e}
 # 125MHZ
 create_clock -period 8 -name default
 
-config_rtl  -encoding onehot -reset control  -reset_level high  -vivado_impl_strategy default -vivado_phys_opt place -vivado_synth_design_args {-directive sdx_optimization_effort_high} -vivado_synth_strategy default
+config_rtl -encoding onehot -reset all -reset_level high -reset_async -vivado_impl_strategy default -vivado_phys_opt place -vivado_synth_design_args {-directive sdx_optimization_effort_high} -vivado_synth_strategy default
 set_clock_uncertainty 1.25
 
-# Simulate the C code 
+# Simulate the C code
 # csim_design
 
 # Synthesis the C code
@@ -53,5 +53,5 @@ csynth_design
 export_design -format ip_catalog -display_name "mm segment" -description "System Memory Chunk Unit, for permission Check" -vendor "purdue.wuklab" -version "1.0"
 
 # Do not perform any other steps
-# - The basic project will be opened in the GUI 
+# - The basic project will be opened in the GUI
 exit

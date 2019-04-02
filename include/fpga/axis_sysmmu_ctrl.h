@@ -10,26 +10,28 @@
 #ifndef _LEGO_FPGA_AXIS_SYSMMU_CTRL_
 #define _LEGO_FPGA_AXIS_SYSMMU_CTRL_
 
-#include "sysmmu_type.h"
+#include <ap_int.h>
+#include <hls_stream.h>
+#include "mem_common.h"
 
-template <int PID_WIDTH, int IDX_WIDTH>
-struct sysmmu_ctrl {
+struct sysmmu_ctrl_if {
 	/*
 	 * physical memory unit memory ctrl structure, this interface sits
 	 * between sysmmu allocator and sysmmu unit:
 	 *
-	 * opcode: ALLOC or FREE
+	 * opcode: ALLOC=0 or FREE=1
+	 * rw:	READ=0, WRITE=1
 	 * pid: application id
-	 * rw:	application rw permission for this request, 
 	 * addr: address to be allocated or to be freed, 
 	 */
-	OPCODE			opcode;
-	ap_uint<PID_WIDTH>	pid;
-	ACCESS_TYPE		rw;
-	ap_uint<IDX_WIDTH>	idx;
+	ap_uint<1>		opcode;
+	ap_uint<1>		rw;
+	ap_uint<PID_SHIFT>	pid;
+	ap_uint<TABLE_TYPE>	idx;
 };
 
-typedef struct sysmmu_ctrl<PID_SHIFT, TABLE_TYPE>	sysmmu_ctrl_if;
-typedef hls::stream<sysmmu_ctrl_if>		axis_sysmmu_ctrl;
+void mm_segment_top(hls::stream<struct sysmmu_ctrl_if>& ctrl, ap_uint<1>* ctrl_stat,
+		    struct sysmmu_indata& rd_in, struct sysmmu_outdata* rd_out,
+		    struct sysmmu_indata& wr_in, struct sysmmu_outdata* wr_out);
 
 #endif /* _LEGO_FPGA_AXIS_SYSMMU_CTRL_ */

@@ -36,7 +36,7 @@ Buddy::Buddy()
 	INIT_LOOP:
 	for (int i = 0; i < LEVEL_MAX; i++) {
 		buddy_set[i].level = i;
-		buddy_set[i].size = (1 << 3*i) < BUDDY_SET_SIZE ? (1 << 3*i) : BUDDY_SET_SIZE;
+		buddy_set[i].size = (1<<3*i) < BUDDY_SET_SIZE ? (1<<3*i) : BUDDY_SET_SIZE;
 		buddy_set[i].rand_counter = 0;
 		buddy_free_set[i].level = i;
 
@@ -45,7 +45,8 @@ Buddy::Buddy()
 			buddy_set[i].lines[0].valid = 1;
 			buddy_set[i].lines[0].tag = 0;
 			if (i == metadata_level) {
-				set_clear_bits(buddy_set[i].lines[0], metadata_width, 0, true);
+				set_clear_bits(buddy_set[i].lines[0],
+					       metadata_width, 0, true);
 			} else {
 				set_clear_bits(buddy_set[i].lines[0], 1, 0, true);
 			}
@@ -76,28 +77,29 @@ BuddyCacheLine::BuddyCacheLine()
 	children = ap_uint<8>(0);
 }
 
-void Buddy::handler(axis_buddy_alloc& alloc, axis_buddy_alloc_ret& alloc_ret, char* dram)
+void Buddy::handler(hls::stream<buddy_alloc_if>& alloc,
+		    hls::stream<buddy_alloc_ret_if>& alloc_ret, char* dram)
 {
 	/*
 	 * Don't do axi stream empty check, non-blocking will cause co-sim to hang
 	 * just make sure you have data and then call this function during simulation
 	 */
-	buddy_alloc_if req = alloc.read();
-	buddy_alloc_ret_if ret;
+	struct buddy_alloc_if req = alloc.read();
+	struct buddy_alloc_ret_if ret;
 	ap_uint<8> test;
 	REQ_DISPATCH:
 	switch (req.opcode) {
-	case BUDDY_ALLOC:
+	case 0:
 		ret.stat = Buddy::alloc(req.order, &ret.addr, dram);
-		if (ret.stat == ERROR)
+		if (ret.stat == 1)
 			ret.addr = 0;
 		alloc_ret.write(ret);
 		break;
-	case BUDDY_FREE:
+	case 1:
 		ret.stat = Buddy::free(req.order, req.addr, dram);
 		break;
 	default:
-		ret.stat = ERROR;
+		ret.stat = 1;
 	}
 	/*
 	 * only active during simulation
@@ -106,7 +108,7 @@ void Buddy::handler(axis_buddy_alloc& alloc, axis_buddy_alloc_ret& alloc_ret, ch
 }
 
 
-RET_STATUS Buddy::alloc(ap_uint<ORDER_MAX> order, ap_uint<PA_SHIFT>* addr, char* dram)
+ap_uint<1> Buddy::alloc(ap_uint<ORDER_MAX> order, ap_uint<PA_SHIFT>* addr, char* dram)
 {
 	// 1. get order level
 	// 2. if tag doesn't exist, ask parent iteratively
@@ -115,8 +117,7 @@ RET_STATUS Buddy::alloc(ap_uint<ORDER_MAX> order, ap_uint<PA_SHIFT>* addr, char*
 	// 5. calculate address
 	// 6. return
 	if (order < 0 || order >= ORDER_MAX - 1)
-		return ERROR;
-
+		return 1;
 
 	ap_uint<BUDDY_SET_TYPE> nr_asso = 0;
 	ap_uint<3> idx = 0;
@@ -133,29 +134,35 @@ RET_STATUS Buddy::alloc(ap_uint<ORDER_MAX> order, ap_uint<PA_SHIFT>* addr, char*
 	ALLOC_VALID_LINE_LOOK_UP:
 	for (start_level = req_level; start_level >= 0; start_level--) {
 #pragma HLS loop_tripcount min=1 max=LOOP_LEVEL_MAX
-		if (start_level == req_level)
-			available = get_valid_free_set(buddy_set[start_level], width, &nr_asso, &idx);
-		else
-			available = get_valid_free_set(buddy_set[start_level], 1, &nr_asso, &idx);
-
+		if (start_level == req_level) {
+			available = get_valid_free_set(buddy_set[start_level],
+						       width, &nr_asso, &idx);
+		} else {
+			available = get_valid_free_set(buddy_set[start_level],
+						       1, &nr_asso, &idx);
+		}
 		if (available) {
 			break;
 		}
 	}
 	/* not available, memory full */
 	if (!available)
-		return ERROR;
+		return 1;
 
 	/* set the valid lines */
 	if (start_level == req_level) {
-		set_clear_bits(buddy_set[start_level].lines[nr_asso], width, idx, true);
+		set_clear_bits(buddy_set[start_level].lines[nr_asso],
+			       width, idx, true);
 	} else {
-		set_clear_bits(buddy_set[start_level].lines[nr_asso], 1, idx, true);
+		set_clear_bits(buddy_set[start_level].lines[nr_asso],
+			       1, idx, true);
 	}
-	tag = parenttag_idx_to_tag(buddy_set[start_level].lines[nr_asso].tag, start_level, idx);
+	tag = parenttag_idx_to_tag(buddy_set[start_level].lines[nr_asso].tag,
+				   start_level, idx);
 	/* flush back to DRAM if it's full after prepare tag */
 	if (buddy_set[start_level].lines[nr_asso].children == 0xFF)
 		flush_line(buddy_set[start_level], start_level, nr_asso, dram);
+
 	/* load from memory and do some operations */
 	ALLOC_CACHE_LOAD:
 	for (i = start_level + 1; i <= req_level; i++) {
@@ -165,11 +172,13 @@ RET_STATUS Buddy::alloc(ap_uint<ORDER_MAX> order, ap_uint<PA_SHIFT>* addr, char*
 			flush_line(buddy_set[i], i, nr_asso, dram);
 
 		/* load from memory */
-		dram_read(&(buddy_set[i].lines[nr_asso].children), tag_level_to_drambuddy(dram_addr, tag, i), dram);
+		dram_read(&(buddy_set[i].lines[nr_asso].children),
+			  tag_level_to_drambuddy(dram_addr, tag, i), dram);
 
 		/* fill meta data */
 		buddy_set[i].lines[nr_asso].tag = tag;
-		buddy_set[i].lines[nr_asso].valid = 1;	/* set valid before check which index to go */
+		/* set valid before check which index to go */
+		buddy_set[i].lines[nr_asso].valid = 1;
 		if (i == req_level) {
 			get_valid_free_line(buddy_set[i].lines[nr_asso], width, &idx);
 			set_clear_bits(buddy_set[i].lines[nr_asso], width, idx, true);
@@ -177,7 +186,6 @@ RET_STATUS Buddy::alloc(ap_uint<ORDER_MAX> order, ap_uint<PA_SHIFT>* addr, char*
 			get_valid_free_line(buddy_set[i].lines[nr_asso], 1, &idx);
 			set_clear_bits(buddy_set[i].lines[nr_asso], 1, idx, true);
 		}
-
 		tag = parenttag_idx_to_tag(buddy_set[i].lines[nr_asso].tag, i, idx);
 
 		/* flush back to DRAM if it's full after prepare tag */
@@ -186,11 +194,10 @@ RET_STATUS Buddy::alloc(ap_uint<ORDER_MAX> order, ap_uint<PA_SHIFT>* addr, char*
 	}
 
 	*addr = tag_to_addr(tag);
-
-	return SUCCESS;
+	return 0;
 }
 
-RET_STATUS Buddy::free(ap_uint<ORDER_MAX> order, ap_uint<PA_SHIFT> addr, char* dram)
+ap_uint<1> Buddy::free(ap_uint<ORDER_MAX> order, ap_uint<PA_SHIFT> addr, char* dram)
 {
 	// 1. get tag, level, and index based on addr and order
 	// 2. if tag doesn't exist, ask parent level iteratively
@@ -199,7 +206,7 @@ RET_STATUS Buddy::free(ap_uint<ORDER_MAX> order, ap_uint<PA_SHIFT> addr, char* d
 	// 5. calculate address
 	// 6. return
 	if (order < 0 || order >= ORDER_MAX - 1)
-		return ERROR;
+		return 1;
 
 	ap_uint<LEVEL_MAX> req_level = order_to_level(order);
 	ap_uint<3> width = order_to_width(order);
@@ -207,36 +214,41 @@ RET_STATUS Buddy::free(ap_uint<ORDER_MAX> order, ap_uint<PA_SHIFT> addr, char* d
 	ap_uint<BUDDY_SET_TYPE> nr_asso[LEVEL_MAX] = {0};
 	ap_uint<LEVEL_MAX> in_cache = ap_uint<LEVEL_MAX>(-1);
 	bool valid_req = false, cont = true;
-#if BUDDY_DEBUG_DUMP
-	std::cout << "LEVEL: " << req_level << " ADDR: " << addr << " WIDTH: " << width << std::endl;
-#endif
 
-	// check requested free has been assigned correctly, load part not in cache from memory
+	/*
+	 * check requested free has been assigned correctly,
+	 * load part not in cache from memory
+	 */
 	for (int i = req_level; i >= 0; i--) {
 #pragma HLS loop_tripcount min=1 max=LOOP_LEVEL_MAX
 		ap_uint<3> width_i = (i == req_level) ? width : ap_uint<3>(1);
 		ap_uint<3> idx_i = addr_to_idx(addr, i);
 
 #if BUDDY_DEBUG_DUMP
-	std::cout << "LEVEL: " << i << " IDX: " << idx_i << " WIDTH: " << width_i << std::endl;
+	std::cout << "LEVEL: " << i << " IDX: "
+		<< idx_i << " WIDTH: " << width_i << std::endl;
 #endif
+
 		tag = addr_to_tag(addr, i);
 		in_cache[i] = tag_in_cache(buddy_set[i], tag, &(nr_asso[i]));
 		if (in_cache[i]) {
-			// this one should definitely in cache, otherwise, something goes wrong
-			valid_req = test_valid_bits(buddy_set[i].lines[nr_asso[i]], width_i, idx_i);
+			// this one should definitely in cache, if not, sth. goes wrong
+			valid_req = test_valid_bits(buddy_set[i].lines[nr_asso[i]],
+						    width_i, idx_i);
 		} else {
 			// everything not in cache, load it in free_set
-			dram_read(&(buddy_free_set[i].line.children), tag_level_to_drambuddy(dram_addr, tag, i), dram);
+			dram_read(&(buddy_free_set[i].line.children),
+				  tag_level_to_drambuddy(dram_addr, tag, i), dram);
 			buddy_free_set[i].line.tag = tag;
 			buddy_free_set[i].line.valid = 1;
-			valid_req = test_valid_bits(buddy_free_set[i].line, width_i, idx_i);
+			valid_req = test_valid_bits(buddy_free_set[i].line,
+						    width_i, idx_i);
 		}
 		if (!valid_req)
 			break;
 	}
 	if (!valid_req)
-		return ERROR;
+		return 1;
 
 	// request looks fine, clear bits and write back to memory
 	// @cont: if children are all zero, then, propagate to parent
@@ -247,13 +259,16 @@ RET_STATUS Buddy::free(ap_uint<ORDER_MAX> order, ap_uint<PA_SHIFT> addr, char* d
 		if (!cont)
 			break;
 		if (in_cache[i]) {
-			set_clear_bits(buddy_set[i].lines[nr_asso[i]], width_i, idx_i, false);
+			set_clear_bits(buddy_set[i].lines[nr_asso[i]],
+				       width_i, idx_i, false);
 			cont = (buddy_set[i].lines[nr_asso[i]].children) == 0;
 
 			/* when children are all zero, flush it */
-			if (!buddy_set[i].lines[nr_asso[i]].children && buddy_set[i].level > 0) {
-				dram_write(tag_level_to_drambuddy(dram_addr, buddy_set[i].lines[nr_asso[i]].tag, buddy_set[i].level),
-						&(buddy_set[i].lines[nr_asso[i]].children), dram);
+			if (!buddy_set[i].lines[nr_asso[i]].children
+					&& buddy_set[i].level > 0) {
+				dram_write(tag_level_to_drambuddy(dram_addr,
+					buddy_set[i].lines[nr_asso[i]].tag, buddy_set[i].level),
+					&(buddy_set[i].lines[nr_asso[i]].children), dram);
 				buddy_set[i].lines[nr_asso[i]].valid = 0;
 				buddy_set[i].lines[nr_asso[i]].tag = 0;
 			}
@@ -261,24 +276,25 @@ RET_STATUS Buddy::free(ap_uint<ORDER_MAX> order, ap_uint<PA_SHIFT> addr, char* d
 		} else {
 			set_clear_bits(buddy_free_set[i].line, width_i, idx_i, false);
 			cont = (buddy_free_set[i].line.children) == 0;
-			dram_write(tag_level_to_drambuddy(dram_addr, buddy_free_set[i].line.tag, buddy_free_set[i].level),
-						&(buddy_free_set[i].line.children), dram);
+			dram_write(tag_level_to_drambuddy(dram_addr,
+					buddy_free_set[i].line.tag, buddy_free_set[i].level),
+				   &(buddy_free_set[i].line.children), dram);
 			buddy_free_set[i].line.valid = 0;
 		}
 	}
-
-	return SUCCESS;
+	return 0;
 }
 
-void Buddy::flush_line(BuddyCacheSet& set, ap_uint<LEVEL_MAX> level,
+void Buddy::flush_line(struct BuddyCacheSet& set, ap_uint<LEVEL_MAX> level,
 		       ap_uint<BUDDY_SET_TYPE> nr_asso, char* dram)
 {
 #pragma HLS INLINE
-	dram_write(tag_level_to_drambuddy(dram_addr, set.lines[nr_asso].tag, set.level),
-					&(set.lines[nr_asso].children), dram);
+	dram_write(tag_level_to_drambuddy(dram_addr,
+			set.lines[nr_asso].tag, set.level),
+		   &(set.lines[nr_asso].children), dram);
 	set.lines[nr_asso].valid = 0;
 	set.lines[nr_asso].tag = 0;
-	//set.lines[nr_asso].children = 0;
+	set.lines[nr_asso].children = 0;
 }
 
 /*
@@ -286,7 +302,8 @@ void Buddy::flush_line(BuddyCacheSet& set, ap_uint<LEVEL_MAX> level,
  * true: potentially there are still children to be flushed
  * false: there are not children to be flushed anymore
  */
-bool Buddy::flush_set(BuddyCacheSet& set, ap_uint<LEVEL_MAX> level, ap_uint<3> flush_idx, char* dram)
+bool Buddy::flush_set(struct BuddyCacheSet& set, ap_uint<LEVEL_MAX> level,
+		      ap_uint<3> flush_idx, char* dram)
 {
 	bool cont = false;
 	BUDDY_CACHE_SET_FLUSH:
@@ -300,7 +317,8 @@ bool Buddy::flush_set(BuddyCacheSet& set, ap_uint<LEVEL_MAX> level, ap_uint<3> f
 	return cont;
 }
 
-void Buddy::flush_children(BuddyCacheSet& set, ap_uint<BUDDY_SET_TYPE> which, char* dram)
+void Buddy::flush_children(struct BuddyCacheSet& set,
+			   ap_uint<BUDDY_SET_TYPE> which, char* dram)
 {
 	assert(which < set.size);
 	if (!set.lines[which].valid)
@@ -330,7 +348,7 @@ void Buddy::flush_children(BuddyCacheSet& set, ap_uint<BUDDY_SET_TYPE> which, ch
  * true: no flush
  * false: flush
  */
-bool Buddy::choose_line(BuddyCacheSet& set, ap_uint<BUDDY_SET_TYPE>* nr_asso)
+bool Buddy::choose_line(struct BuddyCacheSet& set, ap_uint<BUDDY_SET_TYPE>* nr_asso)
 {
 	bool no_flush = false;
 	int i;
@@ -354,7 +372,8 @@ end_choose_line:
 	return no_flush;
 }
 
-bool Buddy::tag_in_cache(BuddyCacheSet& set, ap_uint<ORDER_MAX> tag, ap_uint<BUDDY_SET_TYPE>* nr_asso)
+bool Buddy::tag_in_cache(struct BuddyCacheSet& set, ap_uint<ORDER_MAX> tag,
+			 ap_uint<BUDDY_SET_TYPE>* nr_asso)
 {
 	bool ret = false;
 	TAG_IN_CACHE:
@@ -367,14 +386,13 @@ bool Buddy::tag_in_cache(BuddyCacheSet& set, ap_uint<ORDER_MAX> tag, ap_uint<BUD
 	return ret;
 }
 
-bool Buddy::get_valid_free_set(BuddyCacheSet& set, ap_uint<3> width, ap_uint<BUDDY_SET_TYPE>* nr_asso, ap_uint<3>* idx)
+bool Buddy::get_valid_free_set(struct BuddyCacheSet& set, ap_uint<3> width,
+			       ap_uint<BUDDY_SET_TYPE>* nr_asso, ap_uint<3>* idx)
 {
-//#pragma HLS PIPELINE
+
 	bool ret = false;
 	GET_VALID_FREE_SET:
 	for (*nr_asso = 0; *nr_asso < BUDDY_SET_SIZE; (*nr_asso)++) {
-//#pragma HLS UNROLL factor=UNROLL_FACTOR
-//#pragma HLS loop_tripcount min=1 max=LOOP_LEVEL_MAX
 		if (*nr_asso >= set.size)
 			break;
 
@@ -385,7 +403,8 @@ bool Buddy::get_valid_free_set(BuddyCacheSet& set, ap_uint<3> width, ap_uint<BUD
 	return ret;
 }
 
-bool Buddy::test_valid_bits(BuddyCacheLine& line, ap_uint<3> width, ap_uint<3> idx)
+bool Buddy::test_valid_bits(struct BuddyCacheLine& line,
+			    ap_uint<3> width, ap_uint<3> idx)
 {
 #pragma HLS INLINE
 #pragma HLS PIPELINE
@@ -405,7 +424,8 @@ bool Buddy::test_valid_bits(BuddyCacheLine& line, ap_uint<3> width, ap_uint<3> i
  * true: set
  * false: unset
  */
-void Buddy::set_clear_bits(BuddyCacheLine& line, ap_uint<3> width, ap_uint<3> idx, bool set_clear)
+void Buddy::set_clear_bits(struct BuddyCacheLine& line, ap_uint<3> width,
+			   ap_uint<3> idx, bool set_clear)
 {
 #pragma HLS INLINE
 #pragma HLS PIPELINE
@@ -422,7 +442,8 @@ void Buddy::set_clear_bits(BuddyCacheLine& line, ap_uint<3> width, ap_uint<3> id
 		line.children &= ~(mask << idx);
 }
 
-bool Buddy::get_valid_free_line(BuddyCacheLine& line, ap_uint<3> width, ap_uint<3>* idx)
+bool Buddy::get_valid_free_line(struct BuddyCacheLine& line,
+				ap_uint<3> width, ap_uint<3>* idx)
 {
 #pragma HLS INLINE
 #pragma HLS PIPELINE
@@ -453,14 +474,14 @@ bool Buddy::get_valid_free_line(BuddyCacheLine& line, ap_uint<3> width, ap_uint<
 	return ret;
 }
 
-ap_uint<3> Buddy::get_free_4bit(BuddyCacheLine& line)
+ap_uint<3> Buddy::get_free_4bit(struct BuddyCacheLine& line)
 {
 #pragma HLS INLINE
 #pragma HLS PIPELINE
 	return (line.children & 0xF) == 0 ? 0 : 4;
 }
 
-ap_uint<3> Buddy::get_free_2bit(BuddyCacheLine& line)
+ap_uint<3> Buddy::get_free_2bit(struct BuddyCacheLine& line)
 {
 #pragma HLS INLINE
 #pragma HLS PIPELINE
@@ -474,7 +495,7 @@ ap_uint<3> Buddy::get_free_2bit(BuddyCacheLine& line)
 		return 6;
 }
 
-ap_uint<3> Buddy::get_free_1bit(BuddyCacheLine& line)
+ap_uint<3> Buddy::get_free_1bit(struct BuddyCacheLine& line)
 {
 #pragma HLS INLINE
 #pragma HLS PIPELINE
@@ -510,11 +531,13 @@ ap_uint<3> Buddy::order_to_width(ap_uint<ORDER_MAX> order)
 	return ap_uint<3>(1 << (2 - ((ORDER_MAX - 1 - order) % 3)));
 }
 
-ap_uint<ORDER_MAX> Buddy::addr_to_tag(ap_uint<PA_SHIFT> addr, ap_uint<LEVEL_MAX> level)
+ap_uint<ORDER_MAX> Buddy::addr_to_tag(ap_uint<PA_SHIFT> addr,
+				      ap_uint<LEVEL_MAX> level)
 {
 #pragma HLS INLINE
 #pragma HLS PIPELINE
-	return ap_uint<ORDER_MAX>((addr(BLOCK_SHIFT - 1, BUDDY_MIN_SHIFT)) & ~(ap_uint<ORDER_MAX>(-1) >> (level * 3)));
+	return ap_uint<ORDER_MAX>((addr(BLOCK_SHIFT - 1, BUDDY_MIN_SHIFT)) &
+				  ~(ap_uint<ORDER_MAX>(-1) >> (level * 3)));
 }
 
 ap_uint<3> Buddy::addr_to_idx(ap_uint<PA_SHIFT> addr, ap_uint<LEVEL_MAX> level)
@@ -524,8 +547,10 @@ ap_uint<3> Buddy::addr_to_idx(ap_uint<PA_SHIFT> addr, ap_uint<LEVEL_MAX> level)
 	assert(level < LEVEL_MAX);
 	/* use shift and mask */
 	/* top 3 bits are 1, 0 else where */
-	const ap_uint<BLOCK_SHIFT> mask = ap_uint<BLOCK_SHIFT>(-1) ^ (ap_uint<BLOCK_SHIFT>(-1) >> 3);
-	ap_uint<BLOCK_SHIFT> tmp_idx = (ap_uint<BLOCK_SHIFT>(addr) << (3 * level)) & mask;
+	const ap_uint<BLOCK_SHIFT> mask = ap_uint<BLOCK_SHIFT>(-1)
+					^ (ap_uint<BLOCK_SHIFT>(-1) >> 3);
+	ap_uint<BLOCK_SHIFT> tmp_idx = (ap_uint<BLOCK_SHIFT>(addr)
+					<< (3*level)) & mask;
 	return tmp_idx(BLOCK_SHIFT - 1, BLOCK_SHIFT - 3);
 }
 
@@ -536,7 +561,8 @@ ap_uint<PA_SHIFT> Buddy::tag_to_addr(ap_uint<ORDER_MAX> tag)
 	return ap_uint<PA_SHIFT>(tag) << BUDDY_MIN_SHIFT;
 }
 
-ap_uint<ORDER_MAX> Buddy::tag_to_ancestor_tag(ap_uint<ORDER_MAX> tag, ap_uint<LEVEL_MAX> level)
+ap_uint<ORDER_MAX> Buddy::tag_to_ancestor_tag(ap_uint<ORDER_MAX> tag,
+					      ap_uint<LEVEL_MAX> level)
 {
 #pragma HLS INLINE
 #pragma HLS PIPELINE
@@ -544,7 +570,8 @@ ap_uint<ORDER_MAX> Buddy::tag_to_ancestor_tag(ap_uint<ORDER_MAX> tag, ap_uint<LE
 	return (tag) & ~(ap_uint<ORDER_MAX>(-1) >> (level * 3));
 }
 
-ap_uint<3> Buddy::tag_to_ancestor_idx(ap_uint<ORDER_MAX> tag, ap_uint<LEVEL_MAX> level)
+ap_uint<3> Buddy::tag_to_ancestor_idx(ap_uint<ORDER_MAX> tag,
+				      ap_uint<LEVEL_MAX> level)
 {
 #pragma HLS INLINE
 #pragma HLS PIPELINE
@@ -558,7 +585,8 @@ ap_uint<3> Buddy::tag_to_ancestor_idx(ap_uint<ORDER_MAX> tag, ap_uint<LEVEL_MAX>
 	return tag_pad(ORDER_MAX_PAD - 1 - level*3, ORDER_MAX_PAD - 3 - level*3);
 }
 
-ap_uint<3> Buddy::tag_to_parent_idx(ap_uint<ORDER_MAX> tag, ap_uint<LEVEL_MAX> level)
+ap_uint<3> Buddy::tag_to_parent_idx(ap_uint<ORDER_MAX> tag,
+				    ap_uint<LEVEL_MAX> level)
 {
 #pragma HLS INLINE
 #pragma HLS PIPELINE
@@ -567,11 +595,13 @@ ap_uint<3> Buddy::tag_to_parent_idx(ap_uint<ORDER_MAX> tag, ap_uint<LEVEL_MAX> l
 }
 
 ap_uint<ORDER_MAX> Buddy::parenttag_idx_to_tag(ap_uint<ORDER_MAX> parent_tag,
-					       ap_uint<LEVEL_MAX> parent_level, ap_uint<3> idx)
+					       ap_uint<LEVEL_MAX> parent_level,
+					       ap_uint<3> idx)
 {
 #pragma HLS INLINE
 #pragma HLS PIPELINE
-	return parent_tag | ((idx, ap_uint<ORDER_MAX-3>(0)) >> (ap_uint<ORDER_MAX>(parent_level) * 3));
+	return parent_tag | ((idx, ap_uint<ORDER_MAX-3>(0))
+			>> (ap_uint<ORDER_MAX>(parent_level) * 3));
 }
 
 /*
@@ -579,7 +609,9 @@ ap_uint<ORDER_MAX> Buddy::parenttag_idx_to_tag(ap_uint<ORDER_MAX> parent_tag,
  * for the ith level, the starting address is
  * 8^0 + 8^1 + ... + 8^(i-1) = (8^i)) / 7
  */
-unsigned long Buddy::tag_level_to_drambuddy(unsigned long dram_addr, ap_uint<ORDER_MAX> tag, ap_uint<LEVEL_MAX> level)
+unsigned long
+Buddy::tag_level_to_drambuddy(unsigned long dram_addr,
+			      ap_uint<ORDER_MAX> tag, ap_uint<LEVEL_MAX> level)
 {
 #pragma HLS INLINE
 #pragma HLS PIPELINE
@@ -590,7 +622,7 @@ unsigned long Buddy::tag_level_to_drambuddy(unsigned long dram_addr, ap_uint<ORD
 	ap_uint<ORDER_MAX_PAD> tag_pad = tag;
 #endif
 	return dram_addr + (unsigned long)(tag_pad >> (3 * (LEVEL_MAX - level)))
-					+ (unsigned long)((1 << (3*(unsigned long)(level))) / 7);
+			+ (unsigned long)((1 << (3*(unsigned long)(level))) / 7);
 }
 
 void Buddy::dram_read(ap_uint<8>* dest, unsigned long src, char* dram)
@@ -622,10 +654,6 @@ void Buddy::dump_buddy_table()
 	}
 #endif
 #endif
-}
-
-Buddy::~Buddy()
-{
 }
 
 void BuddyCacheSet::count()

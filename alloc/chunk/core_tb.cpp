@@ -14,17 +14,17 @@
  * 8. Free:  Double Free; Expect: Error
  */
 
-static int test(OPCODE opcode, ap_uint<PA_SHIFT> addr, ap_uint<PID_SHIFT> pid, ACCESS_TYPE rw,
-				RET_STATUS expt_stat, RET_STATUS expt_sysmmu_stat, ap_uint<PA_SHIFT> expt_addr,
-				bool expt_req2sysmmu)
+static int test(ap_uint<1> opcode, ap_uint<PA_SHIFT> addr, ap_uint<PID_SHIFT> pid, ap_uint<1> rw,
+		ap_uint<1> expt_stat, ap_uint<1> expt_sysmmu_stat, ap_uint<PA_SHIFT> expt_addr,
+		bool expt_req2sysmmu)
 {
-	axis_sysmmu_ctrl ctrl;
-	axis_sysmmu_alloc alloc;
-	axis_sysmmu_alloc_ret ret_fifo;
+	hls::stream<struct sysmmu_ctrl_if> ctrl;
+	hls::stream<sysmmu_alloc_if> alloc;
+	hls::stream<sysmmu_alloc_ret_if> ret_fifo;
 	sysmmu_ctrl_if ctrl_req;
 	sysmmu_alloc_if req;
 	sysmmu_alloc_ret_if ret;
-	RET_STATUS stat = SUCCESS;
+	ap_uint<1> stat = 0;
 
 	req.opcode = opcode;
 	req.addr = addr;
@@ -32,7 +32,7 @@ static int test(OPCODE opcode, ap_uint<PA_SHIFT> addr, ap_uint<PID_SHIFT> pid, A
 	req.rw = rw;
 	alloc.write(req);
 
-	if (req.opcode == SYSMMU_ALLOC)
+	if (req.opcode == 0) // if opcode is alloc
 		std::cout << "[ALLOC]  ";
 	else
 		std::cout << "[FREE]   ";
@@ -101,44 +101,40 @@ int main(void)
 
 	/* case 1 */
 	for (int i = 0; i < TABLE_SIZE; i++) {
-		ret = test(SYSMMU_ALLOC, ADDR(i, BLOCK_SHIFT), 123, MEMWIRTE,
-					SUCCESS, SUCCESS, ADDR(i, BLOCK_SHIFT), true);
+		ret = test(0, ADDR(i, BLOCK_SHIFT), 123, 1, 0, 0, ADDR(i, BLOCK_SHIFT), true);
 		err_cnt += print_result(ret, 0);
 	}
 
 	/* case 2 */
-	ret = test(SYSMMU_ALLOC, 0, 123, MEMWIRTE, ERROR, ERROR, 0, false);
+	ret = test(0, 0, 123, 1, 1, 1, 0, false);
 	err_cnt += print_result(ret, -1);
 
 	/* case 3 */
-	ret = test(SYSMMU_FREE, rand1, 456, MEMWIRTE, ERROR, ERROR, 0, true);
+	ret = test(1, rand1, 456, 1, 1, 1, 0, true);
 	err_cnt += print_result(ret, -1);
 
 	/* case 4 */
-	ret = test(SYSMMU_FREE, rand1, 123, MEMREAD, SUCCESS, SUCCESS, 0, true);
+	ret = test(1, rand1, 123, 0, 0, 0, 0, true);
 	err_cnt += print_result(ret, 0);
 
 	/* case 5 */
-	ret = test(SYSMMU_FREE, rand2, 123, MEMWIRTE, SUCCESS, SUCCESS, 0, true);
+	ret = test(1, rand2, 123, 1, 0, 0, 0, true);
 	err_cnt += print_result(ret, 0);
 
 	/* case 6 */
-	ret = test(SYSMMU_ALLOC, 0, 123, MEMWIRTE,
-				SUCCESS, SUCCESS, (ap_uint<PA_SHIFT>)ALIGN_DOWN(rand1, BLOCK_SIZE), true);
+	ret = test(0, 0, 123, 1, 0, 0, (ap_uint<PA_SHIFT>)ALIGN_DOWN(rand1, BLOCK_SIZE), true);
 	err_cnt += print_result(ret, 0);
-	ret = test(SYSMMU_ALLOC, 0, 123, MEMWIRTE,
-				SUCCESS, SUCCESS, (ap_uint<PA_SHIFT>)ALIGN_DOWN(rand2, BLOCK_SIZE), true);
+	ret = test(0, 0, 123, 1, 0, 0, (ap_uint<PA_SHIFT>)ALIGN_DOWN(rand2, BLOCK_SIZE), true);
 	err_cnt += print_result(ret, 0);
 
 	/* case 7 */
 	for (int i = 0; i < TABLE_SIZE ; i++) {
-		ret = test(SYSMMU_FREE, ADDR(i, BLOCK_SHIFT), 123, MEMWIRTE,
-					SUCCESS, SUCCESS, ADDR(i, BLOCK_SHIFT), true);
+		ret = test(1, ADDR(i, BLOCK_SHIFT), 123, 1, 0, 0, ADDR(i, BLOCK_SHIFT), true);
 		err_cnt += print_result(ret, 0);
 	}
 
 	/* case 8 */
-	ret = test(SYSMMU_FREE, rand1, 123, MEMWIRTE, ERROR, ERROR, 0, false);
+	ret = test(1, rand1, 123, 1, 1, 1, 0, false);
 	err_cnt += print_result(ret, -1);
 
 	return err_cnt;

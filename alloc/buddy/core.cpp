@@ -7,9 +7,10 @@
 static Buddy buddy = Buddy();
 const int AXI_DEPTH = SIM_DRAM_SIZE;
 
-void buddy_allocator(axis_buddy_alloc& alloc, axis_buddy_alloc_ret& alloc_ret, char* dram)
+void buddy_allocator(hls::stream<buddy_alloc_if>& alloc,
+		     hls::stream<buddy_alloc_ret_if>& alloc_ret,
+		     char* dram)
 {
-//#pragma HLS INTERFACE ap_ctrl_none port=return
 #pragma HLS DATA_PACK variable=alloc
 #pragma HLS DATA_PACK variable=alloc_ret
 

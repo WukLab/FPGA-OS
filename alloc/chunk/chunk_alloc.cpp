@@ -6,44 +6,42 @@ Chunk_alloc::Chunk_alloc()
 	chunk_bitmap = 0;
 }
 
-Chunk_alloc::~Chunk_alloc()
-{
-}
-
-void Chunk_alloc::handler(axis_sysmmu_alloc& alloc, axis_sysmmu_alloc_ret& alloc_ret,
-						axis_sysmmu_ctrl& ctrl, RET_STATUS& ctrl_ret, RET_STATUS* stat)
+void
+Chunk_alloc::handler(hls::stream<sysmmu_alloc_if>& alloc, hls::stream<sysmmu_alloc_ret_if>& alloc_ret,
+		     hls::stream<struct sysmmu_ctrl_if>& ctrl, ap_uint<1>& ctrl_ret, ap_uint<1>* stat)
 {
 #pragma HLS INLINE
 #pragma HLS PIPELINE
 	if (alloc.empty()) {
-		*stat = SUCCESS;
+		*stat = 0;
 		return;
 	}
 
-	sysmmu_alloc_if req = alloc.read();
+	struct sysmmu_alloc_if req = alloc.read();
 	switch (req.opcode) {
-	case SYSMMU_ALLOC:
+	case 0: // Alloc
 		Chunk_alloc::alloc(req, alloc_ret, ctrl, ctrl_ret, stat);
 		break;
-	case SYSMMU_FREE:
+	case 1: // Free
 		Chunk_alloc::free(req, alloc_ret, ctrl, ctrl_ret, stat);
 		break;
 	default:
-		*stat = ERROR;
+		*stat = 1;
 	}
 }
 
-void Chunk_alloc::alloc(sysmmu_alloc_if& alloc, axis_sysmmu_alloc_ret& alloc_ret,
-						axis_sysmmu_ctrl& ctrl, RET_STATUS& ctrl_ret, RET_STATUS* stat)
+void
+Chunk_alloc::alloc(struct sysmmu_alloc_if& alloc, hls::stream<sysmmu_alloc_ret_if>& alloc_ret,
+		   hls::stream<struct sysmmu_ctrl_if>& ctrl, ap_uint<1>& ctrl_ret, ap_uint<1>* stat)
 {
 #pragma HLS PIPELINE
-	sysmmu_ctrl_if req;
-	sysmmu_alloc_ret_if ret;
+	struct sysmmu_ctrl_if req;
+	struct sysmmu_alloc_ret_if ret;
 	ap_uint<PA_SHIFT> i;
 	for (i = 0; i < TABLE_SIZE; i++) {
 		if (!chunk_bitmap.get_bit(i)) {
 			chunk_bitmap.set_bit(i, 1);
-			req.opcode = SYSMMU_ALLOC;
+			req.opcode = 0;	// Alloc opcode
 			req.idx = i;
 			req.pid = alloc.pid;
 			req.rw = alloc.rw;
@@ -51,39 +49,40 @@ void Chunk_alloc::alloc(sysmmu_alloc_if& alloc, axis_sysmmu_alloc_ret& alloc_ret
 			break;
 		}
 	}
-	if (i < TABLE_SIZE && ctrl_ret == SUCCESS) {
+	if (i < TABLE_SIZE && ctrl_ret == 0) {
 		ret.addr = ADDR(i, BLOCK_SHIFT);
 		alloc_ret.write(ret);
-		*stat = SUCCESS;
+		*stat = 0;
 	} else {
-		*stat = ERROR;
+		*stat = 1;
 	}
 }
 
-void Chunk_alloc::free(sysmmu_alloc_if& alloc, axis_sysmmu_alloc_ret& alloc_ret,
-						axis_sysmmu_ctrl& ctrl, RET_STATUS& ctrl_ret, RET_STATUS* stat)
+void
+Chunk_alloc::free(struct sysmmu_alloc_if& alloc, hls::stream<sysmmu_alloc_ret_if>& alloc_ret,
+		  hls::stream<struct sysmmu_ctrl_if>& ctrl, ap_uint<1>& ctrl_ret, ap_uint<1>* stat)
 {
 #pragma HLS PIPELINE
-	sysmmu_ctrl_if req;
-	sysmmu_alloc_ret_if ret;
+	struct sysmmu_ctrl_if req;
+	struct sysmmu_alloc_ret_if ret;
 	ap_uint<TABLE_TYPE> idx = BLOCK_IDX(alloc.addr);
 
 	if (chunk_bitmap.get_bit(idx)) {
-		req.opcode = SYSMMU_FREE;
+		req.opcode = 1; // Free opcode
 		req.idx = BLOCK_IDX(alloc.addr);
 		req.pid = alloc.pid;
 		req.rw = alloc.rw;
 		ctrl.write(req);
 	} else {
-		*stat = ERROR;
+		*stat = 1;
 	}
 
-	if (ctrl_ret == SUCCESS) {
+	if (ctrl_ret == 0) {
 		chunk_bitmap.set_bit(idx, 0);
 		ret.addr = alloc.addr;
 		alloc_ret.write(ret);
-		*stat = SUCCESS;
+		*stat = 0;
 	} else {
-		*stat = ERROR;
+		*stat = 1;
 	}
 }

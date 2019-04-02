@@ -2,8 +2,8 @@
 
 static Chunk_alloc chunk_allocator = Chunk_alloc();
 
-void chunk_alloc(axis_sysmmu_alloc& alloc, axis_sysmmu_alloc_ret& alloc_ret,
-		axis_sysmmu_ctrl& ctrl, RET_STATUS& ctrl_ret, RET_STATUS* stat)
+void chunk_alloc(hls::stream<sysmmu_alloc_if>& alloc, hls::stream<sysmmu_alloc_ret_if>& alloc_ret,
+		 hls::stream<struct sysmmu_ctrl_if>& ctrl, ap_uint<1>& ctrl_ret, ap_uint<1>* stat)
 {
 #pragma HLS PIPELINE
 #pragma HLS INTERFACE axis register both port=alloc

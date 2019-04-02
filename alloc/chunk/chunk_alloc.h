@@ -11,20 +11,19 @@ class Chunk_alloc
 {
 public:
 	Chunk_alloc();
-	~Chunk_alloc();
+	~Chunk_alloc() {}
 
-	void handler(axis_sysmmu_alloc& alloc, axis_sysmmu_alloc_ret& alloc_ret, axis_sysmmu_ctrl& ctrl,
-			RET_STATUS& ctrl_ret, RET_STATUS* stat);
+	void handler(hls::stream<sysmmu_alloc_if>& alloc, hls::stream<sysmmu_alloc_ret_if>& alloc_ret,
+		     hls::stream<struct sysmmu_ctrl_if>& ctrl, ap_uint<1>& ctrl_ret, ap_uint<1>* stat);
 
 private:
 	ap_uint<TABLE_SIZE> chunk_bitmap;
 
-	void alloc(sysmmu_alloc_if& alloc, axis_sysmmu_alloc_ret& alloc_ret, axis_sysmmu_ctrl& ctrl,
-			RET_STATUS& ctrl_ret, RET_STATUS* stat);
-	void free(sysmmu_alloc_if& alloc, axis_sysmmu_alloc_ret& alloc_ret, axis_sysmmu_ctrl& ctrl,
-			RET_STATUS& ctrl_ret, RET_STATUS* stat);
+	void alloc(struct sysmmu_alloc_if& alloc, hls::stream<sysmmu_alloc_ret_if>& alloc_ret,
+		   hls::stream<struct sysmmu_ctrl_if>& ctrl, ap_uint<1>& ctrl_ret, ap_uint<1>* stat);
+	void free(struct sysmmu_alloc_if& alloc, hls::stream<sysmmu_alloc_ret_if>& alloc_ret,
+		  hls::stream<struct sysmmu_ctrl_if>& ctrl, ap_uint<1>& ctrl_ret, ap_uint<1>* stat);
 };
-
 
 
 #endif /* _CHUNK_ALLOC_H_ */
