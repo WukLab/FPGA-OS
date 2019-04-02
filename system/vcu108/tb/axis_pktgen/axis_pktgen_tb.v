@@ -72,6 +72,7 @@ module axis_pktgen_tb(
                     $fscanf(infd,"%h %h\n",tx_tdata, tx_tkeep);
                     pktlen = pktlen - 1; 
                     tx_tvalid = 1;
+                    tx_tlast = 0;
                     if ($feof(infd)) begin
                         finished = 1;
                         end
