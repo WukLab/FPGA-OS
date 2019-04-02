@@ -1,7 +1,10 @@
-#include <stdlib.h>
+/*
+ * Copyright (c) 2019, WukLab, Purdue University.
+ */
+
+//#include <stdlib.h>
 #include <ctime>
-#include <fpga/axis_sysmmu_ctrl.h>
-#include <fpga/axis_sysmmu_data.h>
+#include <fpga/log2.h>
 #include "sysmmu.h"
 
 /*
@@ -18,37 +21,74 @@
  * 10. Access: Single address but not allocated; Expect: Error
  */
 
-static int data_test(ap_uint<PA_SHIFT> addr, ap_uint<PID_SHIFT> pid,
-					ap_uint<PA_SHIFT> size, ACCESS_TYPE rw)
+int data_test(ap_uint<PA_SHIFT> addr, ap_uint<PID_SHIFT> pid,
+		ap_uint<PA_SHIFT> size, ap_uint<1> rw)
 {
-	axis_sysmmu_data datapath;
-	axis_sysmmu_ctrl ctrlpath_dummy;
-	sysmmu_data_if req;
-	RET_STATUS result, dummy;
+	struct sysmmu_indata in_rd = {0,0,0,0}, in_wr = {0,0,0,0};
+	struct sysmmu_outdata out_rd = {0,0}, out_wr = {0,0};
+	hls::stream<struct sysmmu_ctrl_if> ctrlpath_dummy;
+	ap_uint<1> result, dummy;
 
-	req.addr = addr;
-	req.pid = pid;
-	req.size = size;
-	req.rw = rw;
-	datapath.write(req);
+	if (rw) {
+		/* write */
+		in_wr.in_addr = addr;
+		in_wr.pid = pid;
 
-	std::cout << "[ACCESS] Address:" << std::hex << std::setw(10) << req.addr
-			<< " IDX:" << std::dec << std::setw(3) << BLOCK_IDX(req.addr)
-			<< " PID:" <<  req.pid
-			<< " Size:" << std::hex << std::setw(10) << req.size
-			<< " RW:" << std::dec << req.rw;
+		in_wr.in_len = size >> 7;
+		if (size(6, 0) > 0)
+			in_wr.in_len++;
 
-	mm_segment_top(ctrlpath_dummy, datapath, &dummy, &result);
+		if (in_wr.in_len == 1)
+			in_wr.in_size = order_base_2<PA_SHIFT>(ap_uint<PA_SHIFT>(size(7,0) >> 1));
+		else
+			in_wr.in_size = 7;
 
-	return result ? -1 : 0;
+		std::cout << "[ACCESS] Address:" << std::hex << std::setw(10) << in_wr.in_addr
+				<< " IDX:" << std::dec << std::setw(3) << BLOCK_IDX(in_wr.in_addr)
+				<< " PID:" <<  in_wr.pid
+				<< " AXI Size passed in:" << std::hex << std::setw(16)
+				<< (ap_uint<16>(in_wr.in_len) << ap_uint<16>(in_wr.in_size))
+				<< " Real Size:" << std::hex << std::setw(10) << size
+				<< " RW:" << std::dec << rw;
+	} else {
+		/* read */
+		in_rd.in_addr = addr;
+		in_rd.pid = pid;
+
+		in_rd.in_len = size >> 7;
+		if (size(6, 0) > 0)
+			in_rd.in_len++;
+
+		if (in_rd.in_len == 1)
+			in_rd.in_size = order_base_2<PA_SHIFT>(ap_uint<PA_SHIFT>(size(7,0) >> 1));
+		else
+			in_rd.in_size = 7;
+
+		std::cout << "[ACCESS] Address:" << std::hex << std::setw(10) << in_rd.in_addr
+				<< " IDX:" << std::dec << std::setw(3) << BLOCK_IDX(in_rd.in_addr)
+				<< " PID:" <<  in_rd.pid
+				<< " AXI Size passed in:" << std::hex << std::setw(16)
+				<< (ap_uint<16>(in_rd.in_len) << ap_uint<16>(in_rd.in_size))
+				<< " Real Size:" << std::hex << std::setw(10) << size
+				<< " RW:" << std::dec << rw;
+	}
+
+	mm_segment_top(ctrlpath_dummy, &dummy, in_rd, &out_rd, in_wr, &out_wr);
+
+	if (rw) {
+		return out_wr.drop ? -1 : 0;
+	} else {
+		return out_rd.drop ? -1 : 0;
+	}
 }
 
-static int ctrl_test(OPCODE opcode, ap_uint<PA_SHIFT> addr, ap_uint<PID_SHIFT> pid, ACCESS_TYPE rw)
+int ctrl_test(ap_uint<1> opcode, ap_uint<PA_SHIFT> addr, ap_uint<PID_SHIFT> pid, ap_uint<1> rw)
 {
-	axis_sysmmu_data datapath_dummy;
-	axis_sysmmu_ctrl ctrlpath;
-	sysmmu_ctrl_if req;
-	RET_STATUS dummy, result;
+	struct sysmmu_indata in_rd = {0,0,0,0}, in_wr = {0,0,0,0};
+	struct sysmmu_outdata out_rd = {0,0}, out_wr = {0,0};
+	hls::stream<struct sysmmu_ctrl_if> ctrlpath;
+	struct sysmmu_ctrl_if req;
+	ap_uint<1> result;
 
 	req.opcode = opcode;
 	req.idx = BLOCK_IDX(addr);
@@ -56,24 +96,26 @@ static int ctrl_test(OPCODE opcode, ap_uint<PA_SHIFT> addr, ap_uint<PID_SHIFT> p
 	req.rw = rw;
 	ctrlpath.write(req);
 
-	if (req.opcode == SYSMMU_ALLOC)
+	if (req.opcode == 0)
 		std::cout << "[ALLOC]  ";
 	else
 		std::cout << "[FREE]   ";
 	std::cout << "Address:" << std::hex << std::setw(10) << addr
 			<< " IDX:" << std::dec << std::setw(3) << req.idx
 			<< " PID:" << req.pid
-			<< " Size:" << std::setw(10) << "N/A"
-			<< " RW:" << req.rw;
+			<< " AXI Size passed in:" << std::setw(16) << "N/A"
+			<< " Real Size:" << std::hex << std::setw(10) << "N/A"
+			<< " RW:" << std::dec << req.rw;
 
-	mm_segment_top(ctrlpath, datapath_dummy, &result, &dummy);
+
+	mm_segment_top(ctrlpath, &result, in_rd, &out_rd, in_wr, &out_wr);
 
 	return result ? -1 : 0;
 }
 
 int print_result(int real, int expect)
 {
-	std::cout << " RET: " << std::setw(2) << real
+	std::cout << " RET: " << std::setw(2) << std::dec << real
 			  << " EXPT: " << std::setw(2) << expect;
 	if (real == expect) {
 		std::cout << "  SUCCESS!!" << std::endl;
@@ -104,82 +146,84 @@ int main(void)
 			 ALIGN_DOWN(rand2, BLOCK_SIZE) == ALIGN_DOWN(rand1, BLOCK_SIZE));
 
 	/* ALLOC */
-	ret = ctrl_test(SYSMMU_ALLOC, 0, 123, MEMWIRTE);
+	ret = ctrl_test(0, 0, 12, 1);
 	err_cnt += print_result(ret, 0);
 
-	ret = ctrl_test(SYSMMU_ALLOC, 1UL << BLOCK_SHIFT, 123, MEMWIRTE);
+	ret = ctrl_test(0, 1UL << BLOCK_SHIFT, 12, 1);
 	err_cnt += print_result(ret, 0);
 
-	ret = ctrl_test(SYSMMU_ALLOC, (1UL << PA_SHIFT) - 1, 123, MEMWIRTE);
+	ret = ctrl_test(0, (1UL << PA_SHIFT) - 1, 12, 1);
 	err_cnt += print_result(ret, 0);
 
-	ret = ctrl_test(SYSMMU_ALLOC, rand1, 456, MEMREAD);
+	ret = ctrl_test(0, rand1, 45, 0);
 	err_cnt += print_result(ret, 0);
 
-	ret = ctrl_test(SYSMMU_ALLOC, rand2, 456, MEMREAD);
+	ret = ctrl_test(0, rand2, 45, 0);
 	err_cnt += print_result(ret, 0);
 
-	ret = ctrl_test(SYSMMU_ALLOC, 0, 123, MEMWIRTE);
+	ret = ctrl_test(0, 0, 12, 1);
 	err_cnt += print_result(ret, -1);
 
-	ret = ctrl_test(SYSMMU_ALLOC, rand1, 123, MEMWIRTE);
+	ret = ctrl_test(0, rand1, 12, 1);
 	err_cnt += print_result(ret, -1);
 
 	/* ACCESS */
-	ret = data_test(0, 123, 1, MEMWIRTE);
+	ret = data_test(0, 12, 1, 1);
 	err_cnt += print_result(ret, 0);
 
-	ret = data_test((1UL << PA_SHIFT) - 1, 123, 1, MEMWIRTE);
+	ret = data_test((1UL << PA_SHIFT) - 1, 12, 1, 1);
 	err_cnt += print_result(ret, 0);
 
-	ret = data_test(rand1, 456, 1, MEMREAD);
+	ret = data_test(rand1, 45, 1, 0);
 	err_cnt += print_result(ret, 0);
 
-	ret = data_test(rand2, 456, 1, MEMREAD);
+	ret = data_test(rand2, 45, 1, 0);
 	err_cnt += print_result(ret, 0);
 
 	/* wrong PID */
-	ret = data_test(rand1, 123, 1, MEMREAD);
+	ret = data_test(rand1, 12, 1, 0);
 	err_cnt += print_result(ret, -1);
 
 	/* wrong permission */
-	ret = data_test(rand2, 456, 1, MEMWIRTE);
+	ret = data_test(rand2, 45, 1, 1);
 	err_cnt += print_result(ret, -1);
 
-	ret = data_test(0, 123, 1UL << (BLOCK_SHIFT + 1), MEMWIRTE);
+	ret = data_test((1UL << (BLOCK_SHIFT + 1)) - (1UL << (14)),
+			12, 1UL << 14, 1);
 	err_cnt += print_result(ret, 0);
 
 	/* invalid address */
-	ret = data_test(0, 123, (1UL << (BLOCK_SHIFT + 1)) + 1, MEMWIRTE);
+	ret = data_test((1UL << (BLOCK_SHIFT + 1)) - (1UL << (14)),
+				12, (1UL << 14) + 128, 1);
 	err_cnt += print_result(ret, -1);
 
 	/* FREE */
-	ret = ctrl_test(SYSMMU_FREE, 0, 123, MEMWIRTE);
+	ret = ctrl_test(1, 0, 12, 1);
 	err_cnt += print_result(ret, 0);
 
-	ret = ctrl_test(SYSMMU_FREE, 1UL << BLOCK_SHIFT, 123, MEMWIRTE);
+	ret = ctrl_test(1, 1UL << BLOCK_SHIFT, 12, 1);
 	err_cnt += print_result(ret, 0);
 
-	ret = ctrl_test(SYSMMU_FREE, (1UL << PA_SHIFT) - 1, 123, MEMWIRTE);
+	ret = ctrl_test(1, (1UL << PA_SHIFT) - 1, 12, 1);
 	err_cnt += print_result(ret, 0);
 
-	ret = ctrl_test(SYSMMU_FREE, rand1, 456, MEMREAD);
+	ret = ctrl_test(1, rand1, 45, 0);
 	err_cnt += print_result(ret, 0);
 
-	ret = ctrl_test(SYSMMU_FREE, rand2, 456, MEMREAD);
+	ret = ctrl_test(1, rand2, 45, 0);
 	err_cnt += print_result(ret, 0);
 
-	ret = ctrl_test(SYSMMU_FREE, 0, 123, MEMWIRTE);
+	ret = ctrl_test(1, 0, 12, 1);
 	err_cnt += print_result(ret, -1);
 
-	ret = ctrl_test(SYSMMU_FREE, rand1, 123, MEMWIRTE);
+	ret = ctrl_test(1, rand1, 12, 1);
 	err_cnt += print_result(ret, -1);
 
 	/* USE AFTER FREE */
-	ret = data_test(rand1, 456, 1, MEMREAD);
+	ret = data_test(rand1, 45, 1, 0);
 	err_cnt += print_result(ret, -1);
 
-	ret = data_test(rand2, 456, 1, MEMREAD);
+	ret = data_test(rand2, 45, 1, 0);
 	err_cnt += print_result(ret, -1);
 
 	return err_cnt;

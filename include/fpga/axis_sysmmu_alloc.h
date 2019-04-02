@@ -10,32 +10,29 @@
 #ifndef _LEGO_FPGA_AXIS_SYSMMU_ALLOC_
 #define _LEGO_FPGA_AXIS_SYSMMU_ALLOC_
 
-#include "sysmmu_type.h"
 #include <fpga/axis_sysmmu_ctrl.h>
 
-template <int PID_WIDTH, int ADDR_WIDTH>
-struct sysmmu_alloc {
+struct sysmmu_alloc_if {
 	/*
 	 * physical memory unit memory ctrl structure, this interface sits
 	 * between application and sysmmu allocator, to save the bandwidth,
 	 * alloc and free use the same structure, so some field maybe useless
 	 * for certain opcode, see below for detail:
 	 *
-	 * opcode: ALLOC or FREE
+	 * opcode: ALLOC = 0 or FREE = 1
 	 * pid: application id
 	 * rw:	application rw permission for this malloc, 
 	 * 	if opcode is FREE, this field is useless
 	 * addr: address used for free, 
 	 *       if opcode is ALLOC, this field is useless
 	 */
-	OPCODE			opcode;
-	ap_uint<PID_WIDTH>	pid;
-	ACCESS_TYPE		rw;
-	ap_uint<ADDR_WIDTH>	addr;
+	ap_uint<1>		opcode;
+	ap_uint<PID_SHIFT>	pid;
+	ap_uint<1>		rw;
+	ap_uint<PA_SHIFT>	addr;
 };
 
-template <int ADDR_WIDTH>
-struct sysmmu_alloc_ret {
+struct sysmmu_alloc_ret_if {
 	/*
 	 * physical memory unit memory ctrl return structure, this interface 
 	 * sits between application and sysmmu allocator, the return is only
@@ -43,17 +40,10 @@ struct sysmmu_alloc_ret {
 	 *
 	 * addr: address assigned, useless when request is FREE
 	 */
-	ap_uint<ADDR_WIDTH>	addr;
+	ap_uint<PA_SHIFT>	addr;
 };
 
-typedef struct sysmmu_alloc<PID_SHIFT, PA_SHIFT>	sysmmu_alloc_if;
-typedef struct sysmmu_alloc_ret<PA_SHIFT>		sysmmu_alloc_ret_if;
-
-typedef hls::stream<sysmmu_alloc_if>			axis_sysmmu_alloc;
-typedef hls::stream<sysmmu_alloc_ret_if>		axis_sysmmu_alloc_ret;
-
-
-void chunk_alloc(axis_sysmmu_alloc& alloc, axis_sysmmu_alloc_ret& alloc_ret, axis_sysmmu_ctrl& ctrl,
-		RET_STATUS& ctrl_ret, RET_STATUS* stat);
+void chunk_alloc(hls::stream<sysmmu_alloc_if>& alloc, hls::stream<sysmmu_alloc_ret_if>& alloc_ret,
+		 hls::stream<struct sysmmu_ctrl_if>& ctrl, ap_uint<1>& ctrl_ret, ap_uint<1>* stat);
 
 #endif /* _LEGO_FPGA_AXIS_SYSMMU_ALLOC_ */
