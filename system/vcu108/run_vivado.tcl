@@ -373,7 +373,9 @@ proc cr_bd_LegoFPGA_axis64_KVS { parentCell } {
      set list_check_ips "\ 
   xilinx.com:ip:axis_data_fifo:1.1\
   xilinx.com:ip:jtag_axi:1.2\
-  wuklab:user:memcachedPipeline_top:1.0\
+  purdue.wuklab:hls:buddy_allocator:1.0\
+  wuklab:user:memcachedBuddy_top:1.0\
+  xilinx.com:ip:xlconstant:1.1\
   xilinx.com:ip:ddr4:2.2\
   xilinx.com:ip:util_vector_logic:2.0\
   "
@@ -475,6 +477,76 @@ proc create_hier_cell_mc_ddr4_wrapper { parentCell nameHier } {
   # Restore current instance
   current_bd_instance $oldCurInst
 }
+  
+# Hierarchical cell: kvs
+proc create_hier_cell_kvs { parentCell nameHier } {
+
+  variable script_folder
+
+  if { $parentCell eq "" || $nameHier eq "" } {
+     catch {common::send_msg_id "BD_TCL-102" "ERROR" "create_hier_cell_kvs() - Empty argument(s)!"}
+     return
+  }
+
+  # Get object for parentCell
+  set parentObj [get_bd_cells $parentCell]
+  if { $parentObj == "" } {
+     catch {common::send_msg_id "BD_TCL-100" "ERROR" "Unable to find parent cell <$parentCell>!"}
+     return
+  }
+
+  # Make sure parentObj is hier blk
+  set parentType [get_property TYPE $parentObj]
+  if { $parentType ne "hier" } {
+     catch {common::send_msg_id "BD_TCL-101" "ERROR" "Parent <$parentObj> has TYPE = <$parentType>. Expected to be <hier>."}
+     return
+  }
+
+  # Save current instance; Restore later
+  set oldCurInst [current_bd_instance .]
+
+  # Set parent object as current
+  current_bd_instance $parentObj
+
+  # Create cell and set as current instance
+  set hier_obj [create_bd_cell -type hier $nameHier]
+  current_bd_instance $hier_obj
+
+  # Create interface pins
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 from_net
+  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 m_axi_dram
+  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 toDRAM
+  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 to_net
+
+  # Create pins
+  create_bd_pin -dir I -type clk clk_125
+  create_bd_pin -dir I -type rst clk_125_rst_n
+
+  # Create instance: buddy_allocator_0, and set properties
+  set buddy_allocator_0 [ create_bd_cell -type ip -vlnv purdue.wuklab:hls:buddy_allocator:1.0 buddy_allocator_0 ]
+
+  # Create instance: memcachedBuddy_top_0, and set properties
+  set memcachedBuddy_top_0 [ create_bd_cell -type ip -vlnv wuklab:user:memcachedBuddy_top:1.0 memcachedBuddy_top_0 ]
+
+  # Create instance: xlconstant_0, and set properties
+  set xlconstant_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_0 ]
+
+  # Create interface connections
+  connect_bd_intf_net -intf_net axis_data_fifo_0_M_AXIS [get_bd_intf_pins from_net] [get_bd_intf_pins memcachedBuddy_top_0/from_net]
+  connect_bd_intf_net -intf_net buddy_allocator_0_alloc_ret_V [get_bd_intf_pins buddy_allocator_0/alloc_ret_V] [get_bd_intf_pins memcachedBuddy_top_0/alloc_ret]
+  connect_bd_intf_net -intf_net buddy_allocator_0_m_axi_dram [get_bd_intf_pins m_axi_dram] [get_bd_intf_pins buddy_allocator_0/m_axi_dram]
+  connect_bd_intf_net -intf_net memcachedBuddy_top_0_alloc [get_bd_intf_pins buddy_allocator_0/alloc_V] [get_bd_intf_pins memcachedBuddy_top_0/alloc]
+  connect_bd_intf_net -intf_net memcachedBuddy_top_0_toDRAM [get_bd_intf_pins toDRAM] [get_bd_intf_pins memcachedBuddy_top_0/toDRAM]
+  connect_bd_intf_net -intf_net memcachedBuddy_top_0_to_net [get_bd_intf_pins to_net] [get_bd_intf_pins memcachedBuddy_top_0/to_net]
+
+  # Create port connections
+  connect_bd_net -net ACLK_0_1 [get_bd_pins clk_125] [get_bd_pins buddy_allocator_0/ap_clk] [get_bd_pins memcachedBuddy_top_0/apclk] [get_bd_pins memcachedBuddy_top_0/mem_clk]
+  connect_bd_net -net ARESETN_0_1 [get_bd_pins clk_125_rst_n] [get_bd_pins buddy_allocator_0/ap_rst_n] [get_bd_pins memcachedBuddy_top_0/apresetn] [get_bd_pins memcachedBuddy_top_0/mem_resetn]
+  connect_bd_net -net xlconstant_0_dout [get_bd_pins buddy_allocator_0/ap_start] [get_bd_pins xlconstant_0/dout]
+
+  # Restore current instance
+  current_bd_instance $oldCurInst
+}
   variable script_folder
 
   if { $parentCell eq "" } {
@@ -561,7 +633,7 @@ proc create_hier_cell_mc_ddr4_wrapper { parentCell nameHier } {
    CONFIG.M00_HAS_DATA_FIFO {1} \
    CONFIG.M00_HAS_REGSLICE {3} \
    CONFIG.NUM_MI {1} \
-   CONFIG.NUM_SI {2} \
+   CONFIG.NUM_SI {3} \
    CONFIG.S00_HAS_DATA_FIFO {2} \
    CONFIG.S00_HAS_REGSLICE {3} \
    CONFIG.S01_HAS_DATA_FIFO {2} \
@@ -593,26 +665,27 @@ proc create_hier_cell_mc_ddr4_wrapper { parentCell nameHier } {
   # Create instance: jtag_axi_0, and set properties
   set jtag_axi_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:jtag_axi:1.2 jtag_axi_0 ]
 
+  # Create instance: kvs
+  create_hier_cell_kvs [current_bd_instance .] kvs
+
   # Create instance: mc_ddr4_wrapper
   create_hier_cell_mc_ddr4_wrapper [current_bd_instance .] mc_ddr4_wrapper
-
-  # Create instance: memcachedPipeline_top_0, and set properties
-  set memcachedPipeline_top_0 [ create_bd_cell -type ip -vlnv wuklab:user:memcachedPipeline_top:1.0 memcachedPipeline_top_0 ]
 
   # Create interface connections
   connect_bd_intf_net -intf_net C0_SYS_CLK_0_1 [get_bd_intf_ports C0_SYS_CLK_0] [get_bd_intf_pins mc_ddr4_wrapper/C0_SYS_CLK_0]
   connect_bd_intf_net -intf_net axi_interconnect_0_M00_AXI [get_bd_intf_pins axi_interconnect_0/M00_AXI] [get_bd_intf_pins mc_ddr4_wrapper/C0_DDR4_S_AXI]
-  connect_bd_intf_net -intf_net axis_data_fifo_0_M_AXIS1 [get_bd_intf_pins axis_data_fifo_0/M_AXIS] [get_bd_intf_pins memcachedPipeline_top_0/from_net]
+  connect_bd_intf_net -intf_net axis_data_fifo_0_M_AXIS [get_bd_intf_pins axis_data_fifo_0/M_AXIS] [get_bd_intf_pins kvs/from_net]
   connect_bd_intf_net -intf_net axis_data_fifo_1_M_AXIS [get_bd_intf_ports to_net] [get_bd_intf_pins axis_data_fifo_1/M_AXIS]
+  connect_bd_intf_net -intf_net buddy_allocator_0_m_axi_dram [get_bd_intf_pins axi_interconnect_0/S01_AXI] [get_bd_intf_pins kvs/m_axi_dram]
   connect_bd_intf_net -intf_net ddr4_0_C0_DDR4 [get_bd_intf_ports ddr4_sdram_c1] [get_bd_intf_pins mc_ddr4_wrapper/ddr4_sdram_c1]
   connect_bd_intf_net -intf_net from_net_1 [get_bd_intf_ports from_net] [get_bd_intf_pins axis_data_fifo_0/S_AXIS]
   connect_bd_intf_net -intf_net jtag_axi_0_M_AXI [get_bd_intf_pins axi_interconnect_0/S00_AXI] [get_bd_intf_pins jtag_axi_0/M_AXI]
-  connect_bd_intf_net -intf_net memcachedPipeline_top_0_toDRAM [get_bd_intf_pins axi_interconnect_0/S01_AXI] [get_bd_intf_pins memcachedPipeline_top_0/toDRAM]
-  connect_bd_intf_net -intf_net memcachedPipeline_top_0_to_net [get_bd_intf_pins axis_data_fifo_1/S_AXIS] [get_bd_intf_pins memcachedPipeline_top_0/to_net]
+  connect_bd_intf_net -intf_net memcachedBuddy_top_0_toDRAM [get_bd_intf_pins axi_interconnect_0/S02_AXI] [get_bd_intf_pins kvs/toDRAM]
+  connect_bd_intf_net -intf_net memcachedBuddy_top_0_to_net [get_bd_intf_pins axis_data_fifo_1/S_AXIS] [get_bd_intf_pins kvs/to_net]
 
   # Create port connections
-  connect_bd_net -net ACLK_0_1 [get_bd_ports clk_125] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axi_interconnect_0/S01_ACLK] [get_bd_pins axis_data_fifo_0/m_axis_aclk] [get_bd_pins axis_data_fifo_1/s_axis_aclk] [get_bd_pins jtag_axi_0/aclk] [get_bd_pins memcachedPipeline_top_0/apclk] [get_bd_pins memcachedPipeline_top_0/mem_clk]
-  connect_bd_net -net ARESETN_0_1 [get_bd_ports clk_125_rst_n] [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axi_interconnect_0/S01_ARESETN] [get_bd_pins axis_data_fifo_0/m_axis_aresetn] [get_bd_pins axis_data_fifo_1/s_axis_aresetn] [get_bd_pins jtag_axi_0/aresetn] [get_bd_pins memcachedPipeline_top_0/apresetn] [get_bd_pins memcachedPipeline_top_0/mem_resetn]
+  connect_bd_net -net ACLK_0_1 [get_bd_ports clk_125] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axi_interconnect_0/S01_ACLK] [get_bd_pins axi_interconnect_0/S02_ACLK] [get_bd_pins axis_data_fifo_0/m_axis_aclk] [get_bd_pins axis_data_fifo_1/s_axis_aclk] [get_bd_pins jtag_axi_0/aclk] [get_bd_pins kvs/clk_125]
+  connect_bd_net -net ARESETN_0_1 [get_bd_ports clk_125_rst_n] [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axi_interconnect_0/S01_ARESETN] [get_bd_pins axi_interconnect_0/S02_ARESETN] [get_bd_pins axis_data_fifo_0/m_axis_aresetn] [get_bd_pins axis_data_fifo_1/s_axis_aresetn] [get_bd_pins jtag_axi_0/aresetn] [get_bd_pins kvs/clk_125_rst_n]
   connect_bd_net -net S00_AXIS_ACLK_0_1 [get_bd_ports from_net_clk_390] [get_bd_pins axis_data_fifo_0/s_axis_aclk]
   connect_bd_net -net S00_AXIS_ARESETN_0_1 [get_bd_ports from_net_clk_390_rst_n] [get_bd_pins axis_data_fifo_0/s_axis_aresetn]
   connect_bd_net -net c0_ddr4_ui_clk_rstn [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins mc_ddr4_wrapper/c0_ddr4_ui_clk_rstn]
@@ -623,7 +696,8 @@ proc create_hier_cell_mc_ddr4_wrapper { parentCell nameHier } {
 
   # Create address segments
   create_bd_addr_seg -range 0x000100000000 -offset 0x00000000 [get_bd_addr_spaces jtag_axi_0/Data] [get_bd_addr_segs mc_ddr4_wrapper/mc_ddr4_core/C0_DDR4_MEMORY_MAP/C0_DDR4_ADDRESS_BLOCK] SEG_mc_ddr4_0_C0_DDR4_ADDRESS_BLOCK
-  create_bd_addr_seg -range 0x000100000000 -offset 0x00000000 [get_bd_addr_spaces memcachedPipeline_top_0/toDRAM] [get_bd_addr_segs mc_ddr4_wrapper/mc_ddr4_core/C0_DDR4_MEMORY_MAP/C0_DDR4_ADDRESS_BLOCK] SEG_mc_ddr4_core_C0_DDR4_ADDRESS_BLOCK
+  create_bd_addr_seg -range 0x000100000000 -offset 0x00000000 [get_bd_addr_spaces kvs/buddy_allocator_0/Data_m_axi_dram] [get_bd_addr_segs mc_ddr4_wrapper/mc_ddr4_core/C0_DDR4_MEMORY_MAP/C0_DDR4_ADDRESS_BLOCK] SEG_mc_ddr4_core_C0_DDR4_ADDRESS_BLOCK
+  create_bd_addr_seg -range 0x000100000000 -offset 0x00000000 [get_bd_addr_spaces kvs/memcachedBuddy_top_0/toDRAM] [get_bd_addr_segs mc_ddr4_wrapper/mc_ddr4_core/C0_DDR4_MEMORY_MAP/C0_DDR4_ADDRESS_BLOCK] SEG_mc_ddr4_core_C0_DDR4_ADDRESS_BLOCK
 
 
   # Restore current instance

@@ -347,7 +347,7 @@ module legofpga_mac_qsfp
 		.signal_out          (clk_125_rst_n)
 	);
 
-	LegoFPGA_axis64 u_LegoFPGA (
+	LegoFPGA_axis64_KVS u_LegoFPGA (
 		.sys_rst		(sys_reset),
 
 		.clk_125		(clk_125),
