@@ -3,7 +3,7 @@ ifeq ($(TARGET_BOARD), )
 endif
 
 all:
-	#$(Q)./generate_hls.sh $(TARGET_BOARD)
+	$(Q)./generate_hls.sh $(TARGET_BOARD)
 	$(Q)make -C ip_libnet
 
 clean:

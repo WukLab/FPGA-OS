@@ -10,7 +10,7 @@ add_files	top_512.cpp	-cflags -I../../../include
 add_files -tb	tb_512.cpp	-cflags -I../../../include
 
 # Specify the top-level function for synthesis
-set_top		sysnet_rx_512
+set_top		libnet_rx_512
 
 ###########################
 # Solution settings
@@ -33,7 +33,7 @@ set_clock_uncertainty 1.25
 csynth_design
 
 # Export IP block
-export_design -format ip_catalog -display_name "net_sysnet_rx" -description "SysNet RX Path" -vendor "wuklab" -version "1.0"
+export_design -format ip_catalog -display_name "net_libnet_rx" -description "Reliable LibNet RX Path" -vendor "wuklab" -version "1.0"
 
 # Do not perform any other steps
 # - The basic project will be opened in the GUI 
