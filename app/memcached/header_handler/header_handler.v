@@ -62,10 +62,10 @@ assign data_in = { fromApp_axis_tlast,
                    fromApp_axis_tkeep,
                    fromApp_axis_tdata };
 
-assign tmp_tdata = data_out[63:0];
-assign tmp_tkeep = data_out[71:64];
-assign tmp_tuser = data_out[135:72];
-assign tmp_tlast = data_out[136];
+assign tmp_tdata = rd_en ? data_out[63:0]   : tmp_tdata;
+assign tmp_tkeep = rd_en ? data_out[71:64]  : tmp_tkeep;
+assign tmp_tuser = rd_en ? data_out[135:72] : tmp_tuser;
+assign tmp_tlast = rd_en ? data_out[136]    : tmp_tlast;
 
 assign wr_en = fromApp_axis_tvalid & fromApp_axis_tready;
 
