@@ -8,8 +8,8 @@
 module bd_kvs_tb;
 
 // Change this to absolute path
-parameter IN_FILEPATH="/root/ys/FPGA-2/system/vcu108/tb/kvs/input.txt";
-parameter OUT_FILEPATH="/root/ys/FPGA-2/system/vcu108/tb/kvs/output.txt";
+parameter IN_FILEPATH="/root/ys/FPGA/system/vcu108/tb/kvs/input.txt";
+parameter OUT_FILEPATH="/root/ys/FPGA/system/vcu108/tb/kvs/output.txt";
 
 // 390MHZ for network
 parameter CLK_PERIOD = 2560000;
@@ -154,17 +154,17 @@ parameter TIMEOUT_THRESH = 100000000;
 		// Generate reset signals
 		@(posedge sysclk_125_clk_ref);
 		sysclk_125_rst_n = 0;
-		#200
+		#50000000
 		@(posedge sysclk_125_clk_ref);
                 sysclk_125_rst_n = 1;
 
 	        @(posedge sysclk_390_clk_ref);
                 sysclk_390_rst_n = 0;
-                #200;
+                #50000000
                 @(posedge sysclk_390_clk_ref);
                 sysclk_390_rst_n = 1;
 
-		#500
+		#50000000
 		start_send = 1'b1;
 	end
 
