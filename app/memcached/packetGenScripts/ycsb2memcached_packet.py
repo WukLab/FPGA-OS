@@ -1,10 +1,20 @@
+#!/usr/bin/env python3
+
+import os
+import sys, getopt
 import copy
 
 # Config
-numofcharinkey = 14
-valuelength = 100  #length should not be larger than 256*256
+numofcharinkey = 14 # Don't change this one
+valuelength = 10    # length should not be larger than 256*256
+
+# global variable
+out_dir = ''
 
 def combine_to_keylogs(filename1, filename2, filename3):
+    filename1 = os.path.join(out_dir, filename1)
+    filename2 = os.path.join(out_dir, filename2)
+    filename3 = os.path.join(out_dir, filename3)
     with open(filename1, 'r') as file1:
         str1 = file1.read()
 
@@ -29,7 +39,7 @@ def keylogs_to_packets(filename1, filename2):
         keylength = len(hexkey) // 2 + len(hexkey) % 2                              # each hex is 4 bits, length is in terms of byte
         hexkey = hexkey.zfill(keylength * 2).upper()
 
-        print(opcode, keylength, hexkey, key)
+        # print(opcode, keylength, hexkey, key)
         # packet gen
         # 1
         unit1 = '00000008{0:02X}00{1:02X}80'.format(keylength, opcode)              # fixed term follow Xilinx testbench
@@ -95,9 +105,9 @@ def keylogs_to_packets(filename1, filename2):
 
             one_unit = one_unit.zfill(16)                   # pad to 8 bytes with 0
             unit_rest.append(copy.deepcopy(one_unit))
-            print(one_unit)
+            # print(one_unit)
 
-        print(counter, lengthused)
+        # print(counter, lengthused)
 
         # output to file
         outputstr += '{0}\n'.format(counter)
@@ -118,8 +128,6 @@ def keylogs_to_packets(filename1, filename2):
         file2.write(outputstr)
 
 
-
-
 def to_little_endian(valuelength):
     temp = '{:08X}'.format(valuelength)
     return '' + temp[6:] + temp[4:6] + temp[2:4] + temp[:2]
@@ -133,7 +141,25 @@ def add_packet_metadata(unit, used):
     return "{0} {1}\n".format(unit, switcher.get(used))
 
 
+def main(argv):
+    global out_dir
+    try:
+        opts, _ = getopt.getopt(argv,"ho:",["out_dir="])
+        if not opts:
+            print('Usage: ./ycsb2memcached_packet.py -o <out_dir>')
+    except getopt.GetoptError:
+        print('Usage: ./ycsb2memcached_packet.py -o <out_dir>')
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt == '-h':
+            print('Usage: ./ycsb2memcached_packet.py -o <out_dir>')
+            sys.exit()
+        elif opt in ("-o", "--out_dir"):
+            out_dir = arg
+    out_dir = os.path.abspath(out_dir)
+
 
 if __name__ == "__main__":
-    # combine_to_keylogs('keylogs1.txt', 'keylogs2.txt', 'yscb_workloada.txt')
-    keylogs_to_packets('yscb_workloada.txt', 'testing.txt')
+    main(sys.argv[1:])
+    combine_to_keylogs('ycsb_load.log', 'ycsb_run.log', 'ycsb_workload_keys.txt')
+    keylogs_to_packets('ycsb_workload_keys.txt', 'ycsb_workload_packets.txt')
