@@ -21,10 +21,12 @@
  * @BUDDY_SET_ORDER:    log 2 of buddy BRAM cache associativity
  * @BUDDY_META_OFF:     buddy address space metadata address offset
  * @BUDDY_USER_OFF:     buddy address space user address offset
+ * @BUDDY_START:        base address of buddy allocator
+ * @BUDDY_END:          top address of buddy allocator (exclusive)
  *
  * buddy address space layout:
  *
- * ------------------   <- 2^BUDDY_MAX_SHIFT (top)
+ * ------------------   <- BUDDY_END
  * |                |
  * |                |
  * |    Userdata    |
@@ -34,9 +36,7 @@
  * |                |
  * |    Metadata    |
  * |                |
- * ------------------   <- BUDDY_META_OFF
- * |                |
- * ------------------   <- DRAM_START (bottom)
+ * ------------------   <- BUDDY_START
  *
  */
 
@@ -49,7 +49,8 @@
 #define BUDDY_MAX_SHIFT		32
 #define BUDDY_MIN_SHIFT		8
 #define BUDDY_SET_ORDER		1
-#define BUDDY_META_OFF          0x0
+#define BUDDY_START             0x0
+#define BUDDY_META_OFF          (BUDDY_START)
 
 #define SIZE(shift)		(1UL << shift)
 #define IDX(addr, shift)	(addr >> shift)
@@ -79,6 +80,7 @@
 
 #define BUDDY_META_SIZE         ((1 << (3 * LEVEL_MAX)) / 7)
 #define BUDDY_USER_OFF          (BUDDY_META_OFF + BUDDY_META_SIZE)
+#define BUDDY_END               (BUDDY_START + (1 << BUDDY_MAX_SHIFT))
 
 /*
  * define only for simulation use
