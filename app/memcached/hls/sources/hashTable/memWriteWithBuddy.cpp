@@ -31,7 +31,9 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.// Copyright (c) 2015 Xilinx, 
 
 void memWriteWithBuddy(stream<hashTableInternalWord> &comp2memWrKey, stream<internalMdWord> &comp2memWrMd, stream<comp2decWord> &comp2memWrKeyStatus, stream<ap_uint<512> > &comp2memWrMemData,
 			  stream<memCtrlWord> &memWrCtrl, stream<ap_uint<512> > &memWrData, stream<decideResultWord> &memWr2out, stream<ap_uint<1> > &memWr2cc,
-			  axis_buddy_alloc& alloc, axis_buddy_alloc_ret& alloc_ret) {
+			  stream<struct buddy_alloc_if>& alloc,
+			  stream<struct buddy_alloc_ret_if>& alloc_ret)
+{
 	#pragma HLS INLINE off
 	#pragma HLS pipeline II=1 enable_flush
 
@@ -174,7 +176,9 @@ void memWriteWithBuddy(stream<hashTableInternalWord> &comp2memWrKey, stream<inte
 						else {														// if the value is larger than the split length, then a value from the SSD pool is read
 							while(alloc_ret.empty());
 							buddy_ret = alloc_ret.read();
-							if (buddy_ret.stat == SUCCESS)
+
+							// Succeed
+							if (buddy_ret.stat == 0)
 								addressPointer = buddy_ret.addr >> 8;
 							//std::cout << "ADDR: " << std::hex << buddy_ret.addr << " " << std::bitset<32>(buddy_ret.addr) << std::endl;
 						}

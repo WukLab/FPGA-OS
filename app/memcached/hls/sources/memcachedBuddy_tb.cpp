@@ -287,14 +287,15 @@ ap_uint<8> encodeApUint8(string keepString){
 }
 
 static std::atomic<bool> buddy_run (true);
-static axis_buddy_alloc alloc;
-static axis_buddy_alloc_ret alloc_ret;
+static stream<struct buddy_alloc_if> alloc;
+static stream<struct buddy_alloc_ret_if> alloc_ret;
 
 static void *buddy_allocator_thread(void *unused)
 {
 	int counter = 0;
 	char* dram = new char[SIM_DRAM_SIZE]();
 	buddy_alloc_ret_if buddy_ret = {0,0};
+
 	while (buddy_run) {
 		if (!alloc.empty()) {
 			counter++;

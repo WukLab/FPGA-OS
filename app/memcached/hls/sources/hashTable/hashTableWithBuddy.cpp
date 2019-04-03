@@ -266,7 +266,9 @@ void ht_outputLogic(stream<decideResultWord> &memWr2out, stream<ap_uint<64> > &k
 void hashTableWithBuddy(stream<pipelineWord> &ht_inData, stream<pipelineWord> &ht_outData,
 						stream<ap_uint<512> > &memRdData, stream<memCtrlWord> &memRdCtrl,
 						stream<ap_uint<512> > &memWrData, stream<memCtrlWord> &memWrCtrl,
-						axis_buddy_alloc& alloc, axis_buddy_alloc_ret& alloc_ret) {
+			  stream<struct buddy_alloc_if>& alloc,
+			  stream<struct buddy_alloc_ret_if>& alloc_ret)
+{
 
 	#pragma HLS INTERFACE ap_ctrl_none port=return
 	#pragma HLS INLINE

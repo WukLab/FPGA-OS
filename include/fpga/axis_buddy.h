@@ -7,12 +7,17 @@
  * This file is supposed to be used by FPGA code only.
  */
 
-#ifndef _LEGO_FPGA_AXIS_SYSMMU_ALLOC_
-#define _LEGO_FPGA_AXIS_SYSMMU_ALLOC_
+#ifndef _LEGO_FPGA_AXIS_BUDDY_H_
+#define _LEGO_FPGA_AXIS_BUDDY_H_
 
 #include <ap_int.h>
 #include <hls_stream.h>
 #include "mem_common.h"
+
+enum {
+	BUDDY_ALLOC = 0,
+	BUDDY_FREE = 1,
+};
 
 struct buddy_alloc_if {
 	/*
@@ -43,6 +48,7 @@ struct buddy_alloc_ret_if {
 	ap_uint<PA_SHIFT>	addr;
 };
 
-void buddy_allocator(hls::stream<buddy_alloc_if>& alloc, hls::stream<buddy_alloc_ret_if>& alloc_ret, char* dram);
+void buddy_allocator(hls::stream<struct buddy_alloc_if>& alloc,
+		     hls::stream<struct buddy_alloc_ret_if>& alloc_ret, char *dram);
 
-#endif /* _LEGO_FPGA_AXIS_SYSMMU_ALLOC_ */
+#endif /* _LEGO_FPGA_AXIS_BUDDY_H_ */

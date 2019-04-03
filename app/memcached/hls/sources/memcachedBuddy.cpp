@@ -29,11 +29,13 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.// Copyright (c) 2015 Xilinx, 
 #include "globals.h"
 
 void memcachedBuddy(stream<extendedAxiWord> &inData, stream<extendedAxiWord> &outData,
-					stream<memCtrlWord> &dramValueStoreMemRdCmd, stream<ap_uint<512> > &dramValueStoreMemRdData,
-					stream<memCtrlWord> &dramValueStoreMemWrCmd, stream<ap_uint<512> > &dramValueStoreMemWrData,
-					stream<ap_uint<512> > &hashTableMemRdData, stream<memCtrlWord> &hashTableMemRdCmd,
-					stream<ap_uint<512> > &hashTableMemWrData, stream<memCtrlWord> &hashTableMemWrCmd,
-					axis_buddy_alloc& alloc, axis_buddy_alloc_ret& alloc_ret) {
+		    stream<memCtrlWord> &dramValueStoreMemRdCmd, stream<ap_uint<512> > &dramValueStoreMemRdData,
+		    stream<memCtrlWord> &dramValueStoreMemWrCmd, stream<ap_uint<512> > &dramValueStoreMemWrData,
+		    stream<ap_uint<512> > &hashTableMemRdData, stream<memCtrlWord> &hashTableMemRdCmd,
+		    stream<ap_uint<512> > &hashTableMemWrData, stream<memCtrlWord> &hashTableMemWrCmd,
+		    stream<struct buddy_alloc_if>& alloc,
+		    stream<struct buddy_alloc_ret_if>& alloc_ret)
+{
 
 	//#pragma HLS INTERFACE ap_ctrl_none port=return
 

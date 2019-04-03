@@ -2,8 +2,6 @@
  * Copyright (c) 2019，Wuklab, Purdue University.
  */
 
-
-
 #include <cassert>
 #include <cstring>
 #include <iostream>
