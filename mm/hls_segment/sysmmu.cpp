@@ -28,10 +28,10 @@ void sysmmu_ctrl_hanlder(hls::stream<struct sysmmu_ctrl_if>& ctrlpath, ap_uint<1
 	struct sysmmu_ctrl_if ctrl = ctrlpath.read();
 
 	switch (ctrl.opcode) {
-	case 0: // ALLOC
+	case CHUNK_ALLOC:
 		*stat = insert(ctrl);
 		break;
-	case 1: // FREE
+	case CHUNK_FREE:
 		*stat = del(ctrl);
 		break;
 	default:
@@ -62,10 +62,7 @@ ap_uint<1> insert(sysmmu_ctrl_if& ctrl)
 		return 1;
 
 	sysmmu_table[idx].pid = ctrl.pid;
-	if (ctrl.rw == 1)
-		sysmmu_table[idx].rw = 1;
-	else
-		sysmmu_table[idx].rw = 0;
+	sysmmu_table[idx].rw = ctrl.rw;
 	sysmmu_table[idx].valid = 1;
 	return 0;
 }
@@ -87,8 +84,8 @@ ap_uint<1> check_read(sysmmu_indata& rd_in)
 	/* start index and end index are inclusive */
 	ap_uint<1> ret = 0;
 	ap_uint<16> size = ap_uint<16>(rd_in.in_len) << ap_uint<16>(rd_in.in_size);
-	ap_uint<TABLE_TYPE> start_idx = BLOCK_IDX(rd_in.in_addr);
-	ap_uint<TABLE_TYPE> end_idx = BLOCK_IDX(rd_in.in_addr + size - 1);
+	ap_uint<TABLE_TYPE> start_idx = CHUNK_IDX(rd_in.in_addr);
+	ap_uint<TABLE_TYPE> end_idx = CHUNK_IDX(rd_in.in_addr + size - 1);
 	TABLE_LOOP:
 	for (ap_uint<TABLE_TYPE> i = 0; i < TABLE_SIZE; i++) {
 #pragma HLS UNROLL
@@ -108,8 +105,8 @@ ap_uint<1> check_write(sysmmu_indata& wr_in)
 	/* start index and end index are inclusive */
 	ap_uint<1> ret = 0;
 	ap_uint<16> size = ap_uint<16>(wr_in.in_len) << ap_uint<16>(wr_in.in_size);
-	ap_uint<TABLE_TYPE> start_idx = BLOCK_IDX(wr_in.in_addr);
-	ap_uint<TABLE_TYPE> end_idx = BLOCK_IDX(wr_in.in_addr + size - 1);
+	ap_uint<TABLE_TYPE> start_idx = CHUNK_IDX(wr_in.in_addr);
+	ap_uint<TABLE_TYPE> end_idx = CHUNK_IDX(wr_in.in_addr + size - 1);
 	TABLE_LOOP:
 	for (ap_uint<TABLE_TYPE> i = 0; i < TABLE_SIZE; i++) {
 #pragma HLS UNROLL

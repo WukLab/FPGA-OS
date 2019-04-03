@@ -5,7 +5,7 @@
 #ifndef _CHUNK_ALLOC_H_
 #define _CHUNK_ALLOC_H_
 
-#include <fpga/axis_sysmmu_alloc.h>
+#include <fpga/axis_sysmmu.h>
 
 class Chunk_alloc
 {

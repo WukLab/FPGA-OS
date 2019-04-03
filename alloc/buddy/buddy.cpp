@@ -25,12 +25,12 @@ const int UNROLL_FACTOR = BUDDY_SET_SIZE >> 2;
  */
 Buddy::Buddy()
 {
-	const ap_uint<32> metadata_size = (1 << (3 * LEVEL_MAX)) / 7;
+	const ap_uint<32> metadata_size = BUDDY_USER_OFF;
 	const ap_uint<32> metadata_order =order_base_2<32>(LENGTH_TO_ORDER(metadata_size));
 	const ap_uint<LEVEL_MAX> metadata_level = order_to_level(metadata_order);
 	const ap_uint<3> metadata_width = order_to_width(metadata_order);
 
-	dram_addr = 0;
+	dram_addr = BUDDY_META_OFF;
 	INIT_LOOP:
 	for (int i = 0; i < LEVEL_MAX; i++) {
 		buddy_set[i].level = i;
@@ -87,13 +87,13 @@ void Buddy::handler(hls::stream<buddy_alloc_if>& alloc,
 	ap_uint<8> test;
 	REQ_DISPATCH:
 	switch (req.opcode) {
-	case 0:
+	case BUDDY_ALLOC:
 		ret.stat = Buddy::alloc(req.order, &ret.addr, dram);
 		if (ret.stat == 1)
 			ret.addr = 0;
 		alloc_ret.write(ret);
 		break;
-	case 1:
+	case BUDDY_FREE:
 		ret.stat = Buddy::free(req.order, req.addr, dram);
 		break;
 	default:
@@ -106,7 +106,7 @@ void Buddy::handler(hls::stream<buddy_alloc_if>& alloc,
 }
 
 
-ap_uint<1> Buddy::alloc(ap_uint<ORDER_MAX> order, ap_uint<PA_SHIFT>* addr, char* dram)
+ap_uint<1> Buddy::alloc(ap_uint<ORDER_MAX> order, ap_uint<PA_WIDTH>* addr, char* dram)
 {
 	// 1. get order level
 	// 2. if tag doesn't exist, ask parent iteratively
@@ -195,7 +195,7 @@ ap_uint<1> Buddy::alloc(ap_uint<ORDER_MAX> order, ap_uint<PA_SHIFT>* addr, char*
 	return 0;
 }
 
-ap_uint<1> Buddy::free(ap_uint<ORDER_MAX> order, ap_uint<PA_SHIFT> addr, char* dram)
+ap_uint<1> Buddy::free(ap_uint<ORDER_MAX> order, ap_uint<PA_WIDTH> addr, char* dram)
 {
 	// 1. get tag, level, and index based on addr and order
 	// 2. if tag doesn't exist, ask parent level iteratively
@@ -529,34 +529,34 @@ ap_uint<3> Buddy::order_to_width(ap_uint<ORDER_MAX> order)
 	return ap_uint<3>(1 << (2 - ((ORDER_MAX - 1 - order) % 3)));
 }
 
-ap_uint<ORDER_MAX> Buddy::addr_to_tag(ap_uint<PA_SHIFT> addr,
+ap_uint<ORDER_MAX> Buddy::addr_to_tag(ap_uint<PA_WIDTH> addr,
 				      ap_uint<LEVEL_MAX> level)
 {
 #pragma HLS INLINE
 #pragma HLS PIPELINE
-	return ap_uint<ORDER_MAX>((addr(BLOCK_SHIFT - 1, BUDDY_MIN_SHIFT)) &
+	return ap_uint<ORDER_MAX>((addr(BUDDY_MAX_SHIFT - 1, BUDDY_MIN_SHIFT)) &
 				  ~(ap_uint<ORDER_MAX>(-1) >> (level * 3)));
 }
 
-ap_uint<3> Buddy::addr_to_idx(ap_uint<PA_SHIFT> addr, ap_uint<LEVEL_MAX> level)
+ap_uint<3> Buddy::addr_to_idx(ap_uint<PA_WIDTH> addr, ap_uint<LEVEL_MAX> level)
 {
 #pragma HLS INLINE
 #pragma HLS PIPELINE
 	assert(level < LEVEL_MAX);
 	/* use shift and mask */
 	/* top 3 bits are 1, 0 else where */
-	const ap_uint<BLOCK_SHIFT> mask = ap_uint<BLOCK_SHIFT>(-1)
-					^ (ap_uint<BLOCK_SHIFT>(-1) >> 3);
-	ap_uint<BLOCK_SHIFT> tmp_idx = (ap_uint<BLOCK_SHIFT>(addr)
+	const ap_uint<BUDDY_MAX_SHIFT> mask = ap_uint<BUDDY_MAX_SHIFT>(-1)
+					^ (ap_uint<BUDDY_MAX_SHIFT>(-1) >> 3);
+	ap_uint<BUDDY_MAX_SHIFT> tmp_idx = (ap_uint<BUDDY_MAX_SHIFT>(addr)
 					<< (3*level)) & mask;
-	return tmp_idx(BLOCK_SHIFT - 1, BLOCK_SHIFT - 3);
+	return tmp_idx(BUDDY_MAX_SHIFT - 1, BUDDY_MAX_SHIFT - 3);
 }
 
-ap_uint<PA_SHIFT> Buddy::tag_to_addr(ap_uint<ORDER_MAX> tag)
+ap_uint<PA_WIDTH> Buddy::tag_to_addr(ap_uint<ORDER_MAX> tag)
 {
 #pragma HLS INLINE
 #pragma HLS PIPELINE
-	return ap_uint<PA_SHIFT>(tag) << BUDDY_MIN_SHIFT;
+	return ap_uint<PA_WIDTH>(tag) << BUDDY_MIN_SHIFT;
 }
 
 ap_uint<ORDER_MAX> Buddy::tag_to_ancestor_tag(ap_uint<ORDER_MAX> tag,

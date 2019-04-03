@@ -11,32 +11,63 @@
 #define _LEGO_FPGA_MEM_COMMON_
 
 /*
+ * Some Defines you may care:
+ *
+ * @PID_WIDTH:          pid data width
+ * @PA_WIDTH:           physical address data width
+ * @CHUNK_SHIFT:        log 2 of chunk granularity
+ * @BUDDY_MAX_SHIFT:    log 2 of maximum address space managed by buddy
+ * @BUDDY_MIN_SHIFT:    log 2 of minimum size allocated by buddy
+ * @BUDDY_SET_ORDER:    log 2 of buddy BRAM cache associativity
+ * @BUDDY_META_OFF:     buddy address space metadata address offset
+ * @BUDDY_USER_OFF:     buddy address space user address offset
+ *
+ * buddy address space layout:
+ *
+ * ------------------   <- 2^BUDDY_MAX_SHIFT (top)
+ * |                |
+ * |                |
+ * |    Userdata    |
+ * |                |
+ * |                |
+ * ------------------   <- BUDDY_USER_OFF
+ * |                |
+ * |    Metadata    |
+ * |                |
+ * ------------------   <- BUDDY_META_OFF
+ * |                |
+ * ------------------   <- DRAM_START (bottom)
+ *
+ */
+
+/*
  * configs
  */
-#define PID_SHIFT		8	/* pid width */
-#define PA_SHIFT		32	/* address width */
-#define BLOCK_SHIFT		29	/* minimum chunk granularity */
-#define BUDDY_MIN_SHIFT		12	/* minimum size of buddy allocator */
-#define BUDDY_SET_ORDER		1	/* number of buddy unit in cache per order */
+#define PID_WIDTH		8
+#define PA_WIDTH		32
+#define CHUNK_SHIFT		29
+#define BUDDY_MAX_SHIFT		32
+#define BUDDY_MIN_SHIFT		8
+#define BUDDY_SET_ORDER		1
+#define BUDDY_META_OFF          0x0
 
 #define SIZE(shift)		(1UL << shift)
 #define IDX(addr, shift)	(addr >> shift)
 #define ADDR(idx ,shift)	(idx << shift)
 
-#define BLOCK_SIZE		SIZE(BLOCK_SHIFT)
-#define BLOCK_IDX(addr)		ap_uint<TABLE_TYPE>(IDX(addr, BLOCK_SHIFT))
-
 /*
  * used for system segment
  */
-#define TABLE_SHIFT		(PA_SHIFT - BLOCK_SHIFT)
+#define TABLE_SHIFT		(PA_WIDTH - CHUNK_SHIFT)
 #define TABLE_TYPE		(TABLE_SHIFT + 1)
 #define TABLE_SIZE		SIZE(TABLE_SHIFT)
+#define CHUNK_SIZE		SIZE(CHUNK_SHIFT)
+#define CHUNK_IDX(addr)		ap_uint<TABLE_TYPE>(IDX(addr, CHUNK_SHIFT))
 
 /*
  * used for buddy
  */
-#define ORDER_MAX		(BLOCK_SHIFT - BUDDY_MIN_SHIFT)
+#define ORDER_MAX		(BUDDY_MAX_SHIFT - BUDDY_MIN_SHIFT)
 #define BUDDY_SET_TYPE		(BUDDY_SET_ORDER + 1)
 #define BUDDY_SET_SIZE		(1 << BUDDY_SET_ORDER)
 
@@ -45,6 +76,9 @@
 #define LEVEL_MAX		(ORDER_MAX_PAD / 3)
 #define SMALL_ORDER_IDX(order)	((ORDER_MAX - order - 9) / 3)
 #define LENGTH_TO_ORDER(len)	(len >> BUDDY_MIN_SHIFT)
+
+#define BUDDY_META_SIZE         ((1 << (3 * LEVEL_MAX)) / 7)
+#define BUDDY_USER_OFF          (BUDDY_META_OFF + BUDDY_META_SIZE)
 
 /*
  * define only for simulation use

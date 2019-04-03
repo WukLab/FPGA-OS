@@ -53,8 +53,8 @@ private:
 	struct BuddyCacheSet buddy_set[LEVEL_MAX];
 	struct BuddyCacheFreeSet buddy_free_set[LEVEL_MAX];
 
-	ap_uint<1> alloc(ap_uint<ORDER_MAX> order, ap_uint<PA_SHIFT>* addr, char* dram);
-	ap_uint<1> free(ap_uint<ORDER_MAX> order, ap_uint<PA_SHIFT> addr, char* dram);
+	ap_uint<1> alloc(ap_uint<ORDER_MAX> order, ap_uint<PA_WIDTH>* addr, char* dram);
+	ap_uint<1> free(ap_uint<ORDER_MAX> order, ap_uint<PA_WIDTH> addr, char* dram);
 
 	void flush_line(struct BuddyCacheSet& set, ap_uint<LEVEL_MAX> level,
 			ap_uint<BUDDY_SET_TYPE> nr_asso, char* dram);
@@ -92,12 +92,12 @@ public:
 	static ap_uint<LEVEL_MAX> order_to_level(ap_uint<ORDER_MAX> order);
 	static ap_uint<3> order_to_width(ap_uint<ORDER_MAX> order);
 
-	static ap_uint<ORDER_MAX> addr_to_tag(ap_uint<PA_SHIFT> addr,
+	static ap_uint<ORDER_MAX> addr_to_tag(ap_uint<PA_WIDTH> addr,
 					      ap_uint<LEVEL_MAX> level);
-	static ap_uint<3> addr_to_idx(ap_uint<PA_SHIFT> addr,
+	static ap_uint<3> addr_to_idx(ap_uint<PA_WIDTH> addr,
 				      ap_uint<LEVEL_MAX> level);
 
-	static ap_uint<PA_SHIFT> tag_to_addr(ap_uint<ORDER_MAX> tag);
+	static ap_uint<PA_WIDTH> tag_to_addr(ap_uint<ORDER_MAX> tag);
 	static ap_uint<ORDER_MAX> tag_to_ancestor_tag(ap_uint<ORDER_MAX> tag,
 						      ap_uint<LEVEL_MAX> level);
 	static ap_uint<3> tag_to_ancestor_idx(ap_uint<ORDER_MAX> tag,
