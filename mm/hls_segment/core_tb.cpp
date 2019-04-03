@@ -2,7 +2,6 @@
  * Copyright (c) 2019, WukLab, Purdue University.
  */
 
-//#include <stdlib.h>
 #include <ctime>
 #include <fpga/log2.h>
 #include "sysmmu.h"
@@ -21,15 +20,15 @@
  * 10. Access: Single address but not allocated; Expect: Error
  */
 
-int data_test(ap_uint<PA_SHIFT> addr, ap_uint<PID_SHIFT> pid,
-		ap_uint<PA_SHIFT> size, ap_uint<1> rw)
+int data_test(ap_uint<PA_WIDTH> addr, ap_uint<PID_WIDTH> pid,
+		ap_uint<PA_WIDTH> size, ap_uint<1> rw)
 {
 	struct sysmmu_indata in_rd = {0,0,0,0}, in_wr = {0,0,0,0};
 	struct sysmmu_outdata out_rd = {0,0}, out_wr = {0,0};
 	hls::stream<struct sysmmu_ctrl_if> ctrlpath_dummy;
 	ap_uint<1> result, dummy;
 
-	if (rw) {
+	if (rw == WRITE) {
 		/* write */
 		in_wr.in_addr = addr;
 		in_wr.pid = pid;
@@ -39,12 +38,12 @@ int data_test(ap_uint<PA_SHIFT> addr, ap_uint<PID_SHIFT> pid,
 			in_wr.in_len++;
 
 		if (in_wr.in_len == 1)
-			in_wr.in_size = order_base_2<PA_SHIFT>(ap_uint<PA_SHIFT>(size(7,0) >> 1));
+			in_wr.in_size = order_base_2<PA_WIDTH>(ap_uint<PA_WIDTH>(size(7,0) >> 1));
 		else
 			in_wr.in_size = 7;
 
 		std::cout << "[ACCESS] Address:" << std::hex << std::setw(10) << in_wr.in_addr
-				<< " IDX:" << std::dec << std::setw(3) << BLOCK_IDX(in_wr.in_addr)
+				<< " IDX:" << std::dec << std::setw(3) << CHUNK_IDX(in_wr.in_addr)
 				<< " PID:" <<  in_wr.pid
 				<< " AXI Size passed in:" << std::hex << std::setw(16)
 				<< (ap_uint<16>(in_wr.in_len) << ap_uint<16>(in_wr.in_size))
@@ -60,12 +59,12 @@ int data_test(ap_uint<PA_SHIFT> addr, ap_uint<PID_SHIFT> pid,
 			in_rd.in_len++;
 
 		if (in_rd.in_len == 1)
-			in_rd.in_size = order_base_2<PA_SHIFT>(ap_uint<PA_SHIFT>(size(7,0) >> 1));
+			in_rd.in_size = order_base_2<PA_WIDTH>(ap_uint<PA_WIDTH>(size(7,0) >> 1));
 		else
 			in_rd.in_size = 7;
 
 		std::cout << "[ACCESS] Address:" << std::hex << std::setw(10) << in_rd.in_addr
-				<< " IDX:" << std::dec << std::setw(3) << BLOCK_IDX(in_rd.in_addr)
+				<< " IDX:" << std::dec << std::setw(3) << CHUNK_IDX(in_rd.in_addr)
 				<< " PID:" <<  in_rd.pid
 				<< " AXI Size passed in:" << std::hex << std::setw(16)
 				<< (ap_uint<16>(in_rd.in_len) << ap_uint<16>(in_rd.in_size))
@@ -82,7 +81,7 @@ int data_test(ap_uint<PA_SHIFT> addr, ap_uint<PID_SHIFT> pid,
 	}
 }
 
-int ctrl_test(ap_uint<1> opcode, ap_uint<PA_SHIFT> addr, ap_uint<PID_SHIFT> pid, ap_uint<1> rw)
+int ctrl_test(ap_uint<1> opcode, ap_uint<PA_WIDTH> addr, ap_uint<PID_WIDTH> pid, ap_uint<1> rw)
 {
 	struct sysmmu_indata in_rd = {0,0,0,0}, in_wr = {0,0,0,0};
 	struct sysmmu_outdata out_rd = {0,0}, out_wr = {0,0};
@@ -91,12 +90,12 @@ int ctrl_test(ap_uint<1> opcode, ap_uint<PA_SHIFT> addr, ap_uint<PID_SHIFT> pid,
 	ap_uint<1> result;
 
 	req.opcode = opcode;
-	req.idx = BLOCK_IDX(addr);
+	req.idx = CHUNK_IDX(addr);
 	req.pid = pid;
 	req.rw = rw;
 	ctrlpath.write(req);
 
-	if (req.opcode == 0)
+	if (req.opcode == CHUNK_ALLOC)
 		std::cout << "[ALLOC]  ";
 	else
 		std::cout << "[FREE]   ";
@@ -130,100 +129,100 @@ int print_result(int real, int expect)
 int main(void)
 {
 	int ret, err_cnt = 0;
-	ap_uint<PA_SHIFT> rand1, rand2;
+	ap_uint<PA_WIDTH> rand1, rand2;
 
 	/* Random address generation */
 	do {
 		srand(clock());
-		rand1 = rand() % SIZE(PA_SHIFT);
-	} while (rand1 < (1UL << (BLOCK_SHIFT + 1)) ||
-			 rand1 > (1UL << PA_SHIFT) - (1UL << BLOCK_SHIFT));
+		rand1 = rand() % SIZE(PA_WIDTH);
+	} while (rand1 < (1UL << (CHUNK_SHIFT + 1)) ||
+			 rand1 > (1UL << PA_WIDTH) - (1UL << CHUNK_SHIFT));
 	do {
 		srand(clock());
-		rand2 = rand() % SIZE(PA_SHIFT);
-	} while (rand2 < (1UL << (BLOCK_SHIFT + 1)) ||
-			 rand2 > (1UL << PA_SHIFT) - (1UL << BLOCK_SHIFT) ||
-			 ALIGN_DOWN(rand2, BLOCK_SIZE) == ALIGN_DOWN(rand1, BLOCK_SIZE));
+		rand2 = rand() % SIZE(PA_WIDTH);
+	} while (rand2 < (1UL << (CHUNK_SHIFT + 1)) ||
+			 rand2 > (1UL << PA_WIDTH) - (1UL << CHUNK_SHIFT) ||
+			 ALIGN_DOWN(rand2, CHUNK_SIZE) == ALIGN_DOWN(rand1, CHUNK_SIZE));
 
 	/* ALLOC */
-	ret = ctrl_test(0, 0, 12, 1);
+	ret = ctrl_test(CHUNK_ALLOC, 0, 12, WRITE);
 	err_cnt += print_result(ret, 0);
 
-	ret = ctrl_test(0, 1UL << BLOCK_SHIFT, 12, 1);
+	ret = ctrl_test(CHUNK_ALLOC, 1UL << CHUNK_SHIFT, 12, WRITE);
 	err_cnt += print_result(ret, 0);
 
-	ret = ctrl_test(0, (1UL << PA_SHIFT) - 1, 12, 1);
+	ret = ctrl_test(CHUNK_ALLOC, (1UL << PA_WIDTH) - 1, 12, WRITE);
 	err_cnt += print_result(ret, 0);
 
-	ret = ctrl_test(0, rand1, 45, 0);
+	ret = ctrl_test(CHUNK_ALLOC, rand1, 45, READ);
 	err_cnt += print_result(ret, 0);
 
-	ret = ctrl_test(0, rand2, 45, 0);
+	ret = ctrl_test(CHUNK_ALLOC, rand2, 45, READ);
 	err_cnt += print_result(ret, 0);
 
-	ret = ctrl_test(0, 0, 12, 1);
+	ret = ctrl_test(CHUNK_ALLOC, 0, 12, WRITE);
 	err_cnt += print_result(ret, -1);
 
-	ret = ctrl_test(0, rand1, 12, 1);
+	ret = ctrl_test(CHUNK_ALLOC, rand1, 12, WRITE);
 	err_cnt += print_result(ret, -1);
 
 	/* ACCESS */
-	ret = data_test(0, 12, 1, 1);
+	ret = data_test(0, 12, 1, WRITE);
 	err_cnt += print_result(ret, 0);
 
-	ret = data_test((1UL << PA_SHIFT) - 1, 12, 1, 1);
+	ret = data_test((1UL << PA_WIDTH) - 1, 12, 1, WRITE);
 	err_cnt += print_result(ret, 0);
 
-	ret = data_test(rand1, 45, 1, 0);
+	ret = data_test(rand1, 45, 1, READ);
 	err_cnt += print_result(ret, 0);
 
-	ret = data_test(rand2, 45, 1, 0);
+	ret = data_test(rand2, 45, 1, READ);
 	err_cnt += print_result(ret, 0);
 
 	/* wrong PID */
-	ret = data_test(rand1, 12, 1, 0);
+	ret = data_test(rand1, 12, 1, READ);
 	err_cnt += print_result(ret, -1);
 
 	/* wrong permission */
-	ret = data_test(rand2, 45, 1, 1);
+	ret = data_test(rand2, 45, 1, WRITE);
 	err_cnt += print_result(ret, -1);
 
-	ret = data_test((1UL << (BLOCK_SHIFT + 1)) - (1UL << (14)),
-			12, 1UL << 14, 1);
+	ret = data_test((1UL << (CHUNK_SHIFT + 1)) - (1UL << (14)),
+			12, 1UL << 14, WRITE);
 	err_cnt += print_result(ret, 0);
 
 	/* invalid address */
-	ret = data_test((1UL << (BLOCK_SHIFT + 1)) - (1UL << (14)),
-				12, (1UL << 14) + 128, 1);
+	ret = data_test((1UL << (CHUNK_SHIFT + 1)) - (1UL << (14)),
+				12, (1UL << 14) + 128, WRITE);
 	err_cnt += print_result(ret, -1);
 
 	/* FREE */
-	ret = ctrl_test(1, 0, 12, 1);
+	ret = ctrl_test(CHUNK_FREE, 0, 12, WRITE);
 	err_cnt += print_result(ret, 0);
 
-	ret = ctrl_test(1, 1UL << BLOCK_SHIFT, 12, 1);
+	ret = ctrl_test(CHUNK_FREE, 1UL << CHUNK_SHIFT, 12, WRITE);
 	err_cnt += print_result(ret, 0);
 
-	ret = ctrl_test(1, (1UL << PA_SHIFT) - 1, 12, 1);
+	ret = ctrl_test(CHUNK_FREE, (1UL << PA_WIDTH) - 1, 12, WRITE);
 	err_cnt += print_result(ret, 0);
 
-	ret = ctrl_test(1, rand1, 45, 0);
+	ret = ctrl_test(CHUNK_FREE, rand1, 45, READ);
 	err_cnt += print_result(ret, 0);
 
-	ret = ctrl_test(1, rand2, 45, 0);
+	ret = ctrl_test(CHUNK_FREE, rand2, 45, READ);
 	err_cnt += print_result(ret, 0);
 
-	ret = ctrl_test(1, 0, 12, 1);
+	ret = ctrl_test(CHUNK_FREE, 0, 12, WRITE);
 	err_cnt += print_result(ret, -1);
 
-	ret = ctrl_test(1, rand1, 12, 1);
+	ret = ctrl_test(CHUNK_FREE, rand1, 12, WRITE);
 	err_cnt += print_result(ret, -1);
 
 	/* USE AFTER FREE */
-	ret = data_test(rand1, 45, 1, 0);
+	ret = data_test(rand1, 45, 1, READ);
 	err_cnt += print_result(ret, -1);
 
-	ret = data_test(rand2, 45, 1, 0);
+	ret = data_test(rand2, 45, 1, READ);
 	err_cnt += print_result(ret, -1);
 
 	return err_cnt;

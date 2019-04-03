@@ -2,6 +2,11 @@
 #include <ctime>
 #include "chunk_alloc.h"
 
+enum {
+	SUCCESS = 0,
+	ERROR = 1,
+};
+
 /*
  * Test Cases:
  * 1. Alloc: from 1 all the way to the last one; Expect: Correct
@@ -14,8 +19,8 @@
  * 8. Free:  Double Free; Expect: Error
  */
 
-static int test(ap_uint<1> opcode, ap_uint<PA_SHIFT> addr, ap_uint<PID_SHIFT> pid, ap_uint<1> rw,
-		ap_uint<1> expt_stat, ap_uint<1> expt_sysmmu_stat, ap_uint<PA_SHIFT> expt_addr,
+static int test(ap_uint<1> opcode, ap_uint<PA_WIDTH> addr, ap_uint<PID_WIDTH> pid, ap_uint<1> rw,
+		ap_uint<1> expt_stat, ap_uint<1> expt_sysmmu_stat, ap_uint<PA_WIDTH> expt_addr,
 		bool expt_req2sysmmu)
 {
 	hls::stream<struct sysmmu_ctrl_if> ctrl;
@@ -24,7 +29,7 @@ static int test(ap_uint<1> opcode, ap_uint<PA_SHIFT> addr, ap_uint<PID_SHIFT> pi
 	sysmmu_ctrl_if ctrl_req;
 	sysmmu_alloc_if req;
 	sysmmu_alloc_ret_if ret;
-	ap_uint<1> stat = 0;
+	ap_uint<1> stat = SUCCESS;
 
 	req.opcode = opcode;
 	req.addr = addr;
@@ -32,23 +37,22 @@ static int test(ap_uint<1> opcode, ap_uint<PA_SHIFT> addr, ap_uint<PID_SHIFT> pi
 	req.rw = rw;
 	alloc.write(req);
 
-	if (req.opcode == 0) // if opcode is alloc
+	if (req.opcode == CHUNK_ALLOC)
 		std::cout << "[ALLOC]  ";
 	else
 		std::cout << "[FREE]   ";
 	std::cout << "Address:" << std::hex << std::setw(10) << req.addr
-			<< " IDX:" << std::dec << std::setw(3) << BLOCK_IDX(req.addr)
+			<< " IDX:" << std::dec << std::setw(3) << CHUNK_IDX(req.addr)
 			<< " PID:" << req.pid
 			<< " RW:" << req.rw;
 
 	chunk_alloc(alloc, ret_fifo, ctrl, expt_sysmmu_stat, &stat);
 
-	if (expt_stat != 0) {
+	if (expt_stat != SUCCESS) {
 		if (!ctrl.empty())
 			ctrl_req = ctrl.read();
 		return stat ? -1 : 0;
 	}
-
 
 	if (expt_req2sysmmu) {
 		if (!ctrl.empty())
@@ -78,20 +82,20 @@ int print_result(int real, int expect)
 int main(void)
 {
 	int ret, err_cnt = 0;
-	ap_uint<PA_SHIFT> rand1, rand2, tmp;
+	ap_uint<PA_WIDTH> rand1, rand2, tmp;
 
 	/* Random address generation */
 	do {
 		srand(clock());
-		rand1 = rand() % SIZE(PA_SHIFT);
-	} while (rand1 < (1UL << (BLOCK_SHIFT + 1)) ||
-			 rand1 > (1UL << PA_SHIFT) - (1UL << BLOCK_SHIFT));
+		rand1 = rand() % SIZE(PA_WIDTH);
+	} while (rand1 < (1UL << (CHUNK_SHIFT + 1)) ||
+			 rand1 > (1UL << PA_WIDTH) - (1UL << CHUNK_SHIFT));
 	do {
 		srand(clock());
-		rand2 = rand() % SIZE(PA_SHIFT);
-	} while (rand2 < (1UL << (BLOCK_SHIFT + 1)) ||
-			 rand2 > (1UL << PA_SHIFT) - (1UL << BLOCK_SHIFT) ||
-			 ALIGN_DOWN(rand2, BLOCK_SIZE) == ALIGN_DOWN(rand1, BLOCK_SIZE));
+		rand2 = rand() % SIZE(PA_WIDTH);
+	} while (rand2 < (1UL << (CHUNK_SHIFT + 1)) ||
+			 rand2 > (1UL << PA_WIDTH) - (1UL << CHUNK_SHIFT) ||
+			 ALIGN_DOWN(rand2, CHUNK_SIZE) == ALIGN_DOWN(rand1, CHUNK_SIZE));
 	/* let rand1 store smaller random number */
 	if (rand2 < rand1) {
 		tmp = rand2;
@@ -101,40 +105,44 @@ int main(void)
 
 	/* case 1 */
 	for (int i = 0; i < TABLE_SIZE; i++) {
-		ret = test(0, ADDR(i, BLOCK_SHIFT), 123, 1, 0, 0, ADDR(i, BLOCK_SHIFT), true);
+		ret = test(CHUNK_ALLOC, ADDR(i, CHUNK_SHIFT), 123, WRITE,
+				SUCCESS, SUCCESS, ADDR(i, CHUNK_SHIFT), true);
 		err_cnt += print_result(ret, 0);
 	}
 
 	/* case 2 */
-	ret = test(0, 0, 123, 1, 1, 1, 0, false);
+	ret = test(CHUNK_ALLOC, 0, 123, WRITE, ERROR, ERROR, 0, false);
 	err_cnt += print_result(ret, -1);
 
 	/* case 3 */
-	ret = test(1, rand1, 456, 1, 1, 1, 0, true);
+	ret = test(CHUNK_FREE, rand1, 456, WRITE, ERROR, ERROR, 0, true);
 	err_cnt += print_result(ret, -1);
 
 	/* case 4 */
-	ret = test(1, rand1, 123, 0, 0, 0, 0, true);
+	ret = test(CHUNK_FREE, rand1, 123, READ, SUCCESS, SUCCESS, 0, true);
 	err_cnt += print_result(ret, 0);
 
 	/* case 5 */
-	ret = test(1, rand2, 123, 1, 0, 0, 0, true);
+	ret = test(CHUNK_FREE, rand2, 123, WRITE, SUCCESS, SUCCESS, 0, true);
 	err_cnt += print_result(ret, 0);
 
 	/* case 6 */
-	ret = test(0, 0, 123, 1, 0, 0, (ap_uint<PA_SHIFT>)ALIGN_DOWN(rand1, BLOCK_SIZE), true);
+	ret = test(CHUNK_ALLOC, 0, 123, WRITE, SUCCESS, SUCCESS,
+			(ap_uint<PA_WIDTH>)ALIGN_DOWN(rand1, CHUNK_SIZE), true);
 	err_cnt += print_result(ret, 0);
-	ret = test(0, 0, 123, 1, 0, 0, (ap_uint<PA_SHIFT>)ALIGN_DOWN(rand2, BLOCK_SIZE), true);
+	ret = test(CHUNK_ALLOC, 0, 123, WRITE, SUCCESS, SUCCESS,
+			(ap_uint<PA_WIDTH>)ALIGN_DOWN(rand2, CHUNK_SIZE), true);
 	err_cnt += print_result(ret, 0);
 
 	/* case 7 */
 	for (int i = 0; i < TABLE_SIZE ; i++) {
-		ret = test(1, ADDR(i, BLOCK_SHIFT), 123, 1, 0, 0, ADDR(i, BLOCK_SHIFT), true);
+		ret = test(CHUNK_FREE, ADDR(i, CHUNK_SHIFT), 123, WRITE,
+				SUCCESS, SUCCESS, ADDR(i, CHUNK_SHIFT), true);
 		err_cnt += print_result(ret, 0);
 	}
 
 	/* case 8 */
-	ret = test(1, rand1, 123, 1, 1, 1, 0, false);
+	ret = test(CHUNK_FREE, rand1, 123, WRITE, ERROR, ERROR, 0, false);
 	err_cnt += print_result(ret, -1);
 
 	return err_cnt;

@@ -5,7 +5,7 @@
 #ifndef _SYSMMU_H_
 #define _SYSMMU_H_
 
-#include <fpga/axis_sysmmu_ctrl.h>
+#include <fpga/axis_sysmmu.h>
 
 struct sysmmu_indata {
 	/*
@@ -16,8 +16,8 @@ struct sysmmu_indata {
 	 * in_len:	axi transfer burst length
 	 * in_size:	axi transfer burst size
 	 */
-	ap_uint<PID_SHIFT>	pid;
-	ap_uint<PA_SHIFT>	in_addr;
+	ap_uint<PID_WIDTH>	pid;
+	ap_uint<PA_WIDTH>	in_addr;
 	ap_uint<8>		in_len;
 	ap_uint<3>		in_size;
 };
@@ -29,14 +29,14 @@ struct sysmmu_outdata {
 	 * out_addr: physical address out
 	 * drop: 1 if error occurs, 0 if success
 	 */
-	ap_uint<PA_SHIFT>	out_addr;
+	ap_uint<PA_WIDTH>	out_addr;
 	ap_uint<1>		drop;
 };
 
 struct sysmmu_entry{
 	ap_uint<1>		valid;
 	ap_uint<1>		rw;
-	ap_uint<PID_SHIFT>	pid;
+	ap_uint<PID_WIDTH>	pid;
 };
 
 void sysmmu_data_hanlder(struct sysmmu_indata& rd_in, struct sysmmu_outdata* rd_out,
