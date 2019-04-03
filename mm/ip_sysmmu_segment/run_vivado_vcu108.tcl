@@ -181,7 +181,7 @@ proc cr_bd_sysmmu_segment { parentCell } {
   set bCheckIPs 1
   if { $bCheckIPs == 1 } {
      set list_check_ips "\ 
-  wuklab:user:axi_wrapper:1.0\
+  wuklab:user:axi_mmu_wrapper_sync:1.0\
   purdue.wuklab:hls:mm_segment_top:1.0\
   "
 

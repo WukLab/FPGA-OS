@@ -1,8 +1,9 @@
 PROJ_DIR      = generated_vivado_project
 TB_DIR        = generated_tb
 PROJ_NAME     = generated_vivado_project.xpr
+TB_PROJ_NAME  = mm_sys_mm.xpr
 VIVADO_PRJ    = $(PROJ_DIR)/$(PROJ_NAME)
-VIVADO_TB_PRJ = $(TB_DIR)/$(PROJ_NAME)
+VIVADO_TB_PRJ = $(TB_DIR)/$(TB_PROJ_NAME)
 
 VIVADO        = vivado
 
