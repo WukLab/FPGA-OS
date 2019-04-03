@@ -1,0 +1,66 @@
+@@ -26,6 +26,8 @@ import com.yahoo.ycsb.StringByteIterator;
+ import java.io.IOException;
+ import java.io.StringWriter;
+ import java.io.Writer;
++import java.io.BufferedWriter;
++import java.io.FileWriter;
+ import java.net.InetSocketAddress;
+ import java.text.MessageFormat;
+ import java.util.ArrayList;
+@@ -59,6 +61,9 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
+  */
+ public class MemcachedClient extends DB {
+
++  private BufferedWriter writer;
++  private BufferedWriter writer2;
++
+   private final Logger logger = Logger.getLogger(getClass());
+
+   protected static final ObjectMapper MAPPER = new ObjectMapper();
+@@ -129,6 +134,9 @@ public class MemcachedClient extends DB {
+       shutdownTimeoutMillis = Integer.parseInt(
+           getProperties().getProperty(SHUTDOWN_TIMEOUT_MILLIS_PROPERTY,
+                                       DEFAULT_SHUTDOWN_TIMEOUT_MILLIS));
++
++      writer = new BufferedWriter(new FileWriter("ycsb_load.log", true));
++      writer2 = new BufferedWriter(new FileWriter("ycsb_run.log", true));
+     } catch (Exception e) {
+       throw new DBException(e);
+     }
+@@ -183,6 +191,7 @@ public class MemcachedClient extends DB {
+       Map<String, ByteIterator> result) {
+     key = createQualifiedKey(table, key);
+     try {
++      writer2.append("0," + key + "\n");
+       GetFuture<Object> future = memcachedClient().asyncGet(key);
+       Object document = future.get();
+       if (document != null) {
+@@ -207,6 +216,7 @@ public class MemcachedClient extends DB {
+       String table, String key, Map<String, ByteIterator> values) {
+     key = createQualifiedKey(table, key);
+     try {
++      writer2.append("1," + key + "\n");
+       OperationFuture<Boolean> future =
+           memcachedClient().replace(key, objectExpirationTime, toJson(values));
+       return getReturnCode(future);
+@@ -221,6 +231,7 @@ public class MemcachedClient extends DB {
+       String table, String key, Map<String, ByteIterator> values) {
+     key = createQualifiedKey(table, key);
+     try {
++      writer.append("1," + key + "\n");
+       OperationFuture<Boolean> future =
+           memcachedClient().add(key, objectExpirationTime, toJson(values));
+       return getReturnCode(future);
+@@ -261,6 +272,12 @@ public class MemcachedClient extends DB {
+     if (client != null) {
+       memcachedClient().shutdown(shutdownTimeoutMillis, MILLISECONDS);
+     }
++    try {
++      writer.close();
++      writer2.close();
++    } catch(IOException e) {
++      logger.error("Error closing file", e);
++    }
+   }
+
+   protected static String createQualifiedKey(String table, String key) {
