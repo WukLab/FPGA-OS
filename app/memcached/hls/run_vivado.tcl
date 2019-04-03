@@ -228,9 +228,8 @@ proc cr_bd_axi_interconnect { parentCell } {
   ##################################################################
   set bCheckIPs 1
   if { $bCheckIPs == 1 } {
-     set list_check_ips "\
-          xilinx.com:ip:axi_interconnect:2.1\
-     "
+     set list_check_ips "\ 
+  "
 
    set list_ips_missing ""
    common::send_msg_id "BD_TCL-006" "INFO" "Checking if the following IPs exist in the project's IP catalog: $list_check_ips ."
@@ -289,7 +288,7 @@ proc cr_bd_axi_interconnect { parentCell } {
    CONFIG.NUM_READ_OUTSTANDING {2} \
    CONFIG.NUM_WRITE_OUTSTANDING {2} \
    CONFIG.PROTOCOL {AXI4} \
- ] $M00_AXI_0
+   ] $M00_AXI_0
   set S00_AXI_0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S00_AXI_0 ]
   set_property -dict [ list \
    CONFIG.ADDR_WIDTH {32} \
@@ -319,7 +318,7 @@ proc cr_bd_axi_interconnect { parentCell } {
    CONFIG.SUPPORTS_NARROW_BURST {1} \
    CONFIG.WUSER_BITS_PER_BYTE {0} \
    CONFIG.WUSER_WIDTH {5} \
- ] $S00_AXI_0
+   ] $S00_AXI_0
   set S01_AXI_0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S01_AXI_0 ]
   set_property -dict [ list \
    CONFIG.ADDR_WIDTH {32} \
@@ -349,7 +348,7 @@ proc cr_bd_axi_interconnect { parentCell } {
    CONFIG.SUPPORTS_NARROW_BURST {1} \
    CONFIG.WUSER_BITS_PER_BYTE {0} \
    CONFIG.WUSER_WIDTH {5} \
- ] $S01_AXI_0
+   ] $S01_AXI_0
 
   # Create ports
   set APCLK_0 [ create_bd_port -dir I -type clk APCLK_0 ]
@@ -364,10 +363,15 @@ proc cr_bd_axi_interconnect { parentCell } {
   set axi_interconnect_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_interconnect_0 ]
   set_property -dict [ list \
    CONFIG.ENABLE_ADVANCED_OPTIONS {1} \
+   CONFIG.M00_HAS_DATA_FIFO {1} \
+   CONFIG.M00_HAS_REGSLICE {3} \
    CONFIG.NUM_MI {1} \
    CONFIG.NUM_SI {2} \
    CONFIG.S00_HAS_DATA_FIFO {2} \
+   CONFIG.S00_HAS_REGSLICE {3} \
    CONFIG.S01_HAS_DATA_FIFO {2} \
+   CONFIG.S01_HAS_REGSLICE {3} \
+   CONFIG.S02_HAS_DATA_FIFO {2} \
    CONFIG.STRATEGY {2} \
    CONFIG.SYNCHRONIZATION_STAGES {2} \
    CONFIG.XBAR_DATA_WIDTH {512} \
@@ -385,12 +389,16 @@ proc cr_bd_axi_interconnect { parentCell } {
   connect_bd_net -net S00_ARESETN_1 [get_bd_ports axi_resetn] [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axi_interconnect_0/S01_ARESETN]
 
   # Create address segments
+  create_bd_addr_seg -range 0x000100000000 -offset 0x00000000 [get_bd_addr_spaces S00_AXI_0] [get_bd_addr_segs M00_AXI_0/Reg] SEG_M00_AXI_0_Reg
+  create_bd_addr_seg -range 0x000100000000 -offset 0x00000000 [get_bd_addr_spaces S01_AXI_0] [get_bd_addr_segs M00_AXI_0/Reg] SEG_M00_AXI_0_Reg
 
 
   # Restore current instance
   current_bd_instance $oldCurInst
 
   save_bd_design
+common::send_msg_id "BD_TCL-1000" "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
+
   close_bd_design $design_name 
 }
 # End of cr_bd_axi_interconnect()

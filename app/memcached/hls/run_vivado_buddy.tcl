@@ -363,10 +363,14 @@ proc cr_bd_axi_interconnect { parentCell } {
   set axi_interconnect_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_interconnect_0 ]
   set_property -dict [ list \
    CONFIG.ENABLE_ADVANCED_OPTIONS {1} \
+   CONFIG.M00_HAS_DATA_FIFO {1} \
+   CONFIG.M00_HAS_REGSLICE {3} \
    CONFIG.NUM_MI {1} \
    CONFIG.NUM_SI {2} \
    CONFIG.S00_HAS_DATA_FIFO {2} \
+   CONFIG.S00_HAS_REGSLICE {3} \
    CONFIG.S01_HAS_DATA_FIFO {2} \
+   CONFIG.S01_HAS_REGSLICE {3} \
    CONFIG.S02_HAS_DATA_FIFO {2} \
    CONFIG.STRATEGY {2} \
    CONFIG.SYNCHRONIZATION_STAGES {2} \
@@ -385,6 +389,8 @@ proc cr_bd_axi_interconnect { parentCell } {
   connect_bd_net -net S00_ARESETN_1 [get_bd_ports axi_resetn] [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axi_interconnect_0/S01_ARESETN]
 
   # Create address segments
+  create_bd_addr_seg -range 0x000100000000 -offset 0x00000000 [get_bd_addr_spaces S00_AXI_0] [get_bd_addr_segs M00_AXI_0/Reg] SEG_M00_AXI_0_Reg
+  create_bd_addr_seg -range 0x000100000000 -offset 0x00000000 [get_bd_addr_spaces S01_AXI_0] [get_bd_addr_segs M00_AXI_0/Reg] SEG_M00_AXI_0_Reg
 
 
   # Restore current instance
