@@ -1,11 +1,3 @@
-/*
- * YS:
- * -  The original tb is not doing too much work.
- *    Majority of the work is done by the pkt_mon module.
- * -  This tb is not using gt to send any data, it will
- *    loopback whatever sent out from MAC. Shame.
- */
-
 `define SIM_SPEED_UP
 
 `timescale 1fs/1fs

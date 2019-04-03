@@ -233,6 +233,7 @@ set obj [get_filesets sim_1]
 # Import local files from the original project
 set files [list \
  [file normalize "${origin_dir}/tb/top_qsfp_mac_tb.v"] \
+ [file normalize "${origin_dir}/tb/kvs/bd_kvs_tb.v"] \
  [file normalize "${origin_dir}/tb/ddr4_model/MemoryArray.sv"] \
  [file normalize "${origin_dir}/tb/ddr4_model/StateTableCore.sv"] \
  [file normalize "${origin_dir}/tb/ddr4_model/StateTable.sv"] \
@@ -445,6 +446,7 @@ proc create_hier_cell_mc_ddr4_wrapper { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir O -type clk c0_ddr4_ui_clk
   create_bd_pin -dir O -from 0 -to 0 -type rst c0_ddr4_ui_clk_rstn
+  create_bd_pin -dir O c0_init_calib_complete_0
   create_bd_pin -dir I -type rst sys_rst
 
   # Create instance: mc_ddr4_core, and set properties
@@ -472,6 +474,7 @@ proc create_hier_cell_mc_ddr4_wrapper { parentCell nameHier } {
   connect_bd_net -net c0_ddr4_ui_clk_rstn [get_bd_pins c0_ddr4_ui_clk_rstn] [get_bd_pins mc_ddr4_core/c0_ddr4_aresetn] [get_bd_pins util_vector_logic_0/Res]
   connect_bd_net -net c0_ddr4_ui_clk_rstn_1 [get_bd_pins mc_ddr4_core/c0_ddr4_ui_clk_sync_rst] [get_bd_pins util_vector_logic_0/Op1]
   connect_bd_net -net mc_ddr4_0_c0_ddr4_ui_clk [get_bd_pins c0_ddr4_ui_clk] [get_bd_pins mc_ddr4_core/c0_ddr4_ui_clk]
+  connect_bd_net -net mc_ddr4_core_c0_init_calib_complete [get_bd_pins c0_init_calib_complete_0] [get_bd_pins mc_ddr4_core/c0_init_calib_complete]
   connect_bd_net -net sys_rst_0_1 [get_bd_pins sys_rst] [get_bd_pins mc_ddr4_core/sys_rst]
 
   # Restore current instance
@@ -616,6 +619,8 @@ proc create_hier_cell_kvs { parentCell nameHier } {
   set_property -dict [ list \
    CONFIG.LAYERED_METADATA {xilinx.com:interface:datatypes:1.0 {DATA {datatype {name {attribs {resolve_type immediate dependency {} format string minimum {} maximum {}} value {}} bitwidth {attribs {resolve_type immediate dependency {} format long minimum {} maximum {}} value 1} bitoffset {attribs {resolve_type immediate dependency {} format long minimum {} maximum {}} value 0} integer {signed {attribs {resolve_type immediate dependency {} format bool minimum {} maximum {}} value false}}}}}} \
  ] $mac_ready
+  set mc_ddr4_ui_clk_rst_n [ create_bd_port -dir O mc_ddr4_ui_clk_rst_n ]
+  set mc_init_calib_complete [ create_bd_port -dir O mc_init_calib_complete ]
   set sys_rst [ create_bd_port -dir I -type rst sys_rst ]
   set_property -dict [ list \
    CONFIG.POLARITY {ACTIVE_HIGH} \
@@ -688,8 +693,9 @@ proc create_hier_cell_kvs { parentCell nameHier } {
   connect_bd_net -net ARESETN_0_1 [get_bd_ports clk_125_rst_n] [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axi_interconnect_0/S01_ARESETN] [get_bd_pins axi_interconnect_0/S02_ARESETN] [get_bd_pins axis_data_fifo_0/m_axis_aresetn] [get_bd_pins axis_data_fifo_1/s_axis_aresetn] [get_bd_pins jtag_axi_0/aresetn] [get_bd_pins kvs/clk_125_rst_n]
   connect_bd_net -net S00_AXIS_ACLK_0_1 [get_bd_ports from_net_clk_390] [get_bd_pins axis_data_fifo_0/s_axis_aclk]
   connect_bd_net -net S00_AXIS_ARESETN_0_1 [get_bd_ports from_net_clk_390_rst_n] [get_bd_pins axis_data_fifo_0/s_axis_aresetn]
-  connect_bd_net -net c0_ddr4_ui_clk_rstn [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins mc_ddr4_wrapper/c0_ddr4_ui_clk_rstn]
+  connect_bd_net -net c0_ddr4_ui_clk_rstn [get_bd_ports mc_ddr4_ui_clk_rst_n] [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins mc_ddr4_wrapper/c0_ddr4_ui_clk_rstn]
   connect_bd_net -net mc_ddr4_0_c0_ddr4_ui_clk [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins mc_ddr4_wrapper/c0_ddr4_ui_clk]
+  connect_bd_net -net mc_ddr4_wrapper_c0_init_calib_complete_0 [get_bd_ports mc_init_calib_complete] [get_bd_pins mc_ddr4_wrapper/c0_init_calib_complete_0]
   connect_bd_net -net sys_rst_0_1 [get_bd_ports sys_rst] [get_bd_pins mc_ddr4_wrapper/sys_rst]
   connect_bd_net -net to_net_clk_390_1 [get_bd_ports to_net_clk_390] [get_bd_pins axis_data_fifo_1/m_axis_aclk]
   connect_bd_net -net to_net_clk_390_rst_n_1 [get_bd_ports to_net_clk_390_rst_n] [get_bd_pins axis_data_fifo_1/m_axis_aresetn]
@@ -704,6 +710,8 @@ proc create_hier_cell_kvs { parentCell nameHier } {
   current_bd_instance $oldCurInst
 
   save_bd_design
+common::send_msg_id "BD_TCL-1000" "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
+
   close_bd_design $design_name 
 }
 # End of cr_bd_LegoFPGA_axis64_KVS()
