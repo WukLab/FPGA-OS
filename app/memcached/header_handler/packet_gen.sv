@@ -3,11 +3,11 @@ module packet_gen (
     input  rst_n,
     input  ready,
 
-    output [63:0] toNet_tdata,
-    output  [7:0] toNet_tkeep,
-    output        toNet_tvalid,
-    output        toNet_tlast,
-    input         toNet_tready
+    output [63:0] out_tdata,
+    output  [7:0] out_tkeep,
+    output        out_tvalid,
+    output        out_tlast,
+    input         out_tready
 );
 
 reg tvalid, tlast;
@@ -18,10 +18,10 @@ integer random_delay = 'h10;
 reg status, flag = 0, done, start;
 integer fd;
 
-assign toNet_tdata    = tdata;
-assign toNet_tkeep    = tkeep;
-assign toNet_tvalid   = tvalid;
-assign toNet_tlast    = tlast;
+assign out_tdata    = tdata;
+assign out_tkeep    = tkeep;
+assign out_tvalid   = tvalid;
+assign out_tlast    = tlast;
 
 parameter FD="./input.txt";
 
@@ -66,7 +66,7 @@ always @(posedge clk) begin
             else if (num_pkts >= 0) begin
                  if (~flag) begin
                      if (num_pkts > 0) begin
-                         if ((tvalid & toNet_tready) | ~tvalid) begin 
+                         if ((tvalid & out_tready) | ~tvalid) begin 
                              $fscanf(fd, "%h %h\n", tdata, tkeep);
                              num_pkts <= num_pkts - 1;
                              if (num_pkts == 1) begin
@@ -76,7 +76,7 @@ always @(posedge clk) begin
                      end
                      tvalid <= 1;
                  end
-                 if (~toNet_tready) begin
+                 if (~out_tready) begin
                      flag <= 1;
                  end else if (flag) begin
                      flag <= 0;
