@@ -72,6 +72,11 @@ void ht_compare(stream<hashTableInternalWord> &memRd2comp, stream<internalMdWord
 			if (!memRdData.empty() && !memRd2comp.empty()) {
 				memRdData.read(memInput);
 				memRd2comp.read(cmp_inData);
+#if DEBUG_PRINT
+				if (memInput != 0) {
+					std::cout << "memRead: " << std::hex << memInput << " request: " << cmp_inData.data << std::endl;
+				}
+#endif
 				for (uint8_t i=0;i<noOfBins;++i) {																	// Again go through all the bins
 					if (memInput.range((bitsPerBin*(i+1))-1, (bitsPerBin*i)) != cmp_inData.data)					// If this part of the key does not match the input data
 						statusOutput.bin[i].match = 0;																// set the flag to 0

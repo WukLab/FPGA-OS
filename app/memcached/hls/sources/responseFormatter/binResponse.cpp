@@ -71,6 +71,15 @@ void response_f(stream<pipelineWord> &respInput, stream<ap_uint<248> > &metadata
 	if (!valueBuffer.full() && !metadataBuffer.full() && !respInput.empty()) {
 		pipelineWord tempInput;
 		respInput.read(tempInput);
+#if DEBUG_PRINT
+		std::cout << "Metadata: " << std::hex << tempInput.metadata
+				<< " key: " << tempInput.key
+				<< " value: " << tempInput.value
+				<< " keyvalid: " << std::dec << tempInput.keyValid
+				<< " value valid: " << tempInput.valueValid
+				<< " SOP: " << tempInput.SOP
+				<< " EOP: " << tempInput.EOP << std::endl;
+#endif
 		if (tempInput.SOP == 1 && inWordCounter == 0) {
 			bf_metadataTempBuffer.range(123, 0) = tempInput.metadata;
 			if (tempInput.valueValid == 1)
@@ -118,10 +127,10 @@ void response_r(stream<ap_uint<248> > &metadataBuffer, stream<ap_uint<64> > &val
 		}
 	}
 	else if (br_outWordCounter == 1) {
-		if ((!valueBuffer.empty() && outOpCode == 0 && errorCode != 1) || errorCode == 1 || outOpCode != 0) {
+		if ((outOpCode == 0 && errorCode != 1) || errorCode == 1 || outOpCode != 0) {
 			ap_uint<112> tmpMetadata;
 			resp_ValueConvertTemp			= outMetadataTempBuffer.range(39, 8);
-			resp_ValueConvertTemp			-=  8;
+			//resp_ValueConvertTemp			-=  8;
 			valueLength						= resp_ValueConvertTemp;
 			tmpMetadata.range(95, 0)		= outMetadataTempBuffer.range(219, 124);
 			tempOutput.data 				= 0;
@@ -135,9 +144,6 @@ void response_r(stream<ap_uint<248> > &metadataBuffer, stream<ap_uint<64> > &val
 			else
 				tempOutput.data.range(39, 32)	= 0;									// Extras Length
 			tempOutput.data.range(63, 56) 	= outMetadataTempBuffer.range(119,112);
-			if (outOpCode == 0 && errorCode != 1) {
-				valueBuffer.read(xtrasBuffer);
-			}
 			ap_uint<16> br_valueLengthTemp = 24; 	
 			if (outOpCode == 0 && errorCode != 1) {
 				
@@ -179,17 +185,22 @@ void response_r(stream<ap_uint<248> > &metadataBuffer, stream<ap_uint<64> > &val
 	}
 	else if (br_outWordCounter == 4) { 	// Xtras & Value
 		if (!valueBuffer.empty()) {
-			tempOutput.data.range(31, 0) = xtrasBuffer(31, 0);
 			valueBuffer.read(xtrasBuffer);
-			tempOutput.data.range(63, 32) = xtrasBuffer(31, 0);
-			if (valueLength <= 4) {
+
+			if (valueLength <= 8) {
+				tempOutput.data = xtrasBuffer(8*valueLength - 1, 0);
+#if DEBUG_PRINT
+				std::cout << "Output: " << std::hex << tempOutput.data << std::endl;
+#endif
 				br_outWordCounter = 0;
 				tempOutput.last = 1;
-				tempOutput.keep = length2keep_mapping(valueLength + 4);
+				tempOutput.keep = length2keep_mapping(valueLength);
+				valueLength = 0;
 				}
 			else {
-				br_outWordCounter++;
-				valueLength -= 4;
+				tempOutput.data = xtrasBuffer;
+				//br_outWordCounter = 6;
+				valueLength -= 8;
 			}
 			respOutput.write(tempOutput);
 		}
@@ -201,7 +212,6 @@ void response_r(stream<ap_uint<248> > &metadataBuffer, stream<ap_uint<64> > &val
 			tempOutput.data.range(31, 0) = xtrasBuffer(63, 32);
 			valueBuffer.read(xtrasBuffer);
 			tempOutput.data.range(63, 32) = xtrasBuffer(31, 0);
-			//std::cerr << std::hex << tempOutput.data << std::endl;
 			ap_uint<8> tempKeep = length2keep_mapping(valueLength);
 			valueLength > 8 ? valueLength -=8 : valueLength = 0;
 			if (valueLength == 0) {

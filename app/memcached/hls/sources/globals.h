@@ -42,6 +42,15 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.// Copyright (c) 2015 Xilinx, 
 #include "../../../../include/fpga/log2.h"
 //#include "ap_cint.h"
 
+#define DEBUG_PRINT 0
+#define BEBUG_STATE 0
+
+#if BEBUG_STATE
+# define PR(fmt, ...)	printf(fmt, ##__VA_ARGS__)
+#else
+# define PR(fmt, ...)	do { } while (0)
+#endif
+
 using namespace hls;
 
 #define splitLength	2048

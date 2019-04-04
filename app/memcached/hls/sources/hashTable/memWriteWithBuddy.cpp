@@ -62,7 +62,6 @@ void memWriteWithBuddy(stream<hashTableInternalWord> &comp2memWrKey, stream<inte
 	{
 		case MW_IDLE:
 		{
-			//std::cout << "State: MW_IDLE" << std::endl;
 			if (memWr_memInitialized == true) {
 				if (!comp2memWrMd.empty() && !comp2memWrKeyStatus.empty()) {
 					memWriteAddress = 0;
@@ -89,7 +88,7 @@ void memWriteWithBuddy(stream<hashTableInternalWord> &comp2memWrKey, stream<inte
 		}
 		case MW_EVAL:
 		{
-			std::cout << "State: MW_EVAL" << std::endl;
+			PR("State: MW_EVAL\n");
 			//if (!comp2memWrMemData.empty() && (htMemWriteInputWordMd.operation != 1 ||
 			//	(htMemWriteInputWordMd.operation == 1 && ((htMemWriteInputWordMd.valueLength < splitLength && !addressAssignDramIn.empty())
 			//	 || (htMemWriteInputWordMd.valueLength >= splitLength && !addressAssignFlashIn.empty()))))) {
@@ -153,13 +152,10 @@ void memWriteWithBuddy(stream<hashTableInternalWord> &comp2memWrKey, stream<inte
 						if (replace == true)
 							memWr_location = memWr_replaceLocation;
 						outputWordMemCtrl.count	= htMemWriteInputWordMd.keyLength/16;
-						std::cout << "Count1: " << outputWordMemCtrl.count << std::endl;
 						if (htMemWriteInputWordMd.keyLength > (outputWordMemCtrl.count*16))
 							outputWordMemCtrl.count += 2;
 						else
 							outputWordMemCtrl.count += 1;
-						std::cout << "Count2: " << outputWordMemCtrl.count
-								<< " htMemWriteInputWordMd.keyLength: " << htMemWriteInputWordMd.keyLength << std::endl;
 						//ap_uint<7> tempAddress = htMemWriteInputWordMd.metadata.range(noOfHashTableEntries + 4, 8);	// Plus 5 here is to shift the 8 LSBs of the address.
 						ap_uint<32> tempAddress = htMemWriteInputWordMd.metadata;
 						outputWordMemCtrl.address.range(noOfHashTableEntries - 1, 3) = tempAddress.range(6, 0);
@@ -180,7 +176,6 @@ void memWriteWithBuddy(stream<hashTableInternalWord> &comp2memWrKey, stream<inte
 							// Succeed
 							if (buddy_ret.stat == 0)
 								addressPointer = buddy_ret.addr >> 8;
-							//std::cout << "ADDR: " << std::hex << buddy_ret.addr << " " << std::bitset<32>(buddy_ret.addr) << std::endl;
 						}
 						inputWordMem.range(((bitsPerBin*memWr_location)+88)-1, (bitsPerBin*memWr_location)+56) = addressPointer;
 						memWrData.write(inputWordMem);
@@ -226,7 +221,7 @@ void memWriteWithBuddy(stream<hashTableInternalWord> &comp2memWrKey, stream<inte
 		}
 		case MW_SET_REST:
 		{
-			std::cout << "State: MW_SET_REST" << std::endl;
+			PR("State: MW_SET_REST\n");
 			if (!comp2memWrKey.empty() && !comp2memWrMemData.empty()) {
 				comp2memWrMemData.read(inputWordMem);
 				comp2memWrKey.read(inputWord);
@@ -241,14 +236,14 @@ void memWriteWithBuddy(stream<hashTableInternalWord> &comp2memWrKey, stream<inte
 		}
 		case MW_FLUSH_WAIT:
 		{
-			std::cout << "State: MW_FLUSH_WAIT" << std::endl;
+			PR("State: MW_FLUSH_WAIT\n");
 			//if (flushAck == 1)
 			//	memWrState = MW_FLUSH;
 			break;
 		}
 		case MW_FLUSH:
 		{
-			std::cout << "State: MW_FLUSH" << std::endl;
+			PR("State: MW_FLUSH\n");
 			memCtrlWord flushWord = {memWriteAddress, 1};
 			memWriteAddress++;
 			memWrCtrl.write(flushWord);
@@ -265,7 +260,7 @@ void memWriteWithBuddy(stream<hashTableInternalWord> &comp2memWrKey, stream<inte
 		}
 		case MW_FLUSH_CONSUME_KEY:
 		{
-			std::cout << "State: MW_FLUSH_CONSUME_KEY" << std::endl;
+			PR("State: MW_FLUSH_CONSUME_KEY\n");
 			if (!comp2memWrKey.empty()) {
 				comp2memWrKey.read(inputWord);
 				memWrState = MW_IDLE;
@@ -274,7 +269,7 @@ void memWriteWithBuddy(stream<hashTableInternalWord> &comp2memWrKey, stream<inte
 		}
 		case MW_CONSUME:
 		{
-			std::cout << "State: MW_CONSUME" << std::endl;
+			PR("State: MW_CONSUME\n");
 			if (!comp2memWrKey.empty() && !comp2memWrMemData.empty())	{
 				comp2memWrKey.read(inputWord);
 				comp2memWrMemData.read(inputWordMem);

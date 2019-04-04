@@ -30,7 +30,9 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.// Copyright (c) 2015 Xilinx, 
 #include <pthread.h>
 #include <atomic>
 
-#define totalSimCycles    5000//00    // Defines how many additional C simulation cycles will be executed after the input file has been read in. Used to make sure all the request traverse the entire pipeline.
+#define TB_DEBUG_PRINT 0
+
+#define totalSimCycles    50000//0    // Defines how many additional C simulation cycles will be executed after the input file has been read in. Used to make sure all the request traverse the entire pipeline.
 
 unsigned int    simCycleCounter;
 
@@ -62,8 +64,10 @@ void memAccessHash(stream<extMemCtrlWord> &aggregateMemCmdHashTable, stream<ap_u
         }
         else if (inputWordHashTable.rdOrWr == 1 && !hashTableMemWrData.empty()) {
             memArrayHashTable[inputWordHashTable.address] = hashTableMemWrData.read();
+#if TB_DEBUG_PRINT
             if (memArrayHashTable[inputWordHashTable.address])
-        	    std::cout << std::hex << "Table Entry: 0x" <<  memArrayHashTable[inputWordHashTable.address] << " Count: " << inputWordHashTable.count << std::endl;
+        	    std::cout << std::hex << "[TB] Table Entry: 0x" <<  memArrayHashTable[inputWordHashTable.address] << " Count: " << inputWordHashTable.count << std::endl;
+#endif
             if (inputWordHashTable.count == 1)
                 memStateHashTable = MEM_IDLE;
             else {
@@ -120,7 +124,9 @@ void memAccessValueStore(stream<extMemCtrlWord> &aggregateMemCmd, stream<ap_uint
         }
         else if (inputWordValueStore.rdOrWr == 1 && !wrDataIn.empty()) {
             memArrayValueStore[inputWordValueStore.address] = wrDataIn.read();
-            std::cout << std::hex << "ADDR: " << inputWordValueStore.address << " Data: 0x" <<  memArrayValueStore[inputWordValueStore.address] << std::endl;
+#if TB_DEBUG_PRINT
+            std::cout << std::hex << "[TB] ADDR: " << inputWordValueStore.address << " Data: 0x" <<  memArrayValueStore[inputWordValueStore.address] << std::endl;
+#endif
             if (inputWordValueStore.count == 1)
                 memStateValueStore = MEM_IDLE;
             else {
@@ -298,10 +304,14 @@ static void *buddy_allocator_thread(void *unused)
 
 	while (buddy_run) {
 		if (!alloc.empty()) {
+#if TB_DEBUG_PRINT
 			counter++;
-			//std::cout << "[TB] Allocation Count: " << counter << std::endl;
+			std::cout << "[TB] Allocation Count: " << counter << std::endl;
+#endif
 			buddy_allocator(alloc, alloc_ret, dram);
-			//std::cout << "[TB] Allocation Request Done" << std::endl;
+#if TB_DEBUG_PRINT
+			std::cout << "[TB] Allocation Request Done" << std::endl;
+#endif
 		}
 	}
 	return NULL;
@@ -387,7 +397,7 @@ int main(int argc, char *argv[]) {
                     inData.user = //0encodeApUint112(stringVector[0]);
                     inData.data = encodeApUint64(stringVector[0]);
                     inData.keep = encodeApUint8(stringVector[1]);
-                    std::cout << "[TB] " << stringVector[0] << " | " << stringVector[1] << " | " << stringVector[2] << std::endl;
+                    //std::cout << "[TB] " << stringVector[0] << " | " << stringVector[1] << " | " << stringVector[2] << std::endl;
                     inFIFO.write(inData);
                     }
             }
