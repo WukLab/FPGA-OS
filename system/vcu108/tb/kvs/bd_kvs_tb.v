@@ -58,7 +58,7 @@ parameter TIMEOUT_THRESH = 100000000;
 	wire mc_init_calib_complete;
 	wire mc_ddr4_ui_clk_rst_n;
 
-	reg start_send;
+	reg enable_send;
 
 	LegoFPGA_axis64_KVS	DUT (
 		// DDR4 MC
@@ -129,11 +129,9 @@ parameter TIMEOUT_THRESH = 100000000;
 		.c0_ddr4_reset_n          (ddr4_reset_n)
 	);
 
-	integer infd, outfd;
-	integer pktlen, finished, timeout, timedout;
-
+	// Generate reset signals
 	initial begin
-		start_send = 1'b0;
+		enable_send = 1'b0;
 		sysclk_125_rst_n = 1'b1;
 		sysclk_390_rst_n = 1'b1;
 
@@ -141,6 +139,7 @@ parameter TIMEOUT_THRESH = 100000000;
 		sysclk_300_clk_ref = 1;
 		sysclk_390_clk_ref = 1;
 
+		// Reset MC
 		sys_reset = 1'b0;
 	        #200;
 	        sys_reset = 1'b1;
@@ -148,10 +147,11 @@ parameter TIMEOUT_THRESH = 100000000;
 	        sys_reset = 1'b0;
 		#100;
 
+		// Wait until MC is ready
 		wait(mc_init_calib_complete == 1'b1);
 		wait(mc_ddr4_ui_clk_rst_n == 1'b1);
 
-		// Generate reset signals
+		// Reset others
 		@(posedge sysclk_125_clk_ref);
 		sysclk_125_rst_n = 0;
 		#50000000
@@ -165,103 +165,147 @@ parameter TIMEOUT_THRESH = 100000000;
                 sysclk_390_rst_n = 1;
 
 		#50000000
-		start_send = 1'b1;
+		enable_send = 1'b1;
 	end
 
-  // Send Data to DUT
-  initial begin
-        finished = 0;
-        pktlen = 1;
-	tx_tdata = 0;
-        tx_tkeep = 8'hFF;
-        tx_tuser = 8'h00;
-        tx_tvalid = 0;
-        tx_tlast = 0;
+	// Clock generation
+	always
+		#1666666.667 sysclk_300_clk_ref = ~sysclk_300_clk_ref;
+	    
+	always
+		#4000000.000 sysclk_125_clk_ref = ~sysclk_125_clk_ref;
 
-        infd = $fopen(IN_FILEPATH,"r");
-        if (infd == 0) begin
-            $display("ERROR, input file not found\n");
-            $finish;
-        end
-        
-        // Wait reset signals
-	wait(start_send == 1'b1);
+	always
+		#1280000.000 sysclk_390_clk_ref = ~sysclk_390_clk_ref;
 
-	// Synchronize to network clk
-        @(posedge sysclk_390_clk_ref);
+	assign default_sysclk_300_clk_p = sysclk_300_clk_ref;
+	assign default_sysclk_300_clk_n = ~sysclk_300_clk_ref;
 
-        while (!finished) begin
-            $fscanf(infd,"%d\n",pktlen);
 
-            while (pktlen != 0) begin
-                if (tx_tready) begin
-                    $fscanf(infd,"%h %h\n",tx_tdata, tx_tkeep);
-                    pktlen = pktlen - 1;
-                    
-                    if (pktlen == 0) begin
-                        tx_tlast = 1;
-                    end else begin
-                        tx_tlast = 0;
-                    end 
-                    tx_tvalid = 1;
-                    
-                    if ($feof(infd)) begin
-                        finished = 1;
-                    end
-                end
+	// Counters for evaluation
+	reg [63:0] send_start, send_end, receive_start, receive_end;
+	reg [63:0] nr_requests_send, nr_requests_received;
+
+	integer infd, outfd, pktlen, finished_send;
+
+	// Send Data to DUT
+	initial begin
+	      finished_send = 0;
+	      pktlen = 1;
+	      nr_requests_send = 0;
+	      nr_requests_received = 0;
+
+	      tx_tdata = 0;
+	      tx_tkeep = 8'hFF;
+	      tx_tuser = 8'h00;
+	      tx_tvalid = 0;
+	      tx_tlast = 0;
+
+	      infd = $fopen(IN_FILEPATH,"r");
+	      if (infd == 0) begin
+		  $display("ERROR, input file not found\n");
+		  $finish;
+	      end
+	      
+	      // Wait reset signals
+	      wait(enable_send == 1'b1);
+
+	      // Synchronize to network clk
+	      @(posedge sysclk_390_clk_ref);
+
+	      send_start = $time;
+	      $display("INFO: %t: Start sending packets.", send_start);
+
+	      while (!finished_send) begin
+		  $fscanf(infd,"%d\n",pktlen);
+		  nr_requests_send = nr_requests_send + 1;
+
+		  while (pktlen != 0) begin
+		      if (tx_tready) begin
+			  $fscanf(infd,"%h %h\n",tx_tdata, tx_tkeep);
+			  pktlen = pktlen - 1;
+			  
+			  if (pktlen == 0) begin
+			      tx_tlast = 1;
+			  end else begin
+			      tx_tlast = 0;
+			  end 
+			  tx_tvalid = 1;
+
+			  if ($feof(infd)) begin
+			      finished_send = 1;
+			      send_end = $time;
+			      $display("INFO: %t: Finish sending packets.", send_end);
+			  end
+		      end else begin
+			  tx_tvalid = 0;
+		      end
+
+		      if (!finished_send && (pktlen != 0)) begin
+			  # CLK_PERIOD;
+		      end
+		  end
+
+		  # CLK_PERIOD;
+		  tx_tvalid = 0;
+		  
+		  //wait(nr_requests_send == nr_requests_received);
+	      end
+	end
+
+	// Receive data from DUT
+	initial begin
+	    rx_tready = 1;
+	    receive_start = 0;
+
+	    outfd = $fopen(OUT_FILEPATH,"w");
+	    if (outfd == 0) begin
+		$display("ERROR, can't write output file\n");
+		$finish;
+	    end
+
+	    // wait reset signals
+	    wait(enable_send == 1'b1);
+
+	    // Synchronize to network clk
+	    @(posedge sysclk_390_clk_ref);
+
+	    while (1) begin
+		if (rx_tvalid) begin
+		    if (receive_start == 0) begin
+		    	receive_start = $time;
+		    end
+
+		    if (rx_tlast) begin
+			if (nr_requests_received == (nr_requests_send - 1)) begin
+				receive_end = $time;
+			end
+		    	nr_requests_received = nr_requests_received + 1;
+		    end
+
+		    $display("%t: %h %h %d", $time, rx_tdata, rx_tkeep, rx_tlast);
+		    $fdisplay(outfd, "%h %h %d", rx_tdata, rx_tkeep, rx_tlast);
+		    # CLK_PERIOD;
+		end
 		else begin
-                    tx_tvalid = 0;
-                end
-
-                if (!finished && (pktlen != 0)) begin
-                    # CLK_PERIOD;
-                end
-            end
-
-            # CLK_PERIOD;
-            tx_tvalid = 0;
+		    # CLK_PERIOD;
+		end
+	    end
 	end
-  end
 
-    // Receive data from DUT
-    initial begin
-        outfd = $fopen(OUT_FILEPATH,"w");
-        rx_tready = 1;
-        timedout = 0;
+	// Monitor status
+	initial begin
+		wait (finished_send == 1);
+		wait (nr_requests_send == nr_requests_received);
 
-        if (outfd == 0) begin
-            $display("ERROR, can't write output file\n");
-            $finish;
-        end
+		$display("INFO: TX Time: [%d - %d]", send_start, send_end);
+		$display("INFO: RX Time: [%d - %d]", receive_start, receive_end);
+		$display("INFO: NR Requests TX: %d ", nr_requests_send);
+		$display("INFO: NR Requests RX: %d ", nr_requests_received);
 
-        // wait reset signals
-	wait(start_send == 1'b1);
-
-	// Synchronize to network clk
-        @(posedge sysclk_390_clk_ref);
-
-        while (1) begin
-            if (rx_tvalid) begin
-                $fdisplay(outfd,"%h %h", rx_tdata, rx_tkeep);
-                # CLK_PERIOD;
-            end
-            else begin
-                # CLK_PERIOD;
-            end
-        end
-    end
-
-    // Clock generation
-    always
-        #1666666.667 sysclk_300_clk_ref = ~sysclk_300_clk_ref;
-        
-    always
-        #4000000.000 sysclk_125_clk_ref = ~sysclk_125_clk_ref;
-
-    always
-        #1280000.000 sysclk_390_clk_ref = ~sysclk_390_clk_ref;
-
-    assign default_sysclk_300_clk_p = sysclk_300_clk_ref;
-    assign default_sysclk_300_clk_n = ~sysclk_300_clk_ref;
+		$fclose(infd);
+		$fclose(outfd);
+		$finish;
+	end
 
 endmodule
