@@ -57,16 +57,18 @@ module ack_queue_tb(
                 /* Get Acks from APP0 and APP1 and write to file */
                 $fdisplay(outfd,"%h %h", rx_tdata, rx_tkeep);
                 # CLK_PERIOD;
-                $fdisplay(outfd,"%h %h\n", rx_tdata, rx_tkeep);
+                //$fdisplay(outfd,"%h %h\n", rx_tdata, rx_tkeep);
             end else begin
                 # CLK_PERIOD;
             end
                 
             /* Simulate Sysnet Receiving from apps (not the queue) */
-            if(rx_tlast && rx_tvalid) begin
+            if(rx_tlast && rx_tvalid && rx_tready) begin
+                # CLK_PERIOD;
                 rx_tready = 0;
                 # (CLK_PERIOD * 10);
                 rx_tready = 1;
+                
             end
         end
        /* Close file and end simulation */
@@ -99,3 +101,4 @@ module ack_queue_tb(
     );
     
 endmodule
+

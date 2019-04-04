@@ -63,11 +63,16 @@ module ack_queue
     localparam      SYN = 1'b0;
     localparam      PAD = 134'b0;
     
-    localparam [1:0] IDLE = 2'b00,
-                     APP0 = 2'b01,
-                     APP1 = 2'b10;
+    localparam      IDLE = 1'b0,
+                    SEND = 2'b1;
+                    
+    localparam      APP0 = 1'b0,
+                    APP1 = 1'b1;
+    
+
                      
-    reg [1:0]   state = IDLE;
+    reg             state = IDLE;
+    reg             app_select = APP0;
     
     
     always @ (posedge clk) begin
@@ -76,13 +81,14 @@ module ack_queue
             tx_tvalid <= 0;
             seq0_num <= 32'h0;
             seq1_num <= 32'h0;
+            app_select <= APP0;
         end else begin 
             case (state)
              
                 IDLE: begin
                     tx_tvalid <= 1'b0;
                     if (tx_tready) begin
-                        state <= APP0;
+                        state <= SEND;
                     end else begin
                         state <= IDLE;
                     end
@@ -94,15 +100,18 @@ module ack_queue
                     end
                 end
                 
-                APP0: begin
+                SEND: begin
                     if (!tx_tready) begin
-                        state <= APP0;
+                        state <= SEND;
                     end else begin
-                        state <= APP1;
-                        tx_tvalid <= 1'b1;
-                        tx_tkeep <= 64'hFFFFFFFFFFFFFFFF;
-                        tx_tuser <= 64'hFFFFFFFFFFFFFFFF;
-                        tx_tlast <= 1'b0;
+                        state <= IDLE;
+                        app_select <= ~app_select;
+                    end
+                    tx_tvalid <= 1'b1;
+                    tx_tkeep <= 64'hFFFFFFFFFFFFFFFF;
+                    tx_tuser <= 64'hFFFFFFFFFFFFFFFF;
+                    tx_tlast <= 1'b1;
+                    if (app_select == APP0) begin
                         tx_tdata <= {PAD,
                                      SYN,
                                      ACK,
@@ -120,38 +129,28 @@ module ack_queue
                                      ETHTYPE,
                                      MAC_SRC,
                                      MAC_DEST};
-                   end
-                end
-                
-                APP1: begin
-                    if (!tx_tready) begin
-                        state <= APP1;
-                    end else begin
-                        state <= IDLE;
-                        tx_tvalid <= 1'b1;
-                        tx_tkeep <= 64'hFFFFFFFFFFFFFFFF;
-                        tx_tuser <= 64'hFFFFFFFFFFFFFFFF;
-                        tx_tlast <= 1'b1;
-                        tx_tdata <= {PAD,
-                                     SYN,
-                                     ACK,
-                                     seq1_num,
-                                     APP_ID1,
-                                     CHECKSUM,
-                                     LENGTH,
-                                     PORT_DST,
-                                     PORT_SRC,
-                                     IP_WORD4,
-                                     IP_WORD3,
-                                     IP_WORD2,
-                                     IP_WORD1,
-                                     IP_WORD0,
-                                     ETHTYPE,
-                                     MAC_SRC,
-                                     MAC_DEST};
+                   end else begin
+                       tx_tdata <= {PAD,
+                                    SYN,
+                                    ACK,
+                                    seq1_num,
+                                    APP_ID1,
+                                    CHECKSUM,
+                                    LENGTH,
+                                    PORT_DST,
+                                    PORT_SRC,
+                                    IP_WORD4,
+                                    IP_WORD3,
+                                    IP_WORD2,
+                                    IP_WORD1,
+                                    IP_WORD0,
+                                    ETHTYPE,
+                                    MAC_SRC,
+                                    MAC_DEST};
                    end
                 end
             endcase
         end
-    end  
+    end
 endmodule
+
