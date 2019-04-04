@@ -50,7 +50,11 @@ void bp_f(stream<extendedAxiWord> &feInput, stream<ap_uint<248> > &metadataBuffe
 	static	ap_uint<248>		metadataTempBuffer	= 0;	// This value store the metadata coming from the UDP until they can be written into the metadatabuffer.
 
 	extendedAxiWord						tempInput = {0, 0, 0, 0};
-
+#if DEBUG_PRINT
+	std::cout << "request parser bp_f state: " << std::dec << int(bpf_wordCounter)
+		<< " keylength: " << int(keyLengthBuffer)
+		<< " valuelength: " << int(bpf_valueLengthBuffer) << std::endl;
+#endif
 	if (lastValueWord == false)	{
 		if (!feInput.empty()) {
 			feInput.read(tempInput);
@@ -124,7 +128,10 @@ void bp_f(stream<extendedAxiWord> &feInput, stream<ap_uint<248> > &metadataBuffe
 							bpf_wordCounter = 5;
 					}
 					keyBuffer.write(tempInput.data);
-					keyLengthBuffer -= 8;
+					if (keyLengthBuffer > 8)
+						keyLengthBuffer -= 8;
+					else
+						keyLengthBuffer = 0;
 				}
 				else if (bpf_wordCounter == 5) {
 					keyBuffer.write(tempInput.data);
@@ -196,7 +203,11 @@ void bp_r(stream<ap_uint<248> > &metadataBuffer, stream<ap_uint<64> > &keyBuffer
 	static enum bprState		{BPR_IDLE = 0, BPR_W1, BPR_REST} binaryParserRearState;
 
 	pipelineWord				tempOutput			= {0, 0, 0, 0, 0, 0, 0};
-
+#if DEBUG_PRINT
+	std::cout << "request parser bp_r state: " << std::dec << binaryParserRearState
+			<< " key length: " << int(bpr_keyLength)
+			<< " value length: " << int(bpr_valueLength) << std::endl;
+#endif
 	switch(binaryParserRearState) {
 	case BPR_IDLE:
 		if (!metadataBuffer.empty()) {
@@ -225,6 +236,15 @@ void bp_r(stream<ap_uint<248> > &metadataBuffer, stream<ap_uint<64> > &keyBuffer
 				tempOutput.valueValid = 0;
 				tempOutput.value = 0;
 			}
+#if DEBUG_PRINT
+			std::cout << "Metadata: " << std::hex << tempOutput.metadata
+					<< " key: " << tempOutput.key
+					<< " value: " << tempOutput.value
+					<< " key valid: " << std::dec << tempOutput.keyValid
+					<< " value valid: " << tempOutput.valueValid
+					<< " SOP: " << tempOutput.SOP
+					<< " EOP: " << tempOutput.EOP << std::endl;
+#endif
 			feOutput.write(tempOutput);
 			binaryParserRearState = BPR_REST;
 		}
@@ -255,11 +275,21 @@ void bp_r(stream<ap_uint<248> > &metadataBuffer, stream<ap_uint<64> > &keyBuffer
 				bpr_wordCounter = 0;
 				binaryParserRearState = BPR_IDLE;
 			}
+#if DEBUG_PRINT
+			std::cout << "Metadata: " << std::hex << tempOutput.metadata
+					<< " key: " << tempOutput.key
+					<< " value: " << tempOutput.value
+					<< " keyvalid: " << std::dec << tempOutput.keyValid
+					<< " value valid: " << tempOutput.valueValid
+					<< " SOP: " << tempOutput.SOP
+					<< " EOP: " << tempOutput.EOP << std::endl;
+#endif
 			feOutput.write(tempOutput);
 		}
 		break;
 
 	}
+
 }
 
 void binaryParser(stream<extendedAxiWord> &inData, stream<pipelineWord> &outData) { 			// Binary parser top-level function.
