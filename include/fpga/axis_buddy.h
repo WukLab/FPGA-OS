@@ -32,7 +32,7 @@ struct buddy_alloc_if {
 	 * 	   both ALLOC and FREE, partial free is not allowed
 	 */
 	ap_uint<1>		opcode;
-	ap_uint<PA_SHIFT>	addr;
+	ap_uint<PA_WIDTH>	addr;
 	ap_uint<ORDER_MAX>	order;
 };
 
@@ -45,7 +45,7 @@ struct buddy_alloc_ret_if {
 	 * addr: address assigned, useless when request is FREE
 	 */
 	ap_uint<1>		stat;
-	ap_uint<PA_SHIFT>	addr;
+	ap_uint<PA_WIDTH>	addr;
 };
 
 void buddy_allocator(hls::stream<struct buddy_alloc_if>& alloc,

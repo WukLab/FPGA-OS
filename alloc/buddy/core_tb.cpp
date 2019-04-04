@@ -105,7 +105,7 @@ static void order_to_sth()
 static void tag_addr_idx_translate()
 {
 #if TEST_MACRO
-	ap_uint<PA_SHIFT> addr = 0x3AD4E000;
+	ap_uint<PA_WIDTH> addr = 0x3AD4E000;
 	ap_uint<ORDER_MAX> tag[LEVEL_MAX], parent_tag1[LEVEL_MAX], parent_tag2[LEVEL_MAX];
 	ap_uint<3> idx[LEVEL_MAX], parent_idx[LEVEL_MAX];
 	bool success=true;
@@ -129,7 +129,7 @@ static void tag_addr_idx_translate()
 	}
 
 #if TEST_PRINT
-	std::cout << "ADDR: " << std::bitset<BLOCK_SHIFT>(addr) << std::endl;
+	std::cout << "ADDR: " << std::bitset<BUDDY_MAX_SHIFT>(addr) << std::endl;
 	for (int level = 0; level < LEVEL_MAX; level++) {
 		if (level > 0) {
 			std::cout << "LEVEL:" << level
@@ -310,7 +310,7 @@ static void test_cache_set_operation()
 #endif
 }
 
-static int core_test(ap_uint<1> opcode, ap_uint<PA_SHIFT> addr, ap_uint<ORDER_MAX> order, char* dram, unsigned long* ret_addr)
+static int core_test(ap_uint<1> opcode, ap_uint<PA_WIDTH> addr, ap_uint<ORDER_MAX> order, char* dram, unsigned long* ret_addr)
 {
 	hls::stream<buddy_alloc_if> alloc;
 	hls::stream<buddy_alloc_ret_if> alloc_ret;
@@ -322,7 +322,7 @@ static int core_test(ap_uint<1> opcode, ap_uint<PA_SHIFT> addr, ap_uint<ORDER_MA
 	req.addr = addr;
 	alloc.write(req);
 
-	if (req.opcode == 0)
+	if (req.opcode == BUDDY_ALLOC)
 		std::cout << "[ALLOC]  ";
 	else
 		std::cout << "[FREE]   ";
@@ -331,7 +331,7 @@ static int core_test(ap_uint<1> opcode, ap_uint<PA_SHIFT> addr, ap_uint<ORDER_MA
 
 	buddy_allocator(alloc, alloc_ret, dram);
 
-	if (req.opcode == 0) {
+	if (req.opcode == BUDDY_ALLOC) {
 		ret = alloc_ret.read();
 		*ret_addr = (unsigned long)ret.addr;
 	} else {
@@ -339,11 +339,11 @@ static int core_test(ap_uint<1> opcode, ap_uint<PA_SHIFT> addr, ap_uint<ORDER_MA
 	}
 
 	std::cout << "Return Address: " << std::hex << *ret_addr;
-#if PA_SHIFT == BLOCK_SHIFT
-	std::cout << " == " << std::bitset<PA_SHIFT - BUDDY_MIN_SHIFT>(ret.addr(PA_SHIFT-1, BUDDY_MIN_SHIFT));
+#if PA_WIDTH == BUDDY_MAX_SHIFT
+	std::cout << " == " << std::bitset<PA_WIDTH - BUDDY_MIN_SHIFT>(ret.addr(PA_WIDTH-1, BUDDY_MIN_SHIFT));
 #else
-	std::cout << " == " << std::bitset<PA_SHIFT - BLOCK_SHIFT>(ret.addr(PA_SHIFT-1, BLOCK_SHIFT));
-	std::cout << " " << std::bitset<BLOCK_SHIFT - BUDDY_MIN_SHIFT>(ret.addr(BLOCK_SHIFT-1, BUDDY_MIN_SHIFT));
+	std::cout << " == " << std::bitset<PA_WIDTH - BUDDY_MAX_SHIFT>(ret.addr(PA_WIDTH-1, BUDDY_MAX_SHIFT));
+	std::cout << " " << std::bitset<BUDDY_MAX_SHIFT - BUDDY_MIN_SHIFT>(ret.addr(BUDDY_MAX_SHIFT-1, BUDDY_MIN_SHIFT));
 #endif
 	std::cout << " " << std::bitset<BUDDY_MIN_SHIFT>(ret.addr(BUDDY_MIN_SHIFT-1, 0));
 
@@ -380,40 +380,40 @@ int main()
 	test_cache_set_operation();
 
 	/* allocation test */
-	ret = core_test(0, 0, 0, dram, &addr);
+	ret = core_test(BUDDY_ALLOC, 0, 0, dram, &addr);
 	vectors.push_back(std::pair<unsigned long, int>(addr, 0));
 	err_cnt += print_result(ret, 0);
 
-	ret = core_test(0, 0, 0, dram, &addr);
+	ret = core_test(BUDDY_ALLOC, 0, 0, dram, &addr);
 	vectors.push_back(std::pair<unsigned long, int>(addr, 0));
 	err_cnt += print_result(ret, 0);
 
-	ret = core_test(0, 0, 3, dram, &addr);
+	ret = core_test(BUDDY_ALLOC, 0, 3, dram, &addr);
 	vectors.push_back(std::pair<unsigned long, int>(addr, 3));
 	err_cnt += print_result(ret, 0);
 
-	ret = core_test(0, 0, 3, dram, &addr);
+	ret = core_test(BUDDY_ALLOC, 0, 3, dram, &addr);
 	vectors.push_back(std::pair<unsigned long, int>(addr, 3));
 	err_cnt += print_result(ret, 0);
 
-	ret = core_test(0, 0, 3, dram, &addr);
+	ret = core_test(BUDDY_ALLOC, 0, 3, dram, &addr);
 	vectors.push_back(std::pair<unsigned long, int>(addr, 3));
 	err_cnt += print_result(ret, 0);
 
-	ret = core_test(0, 0, 3, dram, &addr);
+	ret = core_test(BUDDY_ALLOC, 0, 3, dram, &addr);
 	vectors.push_back(std::pair<unsigned long, int>(addr, 3));
 	err_cnt += print_result(ret, 0);
 
-	ret = core_test(0, 0, 7, dram, &addr);
+	ret = core_test(BUDDY_ALLOC, 0, 7, dram, &addr);
 	vectors.push_back(std::pair<unsigned long, int>(addr, 7));
 	err_cnt += print_result(ret, 0);
 
-	ret = core_test(0, 0, 12, dram, &addr);
+	ret = core_test(BUDDY_ALLOC, 0, 12, dram, &addr);
 	vectors.push_back(std::pair<unsigned long, int>(addr, 12));
 	err_cnt += print_result(ret, 0);
 
 	for (int i = 0; i < ORDER_MAX; i++) {
-		ret = core_test(0, 0, i, dram, &addr);
+		ret = core_test(BUDDY_ALLOC, 0, i, dram, &addr);
 		if (!ret)
 			vectors.push_back(std::pair<unsigned long, int>(addr, i));
 		err_cnt += print_result(ret, (i == ORDER_MAX - 1) ? -1 : 0);
@@ -423,7 +423,7 @@ int main()
 	addr = 0;
 	std::cout << std::endl;
 	for (std::vector<std::pair<unsigned long, int>>::iterator i = vectors.begin(); i != vectors.end(); i++) {
-		ret = core_test(1, i->first, i->second, dram, &addr);
+		ret = core_test(BUDDY_FREE, i->first, i->second, dram, &addr);
 		err_cnt += print_result(ret, 0);
 	}
 
@@ -431,7 +431,7 @@ int main()
 	addr = 0;
 	std::cout << std::endl;
 	for (std::vector<std::pair<unsigned long, int>>::reverse_iterator i = vectors.rbegin(); i != vectors.rend(); i++) {
-		ret = core_test(0, 0, i->second, dram, &addr);
+		ret = core_test(BUDDY_ALLOC, 0, i->second, dram, &addr);
 		vectors2.push_back(std::pair<unsigned long, int>(addr, i->second));
 		err_cnt += print_result(ret, 0);
 	}
@@ -440,7 +440,7 @@ int main()
 	addr = 0;
 	std::cout << std::endl;
 	for (std::vector<std::pair<unsigned long, int>>::iterator i = vectors2.begin(); i != vectors2.end(); i++) {
-		ret = core_test(1, i->first, i->second, dram, &addr);
+		ret = core_test(BUDDY_FREE, i->first, i->second, dram, &addr);
 		err_cnt += print_result(ret, 0);
 	}
 

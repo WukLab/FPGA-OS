@@ -19,10 +19,10 @@ Chunk_alloc::handler(hls::stream<sysmmu_alloc_if>& alloc, hls::stream<sysmmu_all
 
 	struct sysmmu_alloc_if req = alloc.read();
 	switch (req.opcode) {
-	case 0: // Alloc
+	case CHUNK_ALLOC:
 		Chunk_alloc::alloc(req, alloc_ret, ctrl, ctrl_ret, stat);
 		break;
-	case 1: // Free
+	case CHUNK_FREE:
 		Chunk_alloc::free(req, alloc_ret, ctrl, ctrl_ret, stat);
 		break;
 	default:
@@ -37,11 +37,11 @@ Chunk_alloc::alloc(struct sysmmu_alloc_if& alloc, hls::stream<sysmmu_alloc_ret_i
 #pragma HLS PIPELINE
 	struct sysmmu_ctrl_if req;
 	struct sysmmu_alloc_ret_if ret;
-	ap_uint<PA_SHIFT> i;
+	ap_uint<PA_WIDTH> i;
 	for (i = 0; i < TABLE_SIZE; i++) {
 		if (!chunk_bitmap.get_bit(i)) {
 			chunk_bitmap.set_bit(i, 1);
-			req.opcode = 0;	// Alloc opcode
+			req.opcode = CHUNK_ALLOC;
 			req.idx = i;
 			req.pid = alloc.pid;
 			req.rw = alloc.rw;
@@ -50,7 +50,7 @@ Chunk_alloc::alloc(struct sysmmu_alloc_if& alloc, hls::stream<sysmmu_alloc_ret_i
 		}
 	}
 	if (i < TABLE_SIZE && ctrl_ret == 0) {
-		ret.addr = ADDR(i, BLOCK_SHIFT);
+		ret.addr = ADDR(i, CHUNK_SHIFT);
 		alloc_ret.write(ret);
 		*stat = 0;
 	} else {
@@ -65,11 +65,11 @@ Chunk_alloc::free(struct sysmmu_alloc_if& alloc, hls::stream<sysmmu_alloc_ret_if
 #pragma HLS PIPELINE
 	struct sysmmu_ctrl_if req;
 	struct sysmmu_alloc_ret_if ret;
-	ap_uint<TABLE_TYPE> idx = BLOCK_IDX(alloc.addr);
+	ap_uint<TABLE_TYPE> idx = CHUNK_IDX(alloc.addr);
 
 	if (chunk_bitmap.get_bit(idx)) {
-		req.opcode = 1; // Free opcode
-		req.idx = BLOCK_IDX(alloc.addr);
+		req.opcode = CHUNK_FREE;
+		req.idx = CHUNK_IDX(alloc.addr);
 		req.pid = alloc.pid;
 		req.rw = alloc.rw;
 		ctrl.write(req);

@@ -22,7 +22,7 @@
         * replace capitalized part with your own
         */
         req.opcode = OPCODE;
-        req.idx = BLOCK_IDX(addr);
+        req.idx = CHUNK_IDX(addr);
         req.pid = PID;
         req.rw = RW;
         ctrlpath.write(req); // send request to sysmmu
