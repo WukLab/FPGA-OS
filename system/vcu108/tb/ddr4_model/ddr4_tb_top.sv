@@ -93,7 +93,8 @@ module ddr4_tb_top (
      c0_ddr4_dm_dbi_n,
      c0_ddr4_dq,
      c0_ddr4_dqs_c,
-     c0_ddr4_dqs_t
+     c0_ddr4_dqs_t,
+     model_enable_in
 );
 
   localparam ADDR_WIDTH                    = 17;
@@ -160,9 +161,10 @@ module ddr4_tb_top (
   inout  [7:0]    c0_ddr4_dqs_c;
   inout  [7:0]    c0_ddr4_dqs_t;
 
+  input model_enable_in;
+
   reg  [31:0] cmdName;
-  bit  en_model;
-  tri        model_enable = en_model;
+  tri        model_enable = model_enable_in;
 
   assign c0_ddr4_ck_t = c0_ddr4_ck_t_int[0];
   assign c0_ddr4_ck_c = c0_ddr4_ck_c_int[0];

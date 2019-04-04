@@ -72,6 +72,9 @@ module legofpga_mac_qsfp_tb
 	);
     
     ddr4_tb_top MEM_MODEL (
+	//
+	// TODO: feed mc_enable_model accordingly
+	//
         .c0_ddr4_act_n            (ddr4_act_n),
         .c0_ddr4_adr              (ddr4_adr),
         .c0_ddr4_ba               (ddr4_ba),

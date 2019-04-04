@@ -57,6 +57,7 @@ parameter TIMEOUT_THRESH = 100000000;
 
 	wire mc_init_calib_complete;
 	wire mc_ddr4_ui_clk_rst_n;
+	reg mc_enable_model;
 
 	reg enable_send;
 
@@ -113,6 +114,7 @@ parameter TIMEOUT_THRESH = 100000000;
 	);
     
 	ddr4_tb_top ddr4_mem_model (
+		.model_enable_in          (mc_enable_model),
 		.c0_ddr4_act_n            (ddr4_act_n),
 		.c0_ddr4_adr              (ddr4_adr),
 		.c0_ddr4_ba               (ddr4_ba),
@@ -131,6 +133,7 @@ parameter TIMEOUT_THRESH = 100000000;
 
 	// Generate reset signals
 	initial begin
+		mc_enable_model = 1'b0;
 		enable_send = 1'b0;
 		sysclk_125_rst_n = 1'b1;
 		sysclk_390_rst_n = 1'b1;
@@ -141,11 +144,15 @@ parameter TIMEOUT_THRESH = 100000000;
 
 		// Reset MC
 		sys_reset = 1'b0;
-	        #200;
+	        #200000;
+
 	        sys_reset = 1'b1;
-	        #200
+		mc_enable_model = 1'b0;
+		#5000 mc_enable_model = 1'b1;
+
+	        #200000
 	        sys_reset = 1'b0;
-		#100;
+		#100000;
 
 		// Wait until MC is ready
 		wait(mc_init_calib_complete == 1'b1);
