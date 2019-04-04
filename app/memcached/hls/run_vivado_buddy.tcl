@@ -445,90 +445,6 @@ proc create_hier_cell_ht { parentCell nameHier } {
   # Restore current instance
   current_bd_instance $oldCurInst
 }
-  
-# Hierarchical cell: axis_to_axi
-proc create_hier_cell_axis_to_axi { parentCell nameHier } {
-
-  variable script_folder
-
-  if { $parentCell eq "" || $nameHier eq "" } {
-     catch {common::send_msg_id "BD_TCL-102" "ERROR" "create_hier_cell_axis_to_axi() - Empty argument(s)!"}
-     return
-  }
-
-  # Get object for parentCell
-  set parentObj [get_bd_cells $parentCell]
-  if { $parentObj == "" } {
-     catch {common::send_msg_id "BD_TCL-100" "ERROR" "Unable to find parent cell <$parentCell>!"}
-     return
-  }
-
-  # Make sure parentObj is hier blk
-  set parentType [get_property TYPE $parentObj]
-  if { $parentType ne "hier" } {
-     catch {common::send_msg_id "BD_TCL-101" "ERROR" "Parent <$parentObj> has TYPE = <$parentType>. Expected to be <hier>."}
-     return
-  }
-
-  # Save current instance; Restore later
-  set oldCurInst [current_bd_instance .]
-
-  # Set parent object as current
-  current_bd_instance $parentObj
-
-  # Create cell and set as current instance
-  set hier_obj [create_bd_cell -type hier $nameHier]
-  current_bd_instance $hier_obj
-
-  # Create interface pins
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 MCD_AXI2DRAM_RD_C0
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 MCD_AXI2DRAM_RD_C1
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 MCD_AXI2DRAM_WR_C0
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 MCD_AXI2DRAM_WR_C1
-  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 memRdCmd_V
-  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 memRdCmd_V1
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 memRdData_V_V
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 memRdData_V_V1
-  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 memWrCmd_V
-  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 memWrCmd_V1
-  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 memWrData_V_V
-  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 memWrData_V_V1
-
-  # Create pins
-  create_bd_pin -dir I -type clk aclk
-  create_bd_pin -dir I -type rst aresetn
-  create_bd_pin -dir I -type clk mem_c0_clk
-  create_bd_pin -dir I -type rst mem_c0_resetn
-
-  # Create instance: ht
-  create_hier_cell_ht $hier_obj ht
-
-  # Create instance: vs
-  create_hier_cell_vs $hier_obj vs
-
-  # Create interface connections
-  connect_bd_intf_net -intf_net ht_axi_datamover_M_AXI_MM2S [get_bd_intf_pins MCD_AXI2DRAM_RD_C0] [get_bd_intf_pins ht/MCD_AXI2DRAM_RD_C0]
-  connect_bd_intf_net -intf_net ht_axi_datamover_M_AXI_S2MM [get_bd_intf_pins MCD_AXI2DRAM_WR_C0] [get_bd_intf_pins ht/MCD_AXI2DRAM_WR_C0]
-  connect_bd_intf_net -intf_net ht_readConverter_memRdData_V_V [get_bd_intf_pins memRdData_V_V] [get_bd_intf_pins ht/memRdData_V_V]
-  connect_bd_intf_net -intf_net memcachedBuddy_0_dramValueStoreMemRdCmd_V [get_bd_intf_pins memRdCmd_V1] [get_bd_intf_pins vs/memRdCmd_V]
-  connect_bd_intf_net -intf_net memcachedBuddy_0_dramValueStoreMemWrCmd_V [get_bd_intf_pins memWrCmd_V1] [get_bd_intf_pins vs/memWrCmd_V]
-  connect_bd_intf_net -intf_net memcachedBuddy_0_dramValueStoreMemWrData_V_V [get_bd_intf_pins memWrData_V_V1] [get_bd_intf_pins vs/memWrData_V_V]
-  connect_bd_intf_net -intf_net memcachedBuddy_0_hashTableMemRdCmd_V [get_bd_intf_pins memRdCmd_V] [get_bd_intf_pins ht/memRdCmd_V]
-  connect_bd_intf_net -intf_net memcachedBuddy_0_hashTableMemWrCmd_V [get_bd_intf_pins memWrCmd_V] [get_bd_intf_pins ht/memWrCmd_V]
-  connect_bd_intf_net -intf_net memcachedBuddy_0_hashTableMemWrData_V_V [get_bd_intf_pins memWrData_V_V] [get_bd_intf_pins ht/memWrData_V_V]
-  connect_bd_intf_net -intf_net vs_axi_datamover_M_AXI_MM2S [get_bd_intf_pins MCD_AXI2DRAM_RD_C1] [get_bd_intf_pins vs/MCD_AXI2DRAM_RD_C1]
-  connect_bd_intf_net -intf_net vs_axi_datamover_M_AXI_S2MM [get_bd_intf_pins MCD_AXI2DRAM_WR_C1] [get_bd_intf_pins vs/MCD_AXI2DRAM_WR_C1]
-  connect_bd_intf_net -intf_net vs_readConverter_memRdData_V_V [get_bd_intf_pins memRdData_V_V1] [get_bd_intf_pins vs/memRdData_V_V]
-
-  # Create port connections
-  connect_bd_net -net Net [get_bd_pins aclk] [get_bd_pins ht/aclk] [get_bd_pins vs/aclk]
-  connect_bd_net -net Net1 [get_bd_pins aresetn] [get_bd_pins ht/aresetn] [get_bd_pins vs/aresetn]
-  connect_bd_net -net Net2 [get_bd_pins mem_c0_clk] [get_bd_pins ht/mem_c0_clk] [get_bd_pins vs/mem_c0_clk]
-  connect_bd_net -net Net4 [get_bd_pins mem_c0_resetn] [get_bd_pins ht/mem_c0_resetn] [get_bd_pins vs/mem_c0_resetn]
-
-  # Restore current instance
-  current_bd_instance $oldCurInst
-}
   variable script_folder
 
   if { $parentCell eq "" } {
@@ -561,7 +477,7 @@ proc create_hier_cell_axis_to_axi { parentCell nameHier } {
   set_property -dict [ list \
    CONFIG.ADDR_WIDTH {32} \
    CONFIG.DATA_WIDTH {512} \
-   CONFIG.FREQ_HZ {125000000} \
+   CONFIG.FREQ_HZ {300000000} \
    CONFIG.HAS_BRESP {0} \
    CONFIG.HAS_BURST {0} \
    CONFIG.HAS_CACHE {0} \
@@ -579,7 +495,7 @@ proc create_hier_cell_axis_to_axi { parentCell nameHier } {
   set_property -dict [ list \
    CONFIG.ADDR_WIDTH {32} \
    CONFIG.DATA_WIDTH {512} \
-   CONFIG.FREQ_HZ {125000000} \
+   CONFIG.FREQ_HZ {300000000} \
    CONFIG.HAS_BRESP {0} \
    CONFIG.HAS_BURST {0} \
    CONFIG.HAS_CACHE {0} \
@@ -597,7 +513,7 @@ proc create_hier_cell_axis_to_axi { parentCell nameHier } {
   set_property -dict [ list \
    CONFIG.ADDR_WIDTH {32} \
    CONFIG.DATA_WIDTH {512} \
-   CONFIG.FREQ_HZ {125000000} \
+   CONFIG.FREQ_HZ {300000000} \
    CONFIG.HAS_BURST {0} \
    CONFIG.HAS_CACHE {0} \
    CONFIG.HAS_LOCK {0} \
@@ -614,7 +530,7 @@ proc create_hier_cell_axis_to_axi { parentCell nameHier } {
   set_property -dict [ list \
    CONFIG.ADDR_WIDTH {32} \
    CONFIG.DATA_WIDTH {512} \
-   CONFIG.FREQ_HZ {125000000} \
+   CONFIG.FREQ_HZ {300000000} \
    CONFIG.HAS_BURST {0} \
    CONFIG.HAS_CACHE {0} \
    CONFIG.HAS_LOCK {0} \
@@ -629,11 +545,11 @@ proc create_hier_cell_axis_to_axi { parentCell nameHier } {
    ] $MCD_AXI2DRAM_WR_C1
   set alloc_V_0 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 alloc_V_0 ]
   set_property -dict [ list \
-   CONFIG.FREQ_HZ {125000000} \
+   CONFIG.FREQ_HZ {150000000} \
    ] $alloc_V_0
   set alloc_ret_V_0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 alloc_ret_V_0 ]
   set_property -dict [ list \
-   CONFIG.FREQ_HZ {125000000} \
+   CONFIG.FREQ_HZ {150000000} \
    CONFIG.HAS_TKEEP {0} \
    CONFIG.HAS_TLAST {0} \
    CONFIG.HAS_TREADY {1} \
@@ -646,7 +562,7 @@ proc create_hier_cell_axis_to_axi { parentCell nameHier } {
    ] $alloc_ret_V_0
   set fromNet [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 fromNet ]
   set_property -dict [ list \
-   CONFIG.FREQ_HZ {125000000} \
+   CONFIG.FREQ_HZ {150000000} \
    CONFIG.HAS_TKEEP {1} \
    CONFIG.HAS_TLAST {1} \
    CONFIG.HAS_TREADY {1} \
@@ -659,28 +575,31 @@ proc create_hier_cell_axis_to_axi { parentCell nameHier } {
    ] $fromNet
   set toNet [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 toNet ]
   set_property -dict [ list \
-   CONFIG.FREQ_HZ {125000000} \
+   CONFIG.FREQ_HZ {150000000} \
    ] $toNet
 
   # Create ports
   set aclk [ create_bd_port -dir I -type clk aclk ]
   set_property -dict [ list \
    CONFIG.ASSOCIATED_BUSIF {fromNet:toNet:alloc_ret_V_0:alloc_V_0} \
-   CONFIG.FREQ_HZ {125000000} \
+   CONFIG.FREQ_HZ {150000000} \
  ] $aclk
   set aresetn [ create_bd_port -dir I -type rst aresetn ]
   set mem_c0_clk [ create_bd_port -dir I -type clk mem_c0_clk ]
   set_property -dict [ list \
    CONFIG.ASSOCIATED_BUSIF {MCD_AXI2DRAM_RD_C0:MCD_AXI2DRAM_WR_C0:MCD_AXI2DRAM_RD_C1:MCD_AXI2DRAM_WR_C1} \
-   CONFIG.FREQ_HZ {125000000} \
+   CONFIG.FREQ_HZ {300000000} \
  ] $mem_c0_clk
   set mem_c0_resetn [ create_bd_port -dir I -type rst mem_c0_resetn ]
 
-  # Create instance: axis_to_axi
-  create_hier_cell_axis_to_axi [current_bd_instance .] axis_to_axi
+  # Create instance: ht
+  create_hier_cell_ht [current_bd_instance .] ht
 
   # Create instance: memcachedBuddy_0, and set properties
   set memcachedBuddy_0 [ create_bd_cell -type ip -vlnv xilinx.labs:hls:memcachedBuddy:1.07 memcachedBuddy_0 ]
+
+  # Create instance: vs
+  create_hier_cell_vs [current_bd_instance .] vs
 
   # Create instance: xlconstant_0, and set properties
   set xlconstant_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_0 ]
@@ -688,33 +607,33 @@ proc create_hier_cell_axis_to_axi { parentCell nameHier } {
   # Create interface connections
   connect_bd_intf_net -intf_net alloc_ret_V_0_1 [get_bd_intf_ports alloc_ret_V_0] [get_bd_intf_pins memcachedBuddy_0/alloc_ret_V]
   connect_bd_intf_net -intf_net fromNet_1 [get_bd_intf_ports fromNet] [get_bd_intf_pins memcachedBuddy_0/inData]
-  connect_bd_intf_net -intf_net ht_axi_datamover_M_AXI_MM2S [get_bd_intf_ports MCD_AXI2DRAM_RD_C0] [get_bd_intf_pins axis_to_axi/MCD_AXI2DRAM_RD_C0]
-  connect_bd_intf_net -intf_net ht_axi_datamover_M_AXI_S2MM [get_bd_intf_ports MCD_AXI2DRAM_WR_C0] [get_bd_intf_pins axis_to_axi/MCD_AXI2DRAM_WR_C0]
-  connect_bd_intf_net -intf_net ht_readConverter_memRdData_V_V [get_bd_intf_pins axis_to_axi/memRdData_V_V] [get_bd_intf_pins memcachedBuddy_0/hashTableMemRdData_V_V]
+  connect_bd_intf_net -intf_net ht_axi_datamover_M_AXI_MM2S [get_bd_intf_ports MCD_AXI2DRAM_RD_C0] [get_bd_intf_pins ht/MCD_AXI2DRAM_RD_C0]
+  connect_bd_intf_net -intf_net ht_axi_datamover_M_AXI_S2MM [get_bd_intf_ports MCD_AXI2DRAM_WR_C0] [get_bd_intf_pins ht/MCD_AXI2DRAM_WR_C0]
+  connect_bd_intf_net -intf_net ht_readConverter_memRdData_V_V [get_bd_intf_pins ht/memRdData_V_V] [get_bd_intf_pins memcachedBuddy_0/hashTableMemRdData_V_V]
   connect_bd_intf_net -intf_net memcachedBuddy_0_alloc_V [get_bd_intf_ports alloc_V_0] [get_bd_intf_pins memcachedBuddy_0/alloc_V]
-  connect_bd_intf_net -intf_net memcachedBuddy_0_dramValueStoreMemRdCmd_V [get_bd_intf_pins axis_to_axi/memRdCmd_V1] [get_bd_intf_pins memcachedBuddy_0/dramValueStoreMemRdCmd_V]
-  connect_bd_intf_net -intf_net memcachedBuddy_0_dramValueStoreMemWrCmd_V [get_bd_intf_pins axis_to_axi/memWrCmd_V1] [get_bd_intf_pins memcachedBuddy_0/dramValueStoreMemWrCmd_V]
-  connect_bd_intf_net -intf_net memcachedBuddy_0_dramValueStoreMemWrData_V_V [get_bd_intf_pins axis_to_axi/memWrData_V_V1] [get_bd_intf_pins memcachedBuddy_0/dramValueStoreMemWrData_V_V]
-  connect_bd_intf_net -intf_net memcachedBuddy_0_hashTableMemRdCmd_V [get_bd_intf_pins axis_to_axi/memRdCmd_V] [get_bd_intf_pins memcachedBuddy_0/hashTableMemRdCmd_V]
-  connect_bd_intf_net -intf_net memcachedBuddy_0_hashTableMemWrCmd_V [get_bd_intf_pins axis_to_axi/memWrCmd_V] [get_bd_intf_pins memcachedBuddy_0/hashTableMemWrCmd_V]
-  connect_bd_intf_net -intf_net memcachedBuddy_0_hashTableMemWrData_V_V [get_bd_intf_pins axis_to_axi/memWrData_V_V] [get_bd_intf_pins memcachedBuddy_0/hashTableMemWrData_V_V]
+  connect_bd_intf_net -intf_net memcachedBuddy_0_dramValueStoreMemRdCmd_V [get_bd_intf_pins memcachedBuddy_0/dramValueStoreMemRdCmd_V] [get_bd_intf_pins vs/memRdCmd_V]
+  connect_bd_intf_net -intf_net memcachedBuddy_0_dramValueStoreMemWrCmd_V [get_bd_intf_pins memcachedBuddy_0/dramValueStoreMemWrCmd_V] [get_bd_intf_pins vs/memWrCmd_V]
+  connect_bd_intf_net -intf_net memcachedBuddy_0_dramValueStoreMemWrData_V_V [get_bd_intf_pins memcachedBuddy_0/dramValueStoreMemWrData_V_V] [get_bd_intf_pins vs/memWrData_V_V]
+  connect_bd_intf_net -intf_net memcachedBuddy_0_hashTableMemRdCmd_V [get_bd_intf_pins ht/memRdCmd_V] [get_bd_intf_pins memcachedBuddy_0/hashTableMemRdCmd_V]
+  connect_bd_intf_net -intf_net memcachedBuddy_0_hashTableMemWrCmd_V [get_bd_intf_pins ht/memWrCmd_V] [get_bd_intf_pins memcachedBuddy_0/hashTableMemWrCmd_V]
+  connect_bd_intf_net -intf_net memcachedBuddy_0_hashTableMemWrData_V_V [get_bd_intf_pins ht/memWrData_V_V] [get_bd_intf_pins memcachedBuddy_0/hashTableMemWrData_V_V]
   connect_bd_intf_net -intf_net memcachedBuddy_0_outData [get_bd_intf_ports toNet] [get_bd_intf_pins memcachedBuddy_0/outData]
-  connect_bd_intf_net -intf_net vs_axi_datamover_M_AXI_MM2S [get_bd_intf_ports MCD_AXI2DRAM_RD_C1] [get_bd_intf_pins axis_to_axi/MCD_AXI2DRAM_RD_C1]
-  connect_bd_intf_net -intf_net vs_axi_datamover_M_AXI_S2MM [get_bd_intf_ports MCD_AXI2DRAM_WR_C1] [get_bd_intf_pins axis_to_axi/MCD_AXI2DRAM_WR_C1]
-  connect_bd_intf_net -intf_net vs_readConverter_memRdData_V_V [get_bd_intf_pins axis_to_axi/memRdData_V_V1] [get_bd_intf_pins memcachedBuddy_0/dramValueStoreMemRdData_V_V]
+  connect_bd_intf_net -intf_net vs_axi_datamover_M_AXI_MM2S [get_bd_intf_ports MCD_AXI2DRAM_RD_C1] [get_bd_intf_pins vs/MCD_AXI2DRAM_RD_C1]
+  connect_bd_intf_net -intf_net vs_axi_datamover_M_AXI_S2MM [get_bd_intf_ports MCD_AXI2DRAM_WR_C1] [get_bd_intf_pins vs/MCD_AXI2DRAM_WR_C1]
+  connect_bd_intf_net -intf_net vs_readConverter_memRdData_V_V [get_bd_intf_pins memcachedBuddy_0/dramValueStoreMemRdData_V_V] [get_bd_intf_pins vs/memRdData_V_V]
 
   # Create port connections
-  connect_bd_net -net Net [get_bd_ports aclk] [get_bd_pins axis_to_axi/aclk] [get_bd_pins memcachedBuddy_0/ap_clk]
-  connect_bd_net -net Net1 [get_bd_ports aresetn] [get_bd_pins axis_to_axi/aresetn] [get_bd_pins memcachedBuddy_0/ap_rst_n]
-  connect_bd_net -net Net2 [get_bd_ports mem_c0_clk] [get_bd_pins axis_to_axi/mem_c0_clk]
-  connect_bd_net -net Net4 [get_bd_ports mem_c0_resetn] [get_bd_pins axis_to_axi/mem_c0_resetn]
+  connect_bd_net -net Net [get_bd_ports aclk] [get_bd_pins ht/aclk] [get_bd_pins memcachedBuddy_0/ap_clk] [get_bd_pins vs/aclk]
+  connect_bd_net -net Net1 [get_bd_ports aresetn] [get_bd_pins ht/aresetn] [get_bd_pins memcachedBuddy_0/ap_rst_n] [get_bd_pins vs/aresetn]
+  connect_bd_net -net Net2 [get_bd_ports mem_c0_clk] [get_bd_pins ht/mem_c0_clk] [get_bd_pins vs/mem_c0_clk]
+  connect_bd_net -net Net4 [get_bd_ports mem_c0_resetn] [get_bd_pins ht/mem_c0_resetn] [get_bd_pins vs/mem_c0_resetn]
   connect_bd_net -net xlconstant_0_dout [get_bd_pins memcachedBuddy_0/ap_start] [get_bd_pins xlconstant_0/dout]
 
   # Create address segments
-  create_bd_addr_seg -range 0x000100000000 -offset 0x00000000 [get_bd_addr_spaces axis_to_axi/ht/ht_axi_datamover/Data_MM2S] [get_bd_addr_segs MCD_AXI2DRAM_RD_C0/Reg] SEG_MCD_AXI2DRAM_RD_C0_Reg
-  create_bd_addr_seg -range 0x000100000000 -offset 0x00000000 [get_bd_addr_spaces axis_to_axi/ht/ht_axi_datamover/Data_S2MM] [get_bd_addr_segs MCD_AXI2DRAM_WR_C0/Reg] SEG_MCD_AXI2DRAM_WR_C0_Reg
-  create_bd_addr_seg -range 0x000100000000 -offset 0x00000000 [get_bd_addr_spaces axis_to_axi/vs/vs_axi_datamover/Data_MM2S] [get_bd_addr_segs MCD_AXI2DRAM_RD_C1/Reg] SEG_MCD_AXI2DRAM_RD_C1_Reg
-  create_bd_addr_seg -range 0x000100000000 -offset 0x00000000 [get_bd_addr_spaces axis_to_axi/vs/vs_axi_datamover/Data_S2MM] [get_bd_addr_segs MCD_AXI2DRAM_WR_C1/Reg] SEG_MCD_AXI2DRAM_WR_C1_Reg
+  create_bd_addr_seg -range 0x000100000000 -offset 0x00000000 [get_bd_addr_spaces ht/ht_axi_datamover/Data_MM2S] [get_bd_addr_segs MCD_AXI2DRAM_RD_C0/Reg] SEG_MCD_AXI2DRAM_RD_C0_Reg
+  create_bd_addr_seg -range 0x000100000000 -offset 0x00000000 [get_bd_addr_spaces ht/ht_axi_datamover/Data_S2MM] [get_bd_addr_segs MCD_AXI2DRAM_WR_C0/Reg] SEG_MCD_AXI2DRAM_WR_C0_Reg
+  create_bd_addr_seg -range 0x000100000000 -offset 0x00000000 [get_bd_addr_spaces vs/vs_axi_datamover/Data_MM2S] [get_bd_addr_segs MCD_AXI2DRAM_RD_C1/Reg] SEG_MCD_AXI2DRAM_RD_C1_Reg
+  create_bd_addr_seg -range 0x000100000000 -offset 0x00000000 [get_bd_addr_spaces vs/vs_axi_datamover/Data_S2MM] [get_bd_addr_segs MCD_AXI2DRAM_WR_C1/Reg] SEG_MCD_AXI2DRAM_WR_C1_Reg
 
 
   # Restore current instance
@@ -732,8 +651,8 @@ set_property SYNTH_CHECKPOINT_MODE "Hierarchical" [get_files memcached_top_for_b
 ##################################################################
 # Make wrappers so that these IPs can be treated as black boxes 
 ##################################################################
-make_wrapper -files [get_files ${origin_dir}/generated_vivado_buddy_project/memcached_buddy.srcs/sources_1/bd/memcached_top_for_buddy/memcached_top_for_buddy.bd] -top
-add_files -norecurse ${origin_dir}/generated_vivado_buddy_project/memcached_buddy.srcs/sources_1/bd/memcached_top_for_buddy/hdl/memcached_top_for_buddy_wrapper.v
+#make_wrapper -files [get_files ${origin_dir}/generated_vivado_buddy_project/memcached_buddy.srcs/sources_1/bd/memcached_top_for_buddy/memcached_top_for_buddy.bd] -top
+#add_files -norecurse ${origin_dir}/generated_vivado_buddy_project/memcached_buddy.srcs/sources_1/bd/memcached_top_for_buddy/hdl/memcached_top_for_buddy_wrapper.v
 
 
 # Create 'synth_1' run (if not found)
@@ -976,10 +895,9 @@ set_property strategy Performance_ExplorePostRoutePhysOpt [get_runs impl_1]
 set_property STEPS.PHYS_OPT_DESIGN.ARGS.DIRECTIVE AggressiveExplore [get_runs impl_1]
 set_property STEPS.POST_ROUTE_PHYS_OPT_DESIGN.ARGS.DIRECTIVE AggressiveExplore [get_runs impl_1]
 
-##################################################################
-# package and export  the design as IP 
-##################################################################
-ipx::package_project -root_dir ${origin_dir}/../../../generated_ip/app_memcached_buddy_vcu108 -vendor wuklab -library user -taxonomy UserIP -import_files -set_current false -force
+#ipx::package_project -root_dir ${origin_dir}/../../../generated_ip/app_memcached_buddy_vcu108 -vendor wuklab -library user -taxonomy UserIP -import_files -set_current false -force
+
+ipx::package_project -root_dir ${origin_dir}/../../../generated_ip/app_memcached_buddy_vcu108 -vendor wuklab -library user -taxonomy UserIP -module memcached_top_for_buddy -import_files
 
 update_ip_catalog -rebuild
 

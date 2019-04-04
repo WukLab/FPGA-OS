@@ -42,9 +42,12 @@ set_top		memcachedBuddy
 open_solution -reset solution1
 
 set_part {xcvu095-ffva2104-2-e}
-create_clock -period 8 -name default
-config_rtl -encoding onehot -reset all -reset_level high -reset_async -vivado_impl_strategy default -vivado_phys_opt place -vivado_synth_design_args {-directive sdx_optimization_effort_high} -vivado_synth_strategy default
-set_clock_uncertainty 1.25
+#create_clock -period 8 -name default
+#config_rtl -encoding onehot -reset all -reset_level high -reset_async -vivado_impl_strategy default -vivado_phys_opt place -vivado_synth_design_args {-directive sdx_optimization_effort_high} -vivado_synth_strategy default
+#set_clock_uncertainty 1.25
+
+create_clock -period 6.66 -name default
+config_rtl -reset all -reset_async
 
 # Simulate the C code
 # csim_design
