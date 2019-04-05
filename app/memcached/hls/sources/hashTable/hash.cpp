@@ -28,15 +28,19 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.// Copyright (c) 2015 Xilinx, 
 ************************************************/
 #include "../globals.h"
 
-void bobj(stream<ap_uint<96> > &key, stream<uint32_t> &lengthStream, stream<uint32_t> &initvalStream, stream<ap_uint<32> > &hashOut)
+void bobj(stream<ap_uint<96> > &key, stream<uint32_t> &lengthStream,
+	  stream<uint32_t> &initvalStream, stream<ap_uint<32> > &hashOut)
 {
-
-	#pragma HLS LATENCY min=1 max=10
 	#pragma HLS INLINE off
+	#pragma HLS LATENCY min=1 max=10
 	#pragma HLS pipeline II=1 enable_flush
-	#pragma HLS INTERFACE ap_ctrl_none port=return
+	//#pragma HLS INTERFACE ap_ctrl_none port=return
 
-	static enum hS {HASH_IDLE = 0, HASH_ACC_1, HASH_ACC_2, HASH_ACC_3, HASH_ACC_4, HASH_FINAL, HASH_FINAL_MIX_1, HASH_FINAL_MIX_2, HASH_FINAL_MIX_3, HASH_FINAL_MIX_4} hashState;
+	static enum hS {
+		HASH_IDLE = 0, HASH_ACC_1, HASH_ACC_2,
+		HASH_ACC_3, HASH_ACC_4, HASH_FINAL,
+		HASH_FINAL_MIX_1, HASH_FINAL_MIX_2,
+		HASH_FINAL_MIX_3, HASH_FINAL_MIX_4} hashState;
 	static uint32_t a,b,c;
 	static size_t 	length = 0;
 	ap_uint<96> 	inputWord = 0;
@@ -191,11 +195,11 @@ void bobj(stream<ap_uint<96> > &key, stream<uint32_t> &lengthStream, stream<uint
 	}
 }
 
-void hashKeyResizer(stream<hashTableInternalWord> &in2hash, stream<ap_uint<8> > &in2hashKeyLength, stream<ap_uint<96> > &resizedKey, stream<uint32_t> &resizedKeyLength, stream<uint32_t> &resizedInitValue)
+void hashKeyResizer(stream<hashTableInternalWord> &in2hash, stream<ap_uint<8> > &in2hashKeyLength,
+		    stream<ap_uint<96> > &resizedKey, stream<uint32_t> &resizedKeyLength, stream<uint32_t> &resizedInitValue)
 {
-	#pragma HLS INTERFACE ap_ctrl_none port=return
-
 	#pragma HLS INLINE off
+	//#pragma HLS INTERFACE ap_ctrl_none port=return
 	#pragma HLS pipeline II=1 enable_flush
 
 	static enum ksState {KS_IDLE = 0, KS_STEP1, KS_STEP2, KS_STEP3, KS_STEP0, KS_RESIDUE, KS_RESIDUE1, KS_RESIDUE2} keyResizerState;
@@ -213,7 +217,13 @@ void hashKeyResizer(stream<hashTableInternalWord> &in2hash, stream<ap_uint<8> > 
 				in2hash.read(tempInput);
 
 				resizedKeyLength.write(static_cast <uint32_t>(keyResizerLength));
+
+				/*
+				 * Okay, this is being written once in this func
+				 * and is the hash function seed..
+				 */
 				resizedInitValue.write(hashFunctionSeed);
+
 				resizedKeyOutput= tempInput.data.range(95, 0);
 				resizedKey.write(resizedKeyOutput);
 
@@ -314,14 +324,25 @@ void hashKeyResizer(stream<hashTableInternalWord> &in2hash, stream<ap_uint<8> > 
 	}
 }
 
-void hash(stream<hashTableInternalWord> &in2hash, stream<ap_uint<8> > &in2hashKeyLength, stream<ap_uint<32> > &hash2cc) {
+/*
+ * in2hash is the key, input from ht_inputLogic()
+ * hash2cc is the hash value of the key, output to CC
+ *
+ * bobj() is the hash function that calculate the 32bits hash value
+ * based on input key. The hash algorithm is: TODO?
+ */
+void hash(stream<hashTableInternalWord> &in2hash, stream<ap_uint<8> > &in2hashKeyLength,
+	  stream<ap_uint<32> > &hash2cc)
+{
 	#pragma HLS INLINE
 
 	static stream<ap_uint<96> > resizedKey;
-	static stream<uint32_t>		resizedKeyLength;
-	static stream<uint32_t>		resizedInitValue;
+	static stream<uint32_t> resizedKeyLength;
+	static stream<uint32_t> resizedInitValue;
 
-	#pragma HLS STREAM variable=resizedKey		depth=8
+	#pragma HLS STREAM variable=resizedKey		depth=512
+	#pragma HLS STREAM variable=resizedKeyLength	depth=512
+	#pragma HLS STREAM variable=resizedInitValue	depth=512
 
 	hashKeyResizer(in2hash, in2hashKeyLength, resizedKey, resizedKeyLength, resizedInitValue);
 	bobj(resizedKey, resizedKeyLength, resizedInitValue, hash2cc);

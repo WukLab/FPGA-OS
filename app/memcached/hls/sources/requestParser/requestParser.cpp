@@ -28,28 +28,32 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.// Copyright (c) 2015 Xilinx, 
 ************************************************/
 #include "../globals.h"
 
-void bp_f(stream<extendedAxiWord> &feInput, stream<ap_uint<248> > &metadataBuffer, stream<ap_uint<64> > &keyBuffer, stream<ap_uint<64> > &valueBuffer) { //  Binary parser front-end. Receives data, shuffles them and places them into the 3 internal buffer (key, value, metadata).
+static unsigned long nr_units_rx = 0;
 
+// Binary parser front-end. Receives data,
+// shuffles them and places them into the 3 internal buffer (key, value, metadata).
+void bp_f(stream<extendedAxiWord> &feInput, stream<ap_uint<248> > &metadataBuffer,
+	  stream<ap_uint<64> > &keyBuffer, stream<ap_uint<64> > &valueBuffer)
+{
 	#pragma HLS INLINE off
 	#pragma HLS pipeline II=1 enable_flush
 
-	static uint8_t				bpf_wordCounter 		= 0; 			//	Counts the words in the current packet
-	static uint8_t				valueShift				= 0;			// 	Indicates how much the value has been shifted
-	static uint8_t				notValueShift			= 0; 			//  8 - valueShift
-	static ap_uint<8>			bpf_keyLength 			= 0;
-	static ap_uint<8>			bpf_opCode 				= 0;
-	static ap_uint<4>			protocol 				= 0;
-	static ap_uint<32>			bpf_valueLength 		= 0;
-	static ap_uint<64>  		valueTempBuffer 		= 0;
-	static ap_uint<108>  		mdTempBuffer	 		= 0;
-	static uint8_t				keyLengthBuffer 		= 0;
-	static ap_uint<17>			bpf_valueLengthBuffer 	= 0;
-	static bool					lastValueWord			= false;
-	static bool 				keyComplete 			= false; // Designates that the key has been streamed through and stored in the buffer
-
+	static uint8_t			bpf_wordCounter 	= 0; 			//	Counts the words in the current packet
+	static uint8_t			valueShift		= 0;			// 	Indicates how much the value has been shifted
+	static uint8_t			notValueShift		= 0; 			//  8 - valueShift
+	static ap_uint<8>		bpf_keyLength 		= 0;
+	static ap_uint<8>		bpf_opCode 		= 0;
+	static ap_uint<4>		protocol 		= 0;
+	static ap_uint<32>		bpf_valueLength 	= 0;
+	static ap_uint<64>  		valueTempBuffer 	= 0;
+	static ap_uint<108>  		mdTempBuffer	 	= 0;
+	static uint8_t			keyLengthBuffer 	= 0;
+	static ap_uint<17>		bpf_valueLengthBuffer 	= 0;
+	static bool			lastValueWord		= false;
+	static bool 			keyComplete 		= false; // Designates that the key has been streamed through and stored in the buffer
 	static	ap_uint<248>		metadataTempBuffer	= 0;	// This value store the metadata coming from the UDP until they can be written into the metadatabuffer.
 
-	extendedAxiWord						tempInput = {0, 0, 0, 0};
+	extendedAxiWord			tempInput = {0, 0, 0, 0};
 #if DEBUG_PRINT
 	std::cout << "request parser bp_f state: " << std::dec << int(bpf_wordCounter)
 		<< " keylength: " << int(keyLengthBuffer)
@@ -58,6 +62,7 @@ void bp_f(stream<extendedAxiWord> &feInput, stream<ap_uint<248> > &metadataBuffe
 	if (lastValueWord == false)	{
 		if (!feInput.empty()) {
 			feInput.read(tempInput);
+			nr_units_rx++;
 
 			if (bpf_wordCounter == 0) {
 				mdTempBuffer 						= tempInput.user.range(107, 0);
@@ -188,51 +193,65 @@ void bp_f(stream<extendedAxiWord> &feInput, stream<ap_uint<248> > &metadataBuffe
 	}
 }
 
-void bp_r(stream<ap_uint<248> > &metadataBuffer, stream<ap_uint<64> > &keyBuffer, stream<ap_uint<64> > &valueBuffer, stream<pipelineWord> &feOutput) { // Back-end of the binary parser. Reads data from the 3 buffers and outputs them in the correct internal pipeline format.
+// Back-end of the binary parser.
+// Reads data from the 3 buffers and outputs them in the correct internal pipeline format.
+void bp_r(stream<ap_uint<248> > &metadataBuffer, stream<ap_uint<64> > &keyBuffer,
+	  stream<ap_uint<64> > &valueBuffer, stream<pipelineWord> &feOutput)
+{
 	#pragma HLS INLINE off
 	#pragma HLS pipeline II=1 enable_flush
 
 	// This part takes care of the writing into the memcached pipeline.
-	ap_uint<64>					outKeyBuffer		= 0;			// Temp variable to store key FIFO output before writing it out
-	ap_uint<64>					outValueBuffer		= 0;			// Temp variable to store value FIFO output before writing it out
-	static ap_uint<248>			outMetadataBuffer	= 0;			// Temp variable to store metadata FIFO output before writing it out
-	static uint8_t				bpr_keyLength		= 0;
-	static uint16_t				bpr_valueLength		= 0;
-	static uint8_t				bpr_opCode			= 0;
-	static ap_uint<2>			bpr_wordCounter		= 0;
-	static enum bprState		{BPR_IDLE = 0, BPR_W1, BPR_REST} binaryParserRearState;
+	ap_uint<64>			outKeyBuffer		= 0;			// Temp variable to store key FIFO output before writing it out
+	ap_uint<64>			outValueBuffer		= 0;			// Temp variable to store value FIFO output before writing it out
+	static ap_uint<248>		outMetadataBuffer	= 0;			// Temp variable to store metadata FIFO output before writing it out
+	static uint8_t			bpr_keyLength		= 0;
+	static uint16_t			bpr_valueLength		= 0;
+	static uint8_t			bpr_opCode		= 0;
+	static ap_uint<2>		bpr_wordCounter		= 0;
+	pipelineWord			tempOutput		= {0, 0, 0, 0, 0, 0, 0};
+	static enum bprState {
+		BPR_IDLE = 0,
+		BPR_W1,
+		BPR_REST
+	} binaryParserRearState;
 
-	pipelineWord				tempOutput			= {0, 0, 0, 0, 0, 0, 0};
 #if DEBUG_PRINT
 	std::cout << "request parser bp_r state: " << std::dec << binaryParserRearState
 			<< " key length: " << int(bpr_keyLength)
 			<< " value length: " << int(bpr_valueLength) << std::endl;
 #endif
+
 	switch(binaryParserRearState) {
 	case BPR_IDLE:
 		if (!metadataBuffer.empty()) {
 			metadataBuffer.read(outMetadataBuffer);
-			bpr_opCode			= outMetadataBuffer.range(111, 104);
+			bpr_opCode = outMetadataBuffer.range(111, 104);
 			binaryParserRearState = BPR_W1;
 		}
 		break;
 	case BPR_W1:
-		if (bpr_opCode == 8 || ((bpr_opCode != 8 && !keyBuffer.empty()) && (bpr_opCode != 1 || (bpr_opCode == 1 && !valueBuffer.empty())))) {
-			bpr_keyLength		= outMetadataBuffer.range(7,0);
-			if (bpr_opCode != 8) keyBuffer.read(outKeyBuffer);
+		if (bpr_opCode == 8 || ((bpr_opCode != 8 && !keyBuffer.empty()) &&
+		    (bpr_opCode != 1 || (bpr_opCode == 1 && !valueBuffer.empty())))) {
+			bpr_keyLength = outMetadataBuffer.range(7,0);
+
+			if (bpr_opCode != 8)
+				keyBuffer.read(outKeyBuffer);
+
 			bpr_valueLength		= static_cast <unsigned short int>(outMetadataBuffer.range(23, 8));
-			tempOutput.metadata = outMetadataBuffer.range(123, 0);
+			tempOutput.metadata	= outMetadataBuffer.range(123, 0);
 			tempOutput.SOP		= 1;
-			tempOutput.keyValid = 1;
+			tempOutput.keyValid	= 1;
 			tempOutput.key		= outKeyBuffer;
+
 			(bpr_keyLength <= 8) ? bpr_keyLength = 0 : bpr_keyLength -=8;
+
 			if (bpr_opCode == 1) {
 				valueBuffer.read(outValueBuffer);
 				tempOutput.valueValid = 1;
 				tempOutput.value = outValueBuffer;
 				(bpr_valueLength > 8) ? bpr_valueLength -= 8 : bpr_valueLength = 0;
-			}
-			else {
+			} else {
 				tempOutput.valueValid = 0;
 				tempOutput.value = 0;
 			}
@@ -292,17 +311,17 @@ void bp_r(stream<ap_uint<248> > &metadataBuffer, stream<ap_uint<64> > &keyBuffer
 
 }
 
-void binaryParser(stream<extendedAxiWord> &inData, stream<pipelineWord> &outData) { 			// Binary parser top-level function.
+void binaryParser(stream<extendedAxiWord> &inData, stream<pipelineWord> &outData)
+{
 	//#pragma HLS INTERFACE ap_ctrl_none port=return
-
 	#pragma HLS INLINE
 
-	static stream<ap_uint<248> >	metadataBuffer_rp("metadataBuffer_rp");			// Internal queue to store the metadata words
-	static stream<ap_uint<64> >		keyBuffer_rp("keyBuffer_rp");					// Internal queue to store the key words
-	static stream<ap_uint<64> >		valueBuffer_rp("valueBuffer_rp");				// Internal queue to store the value words
+	static stream<ap_uint<248> >	metadataBuffer_rp("metadataBuffer_rp");	// Internal queue to store the metadata words
+	static stream<ap_uint<64> >	keyBuffer_rp("keyBuffer_rp");		// Internal queue to store the key words
+	static stream<ap_uint<64> >	valueBuffer_rp("valueBuffer_rp");	// Internal queue to store the value words
 
-	#pragma HLS STREAM variable=metadataBuffer_rp 	depth=16
-	#pragma HLS STREAM variable=keyBuffer_rp 		depth=128
+	#pragma HLS STREAM variable=metadataBuffer_rp 		depth=1024
+	#pragma HLS STREAM variable=keyBuffer_rp 		depth=1024
 	#pragma HLS STREAM variable=valueBuffer_rp 		depth=1024
 
 	bp_f(inData, metadataBuffer_rp, keyBuffer_rp, valueBuffer_rp);

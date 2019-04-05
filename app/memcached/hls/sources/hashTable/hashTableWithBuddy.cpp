@@ -28,141 +28,172 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.// Copyright (c) 2015 Xilinx, 
 ************************************************/
 #include "../globals.h"
 
-void ht_inputLogic(stream<pipelineWord> &inData, stream<ap_uint<64> > &in2key, stream<ap_uint<64> > &in2value, stream<ap_uint<128> > &in2md, stream<hashTableInternalWord> &in2hash, stream<ap_uint<8> > &in2hashKeyLength, stream<hashTableInternalWord> &in2cc, stream<internalMdWord> &in2ccMd) { // This modules reads an input data word, writes key, value and metadata into buffers, sends the key to the hash function int 64-bit words and aggregates the key into stripes for processing in the hash pipeline
-
-	#pragma HLS INTERFACE ap_ctrl_none port=return
-
+// This modules reads an input data word, writes key, value and metadata into buffers,
+// sends the key to the hash function int 64-bit words and aggregates the key into
+// stripes for processing in the hash pipeline
+void ht_inputLogic(stream<pipelineWord> &inData, stream<ap_uint<64> > &in2key,
+		   stream<ap_uint<64> > &in2value, stream<ap_uint<128> > &in2md,
+		   stream<hashTableInternalWord> &in2hash,
+		   stream<ap_uint<8> > &in2hashKeyLength,
+		   stream<hashTableInternalWord> &in2cc, stream<internalMdWord> &in2ccMd)
+{
+//#pragma HLS INTERFACE ap_ctrl_none port=return
 	#pragma HLS INLINE off
 	#pragma HLS pipeline II=1 enable_flush
 
-	pipelineWord 					inputWord		= {0, 0, 0, 0, 0, 0, 0};	// Input data word read from the parser modules
-	static 	hashTableInternalWord 	bufferWord 		= {0, 0, 0};				// Internal word which is sent down the hash pipeline
-	static	internalMdWord			bufferWordMd	= {0, 0, 0};
-	static	enum					ilState {IL_IDLE = 0, IL_STREAM} iState;	// Maintains the state of the module
-	static	ap_uint<2>				wordCounter		= 0;
-	static	ap_uint<2>				keyWordCounter		= 0;
-	static 	ap_uint<3>				aggregatedKeyLength	= 0;					// Length of the key when aggregated into 192-bit data words
-	static	ap_uint<8>				keyLength 			= 0;					// Holds the key length. Used to count down as the key words come in.
-	ap_uint<128> 					metadataBuffer 		= 0;					// Agreggates all the metadata info (keyValid, EOP, etc in one bit vector and stores it. This is possible since the hash table NEVER changes the length of a packet.
+	static 	hashTableInternalWord 	bufferWord  = {0, 0, 0};	// Internal word which is sent down the hash pipeline
+	pipelineWord 		inputWord = {0, 0, 0, 0, 0, 0, 0};	// Input data word read from the parser modules
+	static	internalMdWord	bufferWordMd = {0, 0, 0};
+	static	enum		ilState {IL_IDLE = 0, IL_STREAM} iState;// Maintains the state of the module
+	static	ap_uint<2>	wordCounter = 0;
+	static	ap_uint<2>	keyWordCounter = 0;
+	static 	ap_uint<3>	aggregatedKeyLength = 0;// Length of the key when aggregated into 192-bit data words
+	static	ap_uint<8>	keyLength = 0;		// Holds the key length. Used to count down as the key words come in.
 
-	switch(iState) {
-		case IL_IDLE:
-		{
-			if (!inData.empty()) {
-				inData.read(inputWord);
-				bufferWordMd.keyLength 	= 0;
-				wordCounter				= 0;
-				aggregatedKeyLength		= 0;
-				if (inputWord.SOP == 1)	{
-					bufferWord.SOP 				= 1;
-					bufferWordMd.operation 		= inputWord.metadata.range(111, 104);
-					bufferWordMd.valueLength 	= inputWord.metadata.range(39, 8);
-					if (inputWord.metadata.range(111, 104) == 8) {
-						bufferWordMd.keyLength 		= 1;
-						keyLength					= 1;
-					}
-					else {
-						bufferWordMd.keyLength 		= inputWord.metadata.range(7, 0);
-						keyLength 					= inputWord.metadata.range(7, 0);
-					}
-					keyWordCounter 	= 1;
-					if (bufferWordMd.keyLength > 0) {
-						if (bufferWordMd.operation != 8)
-							in2key.write(inputWord.key);
-						bufferWord.SOP = 1;
-						in2hashKeyLength.write(keyLength);
-						if (keyLength <= 8) {
-							bufferWord.data.range((keyLength*8)-1, 0) = inputWord.key.range((keyLength*8)-1, 0);
-							bufferWord.EOP = 1;
-							in2cc.write(bufferWord);
-							in2ccMd.write(bufferWordMd);
-							in2hash.write(bufferWord);
-							keyLength = 0;
-						}
-						else {
-							bufferWord.data.range(63, 0) = inputWord.key;
-							keyLength -= 8;
-						}
-					}
-					if (inputWord.valueValid == 1)
-						in2value.write(inputWord.value);
-					metadataBuffer.bit(127) 		= inputWord.EOP;
-					metadataBuffer.bit(126) 		= inputWord.valueValid;
-					metadataBuffer.bit(125)	 		= inputWord.keyValid;
-					metadataBuffer.bit(124) 		= inputWord.SOP;
-					metadataBuffer.range(123, 0) 	= inputWord.metadata;
-					in2md.write(metadataBuffer);
-					wordCounter++;
-					iState = IL_STREAM;
+	// Agreggates all the metadata info
+	// (keyValid, EOP, etc in one bit vector and stores it.
+	// This is possible since the hash table NEVER changes the length of a packet.
+	ap_uint<128> 			metadataBuffer 		= 0;
+
+	switch (iState) {
+	case IL_IDLE:
+		if (inData.empty())
+			break;
+		inData.read(inputWord);
+
+		wordCounter		= 0;
+		bufferWordMd.keyLength 	= 0;
+		aggregatedKeyLength	= 0;
+
+		if (inputWord.SOP == 1)	{
+			bufferWord.SOP 			= 1;
+			bufferWordMd.operation 		= inputWord.metadata.range(111, 104);
+			bufferWordMd.valueLength 	= inputWord.metadata.range(39, 8);
+
+			if (inputWord.metadata.range(111, 104) == 8) {
+				keyLength = 1;
+				bufferWordMd.keyLength = 1;
+			} else {
+				keyLength = inputWord.metadata.range(7, 0);
+				bufferWordMd.keyLength = inputWord.metadata.range(7, 0);
+			}
+
+			keyWordCounter 	= 1;
+
+			if (bufferWordMd.keyLength > 0) {
+				if (bufferWordMd.operation != 8)
+					in2key.write(inputWord.key);
+
+				bufferWord.SOP = 1;
+				in2hashKeyLength.write(keyLength);
+
+				if (keyLength <= 8) {
+					bufferWord.data.range((keyLength*8)-1, 0) = inputWord.key.range((keyLength*8)-1, 0);
+					bufferWord.EOP = 1;
+					in2cc.write(bufferWord);
+					in2ccMd.write(bufferWordMd);
+					in2hash.write(bufferWord);
+					keyLength = 0;
+				} else {
+					bufferWord.data.range(63, 0) = inputWord.key;
+					keyLength -= 8;
+				}
+			}
+
+			if (inputWord.valueValid == 1)
+				in2value.write(inputWord.value);
+
+			metadataBuffer.bit(127) = inputWord.EOP;
+			metadataBuffer.bit(126) = inputWord.valueValid;
+			metadataBuffer.bit(125) = inputWord.keyValid;
+			metadataBuffer.bit(124) = inputWord.SOP;
+			metadataBuffer.range(123, 0) = inputWord.metadata;
+			in2md.write(metadataBuffer);
+
+			wordCounter++;
+			iState = IL_STREAM;
+		} else {
+			keyWordCounter			= 0;
+		}
+
+		break;
+	case IL_STREAM:
+		if (inData.empty())
+			break;
+		inData.read(inputWord);
+
+		if (inputWord.valueValid == 1)
+			in2value.write(inputWord.value);
+
+		if (wordCounter < 2) {
+			metadataBuffer.bit(127) = inputWord.EOP;
+			metadataBuffer.bit(126) = inputWord.valueValid;
+			metadataBuffer.bit(125) = inputWord.keyValid;
+			metadataBuffer.bit(124) = inputWord.SOP;
+			metadataBuffer.range(123, 0) = inputWord.metadata;
+			in2md.write(metadataBuffer);
+			wordCounter++;
+		}
+
+		if (keyLength > 0) {
+			bufferWord.SOP = 0;
+			in2key.write(inputWord.key);
+
+			if (keyLength <= 8) {
+				bufferWord.data.range(((64*keyWordCounter)+(keyLength*8))-1, (64*keyWordCounter)) = inputWord.key;
+				keyLength = 0;
+				bufferWord.EOP = 1;
+				in2cc.write(bufferWord);
+				in2ccMd.write(bufferWordMd);
+				in2hash.write(bufferWord);
+			} else {
+				bufferWord.data.range((64*(keyWordCounter+1))-1, (64*keyWordCounter)) = inputWord.key;
+				if (keyWordCounter == 1) {
+					bufferWord.EOP = 0;
+					in2cc.write(bufferWord);
+					in2hash.write(bufferWord);
+
+					keyWordCounter = 0;
 				}
 				else
-					keyWordCounter			= 0;
+					keyWordCounter++;
+				keyLength -= 8;
 			}
-			break;
 		}
-		case IL_STREAM:
-		{
-			if (!inData.empty()) {
-				inData.read(inputWord);
-				if (inputWord.valueValid == 1)
-					in2value.write(inputWord.value);
-				if (wordCounter < 2) {
-					metadataBuffer.bit(127) 		= inputWord.EOP;
-					metadataBuffer.bit(126) 		= inputWord.valueValid;
-					metadataBuffer.bit(125)	 		= inputWord.keyValid;
-					metadataBuffer.bit(124) 		= inputWord.SOP;
-					metadataBuffer.range(123, 0) 	= inputWord.metadata;
-					in2md.write(metadataBuffer);
-					wordCounter++;
-				}
-				if (keyLength > 0) {
-					bufferWord.SOP = 0;
-					in2key.write(inputWord.key);
-					if (keyLength <= 8) {
-						bufferWord.data.range(((64*keyWordCounter)+(keyLength*8))-1, (64*keyWordCounter)) = inputWord.key;
-						keyLength = 0;
-						bufferWord.EOP = 1;
-						in2cc.write(bufferWord);
-						in2ccMd.write(bufferWordMd);
-						in2hash.write(bufferWord);
-					}
-					else {
-						bufferWord.data.range((64*(keyWordCounter+1))-1, (64*keyWordCounter)) = inputWord.key;
-						if (keyWordCounter == 1) {
-							bufferWord.EOP = 0;
-							in2cc.write(bufferWord);
-							in2hash.write(bufferWord);
-
-							keyWordCounter = 0;
-						}
-						else
-							keyWordCounter++;
-						keyLength -= 8;
-					}
-				}
-				if (inputWord.EOP == 1)
-					iState = IL_IDLE;
-			}
-			break;
-		}
+		if (inputWord.EOP == 1)
+			iState = IL_IDLE;
+		break;
 	}
 }
 
-void ht_outputLogic(stream<decideResultWord> &memWr2out, stream<ap_uint<64> > &key2out, stream<ap_uint<64> > &value2out, stream<ap_uint<128> > &md2out, stream<pipelineWord> &outData) {
-	#pragma HLS INTERFACE ap_ctrl_none port=return
-
+/*
+ * @memWr2out:
+ * 	- opcode: SET/GET
+ * 	- status: 0 suceed
+ * 	- address: DRAM address of the value
+ */
+void ht_outputLogic(stream<decideResultWord> &memWr2out,
+		    stream<ap_uint<64> > &key2out, stream<ap_uint<64> > &value2out, stream<ap_uint<128> > &md2out,
+		    stream<pipelineWord> &outData)
+{
+//#pragma HLS INTERFACE ap_ctrl_none port=return
 	#pragma HLS INLINE off
 	#pragma HLS pipeline II=1 enable_flush
 
-	static enum	oState	{OL_IDLE = 0, OL_W1, OL_MD, OL_REST} olState;
+	static enum oState {
+		OL_IDLE = 0,
+		OL_W1,
+		OL_MD,
+		OL_REST
+	} olState;
 	static decideResultWord 	ol_addressWord	= {0, 0, 0, 0};
-	ap_uint<64>					keyWord			= 0;
-	ap_uint<64>					valueWord		= 0;
-	static ap_uint<128>			ol_metadataWord	= 0;
-	pipelineWord				outputWord		= {0, 0, 0, 0, 0, 0, 0};
-	static ap_uint<3>			ol_WordCounter	= 0;
-	static ap_uint<8>			ol_keyLength	= 0;
-	static ap_uint<16>			ol_valueLength	= 0;
+	ap_uint<64>			keyWord		= 0;
+	ap_uint<64>			valueWord	= 0;
+	static ap_uint<128>		ol_metadataWord	= 0;
+	pipelineWord			outputWord	= {0, 0, 0, 0, 0, 0, 0};
+	static ap_uint<3>		ol_WordCounter	= 0;
+	static ap_uint<8>		ol_keyLength	= 0;
+	static ap_uint<16>		ol_valueLength	= 0;
 
 	switch (olState) {
 		/*case OL_IDLE:
@@ -182,12 +213,12 @@ void ht_outputLogic(stream<decideResultWord> &memWr2out, stream<ap_uint<64> > &k
 				md2out.read(ol_metadataWord);
 				ol_keyLength = ol_metadataWord.range(7, 0);
 				if ((!(ol_keyLength > 0) || (ol_keyLength > 0 && !key2out.empty())) && (!(ol_addressWord.operation == 1) || (ol_addressWord.operation == 1 && !value2out.empty()))) {
-					outputWord.SOP 						= ol_metadataWord.bit(124);
-					outputWord.keyValid 				= ol_metadataWord.bit(125);
-					outputWord.valueValid 				= ol_metadataWord.bit(126);
-					outputWord.EOP 						= ol_metadataWord.bit(127);
+					outputWord.SOP 				= ol_metadataWord.bit(124);
+					outputWord.keyValid 			= ol_metadataWord.bit(125);
+					outputWord.valueValid 			= ol_metadataWord.bit(126);
+					outputWord.EOP 				= ol_metadataWord.bit(127);
 					outputWord.metadata.range(103, 72) 	= ol_addressWord.address.range(31, 0);
-					outputWord.metadata.range(123, 104) = ol_metadataWord.range(123, 104);
+					outputWord.metadata.range(123, 104)	= ol_metadataWord.range(123, 104);
 					outputWord.metadata.bit(112) 		= ol_addressWord.status;
 
 					if (ol_addressWord.operation != 1)
@@ -263,36 +294,39 @@ void ht_outputLogic(stream<decideResultWord> &memWr2out, stream<ap_uint<64> > &k
 	}
 }
 
-void hashTableWithBuddy(stream<pipelineWord> &ht_inData, stream<pipelineWord> &ht_outData,
-						stream<ap_uint<512> > &memRdData, stream<memCtrlWord> &memRdCtrl,
-						stream<ap_uint<512> > &memWrData, stream<memCtrlWord> &memWrCtrl,
-			  stream<struct buddy_alloc_if>& alloc,
-			  stream<struct buddy_alloc_ret_if>& alloc_ret)
+void hashTableWithBuddy(stream<pipelineWord> &ht_inData,
+			stream<pipelineWord> &ht_outData,
+			stream<ap_uint<512> > &memRdData, stream<memCtrlWord> &memRdCtrl,
+			stream<ap_uint<512> > &memWrData, stream<memCtrlWord> &memWrCtrl,
+			stream<struct buddy_alloc_if>& alloc,
+			stream<struct buddy_alloc_ret_if>& alloc_ret)
 {
-
-	#pragma HLS INTERFACE ap_ctrl_none port=return
+#pragma HLS INTERFACE ap_ctrl_none port=return
 	#pragma HLS INLINE
 
-	static stream<ap_uint<64> >				hashKeyBuffer("hashKeyBuffer");
-	static stream<ap_uint<64> >				hashValueBuffer("hashValueBuffer");
-	static stream<ap_uint<128> >			hashMdBuffer("hashMdBuffer");
+	static stream<ap_uint<64> >		hashKeyBuffer("hashKeyBuffer");
+	static stream<ap_uint<64> >		hashValueBuffer("hashValueBuffer");
+	static stream<ap_uint<128> >		hashMdBuffer("hashMdBuffer");
 
 	static stream<hashTableInternalWord>	in2cc("in2cc");
-	static stream<internalMdWord>			in2ccMd("in2ccMd");
+	static stream<internalMdWord>		in2ccMd("in2ccMd");
 	static stream<hashTableInternalWord>	in2hash("in2hash");
-	static stream<ap_uint<8> >				in2hashKeyLength("in2hashKeyLength");
+	static stream<ap_uint<8> >		in2hashKeyLength("in2hashKeyLength");
 
-	static stream<ap_uint<32> >				hash2cc("hash2cc");
+	static stream<ap_uint<32> >		hash2cc("hash2cc");
+
 	static stream<hashTableInternalWord>	cc2memRead("cc2memRead");
-	static stream<internalMdWord>			cc2memReadMd("cc2memReadMd");
+	static stream<internalMdWord>		cc2memReadMd("cc2memReadMd");
+
 	static stream<hashTableInternalWord>	memRd2comp("memRd2comp");
-	static stream<internalMdWord>			memRd2compMd("memRd2compMd");
-	static stream<decideResultWord>			memWr2out("memWr2out");
+	static stream<internalMdWord>		memRd2compMd("memRd2compMd");
+	static stream<decideResultWord>		memWr2out("memWr2out");
+
 	static stream<hashTableInternalWord>	comp2memWrKey("comp2memWrKey");
-	static stream<internalMdWord>			comp2memWrMd("comp2memWrMd");
-	static stream<comp2decWord>				comp2memWrStatus("comp2memWrStatus");
-	static stream<ap_uint<512> > 			comp2memWrMemData("comp2memWrMemData");
-	static stream<ap_uint<1> > 				dec2cc("dec2cc");
+	static stream<internalMdWord>		comp2memWrMd("comp2memWrMd");
+	static stream<comp2decWord>		comp2memWrStatus("comp2memWrStatus");
+	static stream<ap_uint<512> > 		comp2memWrMemData("comp2memWrMemData");
+	static stream<ap_uint<1> > 		dec2cc("dec2cc");
 
 	#pragma HLS DATA_PACK variable=in2hash
 	#pragma HLS DATA_PACK variable=in2cc
@@ -305,29 +339,82 @@ void hashTableWithBuddy(stream<pipelineWord> &ht_inData, stream<pipelineWord> &h
 	#pragma HLS DATA_PACK variable=comp2memWrKey
 	#pragma HLS DATA_PACK variable=comp2memWrMd
 	#pragma HLS DATA_PACK variable=comp2memWrStatus
-	//Here the I/Fs to the memory and the PCIe are missing. I/Fs to be discussed (does it make sense to use the ones in the maxbox go straight for the VC709. If so, what are the differences?)
 
-	#pragma HLS STREAM variable=hashKeyBuffer 		depth=128
+	#pragma HLS STREAM variable=hashKeyBuffer 		depth=1024
 	#pragma HLS STREAM variable=hashValueBuffer		depth=1024
-	#pragma HLS STREAM variable=hashMdBuffer 		depth=32
-	#pragma HLS STREAM variable=in2cc				depth=10
-	#pragma HLS STREAM variable=in2ccMd 			depth=10
-	#pragma HLS STREAM variable=cc2memRead			depth=10
-	#pragma HLS STREAM variable=cc2memReadMd 		depth=10
-	#pragma HLS STREAM variable=memRd2comp			depth=10
-	#pragma HLS STREAM variable=memRd2compMd 		depth=10
-	#pragma HLS STREAM variable=comp2memWrMd		depth=10
-	#pragma HLS STREAM variable=comp2memWrKey 		depth=10
-	#pragma HLS STREAM variable=comp2memWrMemData	depth=10
+	#pragma HLS STREAM variable=hashMdBuffer 		depth=1024
 
-	ht_inputLogic(ht_inData, hashKeyBuffer, hashValueBuffer, hashMdBuffer, in2hash, in2hashKeyLength, in2cc, in2ccMd);
+	#pragma HLS STREAM variable=in2cc			depth=1024
+	#pragma HLS STREAM variable=in2ccMd 			depth=1024
+	#pragma HLS STREAM variable=in2hash 			depth=1024
+	#pragma HLS STREAM variable=in2hashKeyLength 		depth=1024
+
+	#pragma HLS STREAM variable=hash2cc			depth=1024
+
+	#pragma HLS STREAM variable=cc2memRead			depth=1024
+	#pragma HLS STREAM variable=cc2memReadMd 		depth=1024
+
+	#pragma HLS STREAM variable=memRd2comp			depth=1024
+	#pragma HLS STREAM variable=memRd2compMd 		depth=1024
+	#pragma HLS STREAM variable=memWr2out			depth=1024
+
+	#pragma HLS STREAM variable=comp2memWrKey 		depth=1024
+	#pragma HLS STREAM variable=comp2memWrMd		depth=1024
+	#pragma HLS STREAM variable=comp2memWrStatus		depth=1024
+	#pragma HLS STREAM variable=comp2memWrMemData		depth=1024
+	#pragma HLS STREAM variable=dec2cc			depth=1024
+
+	ht_inputLogic(ht_inData,
+		      hashKeyBuffer, hashValueBuffer, hashMdBuffer,
+		      in2hash, in2hashKeyLength,
+		      in2cc, in2ccMd);
+
+	/* This function takes the KEY and computes the hash value */
 	hash(in2hash, in2hashKeyLength, hash2cc);
-	concurrencyControl(in2cc, in2ccMd, hash2cc, cc2memRead, cc2memReadMd, dec2cc);
+
+	/*
+	 * @in2cc is the key
+	 * @in2ccMd is some metadata such as opcode
+	 * @hash2cc is the computed hash value
+	 * @de2cc: TODO?
+	 */
+	concurrencyControl(in2cc, in2ccMd, hash2cc,
+			   cc2memRead, cc2memReadMd, dec2cc);
+
+	/*
+	 * inputs:
+	 * @cc2memRead is the key
+	 * @cc2memReadMd has operation and computed 32b hash value
+	 */
 	memRead(cc2memRead, cc2memReadMd, memRdCtrl, memRd2comp, memRd2compMd);
-	ht_compare(memRd2comp, memRd2compMd, memRdData, comp2memWrKey, comp2memWrMd, comp2memWrStatus, comp2memWrMemData);
-	memWriteWithBuddy(comp2memWrKey,comp2memWrMd,comp2memWrStatus, comp2memWrMemData,
-             memWrCtrl, memWrData, memWr2out,
-             dec2cc,
-             alloc, alloc_ret);
+
+	/*
+	 * @memRd2comp is the key
+	 * @memRd2compMd has operation etc
+	 */
+	ht_compare(memRd2comp, memRd2compMd, memRdData,
+		   comp2memWrKey, comp2memWrMd, comp2memWrStatus, comp2memWrMemData);
+
+	/*
+	 * Inputs:
+ 	 * @comp2memWrKey: the new request's key
+ 	 * @comp2memWrMd: the new request's metadata
+ 	 * @comp2memWrKeyStatus: the comparison status array from ht_compare()
+ 	 * @comp2memWrMemData: the DRAM content of the hash bucket (HEAD+saved_keys)
+	 *
+	 * Outputs:
+	 * @memWr2out: results to output logic
+	 * @dec2cc: tell CC to pop cached request, we are done.
+	 */
+	memWriteWithBuddy(comp2memWrKey, comp2memWrMd, comp2memWrStatus, comp2memWrMemData,
+			  memWrCtrl, memWrData, memWr2out,
+			  dec2cc, alloc, alloc_ret);
+
+	/*
+	 * @memWr2out:
+	 * 	- opcode: SET/GET
+	 * 	- status: 0 suceed
+	 * 	- address: DRAM address of the value
+	 */
 	ht_outputLogic(memWr2out, hashKeyBuffer, hashValueBuffer, hashMdBuffer, ht_outData);
 }

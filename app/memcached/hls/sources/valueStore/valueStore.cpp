@@ -28,37 +28,51 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.// Copyright (c) 2015 Xilinx, 
 ************************************************/
 #include "../globals.h"
 
-void accessControl(stream<pipelineWord> &inData, stream<pipelineWord> &accCtrl2demux, stream<ap_uint<1> > &filterPopSet, stream<ap_uint<1> > &filterPopGet) {
-	#pragma HLS INTERFACE ap_ctrl_none port=return
-
+void accessControl(stream<pipelineWord> &inData, stream<pipelineWord> &accCtrl2demux,
+		   stream<ap_uint<1> > &filterPopSet, stream<ap_uint<1> > &filterPopGet)
+{
+//#pragma HLS INTERFACE ap_ctrl_none port=return
 	#pragma HLS INLINE region
 	#pragma HLS pipeline II=1 enable_flush
 
-	static enum aState{ACC_IDLE = 0, ACC_EVAL, ACC_QRD, ACC_POP, ACC_POP_WAIT, ACC_STREAM, ACC_WAIT, ACC_PUSH} accState;
+	static enum aState {
+		ACC_IDLE = 0,
+		ACC_EVAL,
+		ACC_QRD,
+		ACC_POP,
+		ACC_POP_WAIT,
+		ACC_STREAM,
+		ACC_WAIT,
+		ACC_PUSH
+	} accState;
 	static accessFilter 		accessCtrl;
 	static pipelineWord 		inputWord 	= {0, 0, 0, 0, 0, 0, 0};
-	static accessWord 			pushWord 	= {0, 0, 1};
-	static stream<ap_uint<2> >	filterSeq;										// This stream stores the order of the operations to be read from the two pop queues.
-	static ap_uint<2>			streamToPop	= 2;								// Indicates which stream is to be popped next
+	static accessWord 		pushWord 	= {0, 0, 1};
+	// This stream stores the order of the operations to be read from the two pop queues.
+	static stream<ap_uint<2> >	filterSeq;
+	// Indicates which stream is to be popped next
+	static ap_uint<2>		streamToPop	= 2;
 
-
-	#pragma HLS STREAM variable=filterSeq	depth=16
+	#pragma HLS STREAM variable=filterSeq	depth=128
 
 	switch(accState) {
 		case ACC_IDLE:
 		{
-			if (streamToPop == 1 && !filterPopSet.empty() )							// If the next operation to pop is a set and a SET has been completed...
-				accState = ACC_POP;													// then move to ACC_POP and extract it from the queue
-			else if (streamToPop == 0 && !filterPopGet.empty())						// Same thing for a get
+			if (streamToPop == 1 && !filterPopSet.empty() )					// If the next operation to pop is a set and a SET has been completed...
+				accState = ACC_POP;							// then move to ACC_POP and extract it from the queue
+			else if (streamToPop == 0 && !filterPopGet.empty())				// Same thing for a get
 				accState = ACC_POP;
-			else {																	// If not
-				if (!inData.empty() && !filterSeq.full()) {							// Check if there's new data at the input AND if the pop order queue is not full
+			else {										// If not
+				if (!inData.empty() && !filterSeq.full()) {				// Check if there's new data at the input AND if the pop order queue is not full
 					inData.read(inputWord);
-					if (inputWord.metadata.bit(112) == 1 || inputWord.metadata.range(111, 104) == 8 || inputWord.metadata.range(111, 104) == 4) {	// If this is a failed operation, a FLUSH or a DEL just stream it through as it does not affect the pipeline
+					if (inputWord.metadata.bit(112) == 1 ||
+					    inputWord.metadata.range(111, 104) == 8 ||
+					    inputWord.metadata.range(111, 104) == 4) {
+					    	// If this is a failed operation, a FLUSH or a DEL just stream it through as it does not affect the pipeline
 						accCtrl2demux.write(inputWord);
 						accState = ACC_STREAM;
-					}
-					else {
+					} else {
+						// This is the DRAM address of the value (for GET)
 						pushWord.address 	= inputWord.metadata.range(103, 72);
 						pushWord.operation 	= inputWord.metadata.range(111, 104);
 						filterSeq.write(inputWord.metadata.bit(104));
@@ -82,6 +96,8 @@ void accessControl(stream<pipelineWord> &inData, stream<pipelineWord> &accCtrl2d
 		}
 		case ACC_QRD:
 		{
+			if (filterSeq.empty())
+				break;
 			filterSeq.read(streamToPop);
 			accState = ACC_WAIT;
 			break;
@@ -97,6 +113,9 @@ void accessControl(stream<pipelineWord> &inData, stream<pipelineWord> &accCtrl2d
 		}
 		case ACC_STREAM:
 		{
+			if (inData.empty())
+				break;
+
 			inData.read(inputWord);
 			accCtrl2demux.write(inputWord);
 			if (inputWord.EOP == 1)
@@ -117,9 +136,9 @@ void accessControl(stream<pipelineWord> &inData, stream<pipelineWord> &accCtrl2d
 		}
 		case ACC_POP_WAIT:
 		{
-			if (streamToPop == 1)
+			if (streamToPop == 1 && !filterPopSet.empty())
 				ap_uint<1> tempPop = filterPopSet.read();
-			else if (streamToPop == 0)
+			else if (streamToPop == 0 && !filterPopGet.empty())
 				ap_uint<1> tempPop = filterPopGet.read();
 			if (!filterSeq.empty())
 				filterSeq.read(streamToPop);
@@ -131,9 +150,9 @@ void accessControl(stream<pipelineWord> &inData, stream<pipelineWord> &accCtrl2d
 		}
 		case ACC_POP:
 		{
-			if (streamToPop == 1)
+			if (streamToPop == 1 && !filterPopSet.empty())
 				ap_uint<1> tempPop = filterPopSet.read();
-			else if (streamToPop == 0)
+			else if (streamToPop == 0 && !filterPopGet.empty())
 				ap_uint<1> tempPop = filterPopGet.read();
 			if (!filterSeq.empty())
 				filterSeq.read(streamToPop);
@@ -146,75 +165,75 @@ void accessControl(stream<pipelineWord> &inData, stream<pipelineWord> &accCtrl2d
 	}
 }
 
-void demux(stream<pipelineWord> &accCtrl2demux, stream<internalWord>	&setValueIn, stream<valueStoreInternalWordMd>	&setMetadata, stream<valueStoreInternalWordMd>	&getMetadata, stream<metadataWord>	&metadataBuffer, stream<ap_uint<64> > &keyBuffer) {
-
-	#pragma HLS INTERFACE ap_ctrl_none port=return
-
+void demux(stream<pipelineWord> &accCtrl2demux, stream<internalWord> &setValueIn,
+	   stream<valueStoreInternalWordMd> &setMetadata, stream<valueStoreInternalWordMd> &getMetadata,
+	   stream<metadataWord>	&metadataBuffer, stream<ap_uint<64> > &keyBuffer)
+{
+//#pragma HLS INTERFACE ap_ctrl_none port=return
 	#pragma HLS INLINE off
 	#pragma HLS pipeline II=1 enable_flush
 
-	static enum dState{DMUX_IDLE = 0, DMUX_SET, DMUX_STREAM} demuxState;
-	static ap_uint<16>	valueLength = 0;
-	static pipelineWord inputWord = {0, 0, 0, 0, 0, 0, 0};
-	static ap_uint<2> 	wordCounter = 0;
+	static enum dState {
+		DMUX_IDLE = 0,
+		DMUX_SET,
+		DMUX_STREAM
+	} demuxState;
+	static ap_uint<16> 	valueLength = 0;
+	static pipelineWord	inputWord = {0, 0, 0, 0, 0, 0, 0};
+	static ap_uint<2>	wordCounter = 0;
 	
 	switch(demuxState)
 	{
 		case DMUX_IDLE:
 		{
-			if (!accCtrl2demux.empty())
-			{
-				accCtrl2demux.read(inputWord);
-				if(inputWord.SOP == 1)
-				{
-					wordCounter = 1;
-					if (inputWord.metadata.bit(112) == 1 || inputWord.metadata.range(111, 104) == 8 || inputWord.metadata.range(111, 104) == 4)	// If this is a failed GET/SET or a DELETE or a FLUSH
-					{
-						metadataWord metadataWrWord = {inputWord.metadata, inputWord.SOP, inputWord.keyValid, inputWord.valueValid, inputWord.EOP};
-						metadataBuffer.write(metadataWrWord);
-						if (inputWord.keyValid == 1 && inputWord.metadata.range(111, 104) != 8)
-							keyBuffer.write(inputWord.key);
-						demuxState = DMUX_STREAM;
-					}
-					else if (inputWord.metadata.range(111, 104) == 0)	// If this is a GET operation
-					{
-						metadataWord metadataWrWord = {inputWord.metadata, inputWord.SOP, inputWord.keyValid, inputWord.valueValid, inputWord.EOP};
-						metadataBuffer.write(metadataWrWord);
-						valueStoreInternalWordMd	getMd = {inputWord.metadata.range(72+dramMemAddressWidth, 72), inputWord.metadata.range(20, 8)};
-						getMetadata.write(getMd);
-						if (inputWord.keyValid == 1)
-							keyBuffer.write(inputWord.key);
-						demuxState = DMUX_STREAM;
-					}
-					else if (inputWord.metadata.range(111, 104) == 1)	// or if finally this is a SET operation
-					{
-						metadataWord metadataWrWord = {inputWord.metadata, inputWord.SOP, inputWord.keyValid, inputWord.valueValid, inputWord.EOP};
-						metadataBuffer.write(metadataWrWord);
-						valueStoreInternalWordMd	setMd = {inputWord.metadata.range(72+dramMemAddressWidth, 72), inputWord.metadata.range(20, 8)};
-						setMetadata.write(setMd);
-						internalWord setData = {inputWord.value, 1, 0};
-						valueLength = inputWord.metadata(19, 8);
-						if (inputWord.metadata(19, 8) < 9)
-							setData.EOP = 1;
-						else
-							valueLength -= 8;
-						setValueIn.write(setData);
-						if (inputWord.keyValid == 1)
-							keyBuffer.write(inputWord.key);
-						demuxState = DMUX_SET;
-					}
+			if (accCtrl2demux.empty())
+				break;
+
+			accCtrl2demux.read(inputWord);
+			if (inputWord.SOP == 1) {
+				wordCounter = 1;
+				if (inputWord.metadata.bit(112) == 1 || inputWord.metadata.range(111, 104) == 8 || inputWord.metadata.range(111, 104) == 4) {
+					// If this is a failed GET/SET or a DELETE or a FLUSH
+					metadataWord metadataWrWord = {inputWord.metadata, inputWord.SOP, inputWord.keyValid, inputWord.valueValid, inputWord.EOP};
+					metadataBuffer.write(metadataWrWord);
+					if (inputWord.keyValid == 1 && inputWord.metadata.range(111, 104) != 8)
+						keyBuffer.write(inputWord.key);
+					demuxState = DMUX_STREAM;
+				} else if (inputWord.metadata.range(111, 104) == 0) {
+					// If this is a GET operation
+					metadataWord metadataWrWord = {inputWord.metadata, inputWord.SOP, inputWord.keyValid, inputWord.valueValid, inputWord.EOP};
+					metadataBuffer.write(metadataWrWord);
+					valueStoreInternalWordMd	getMd = {inputWord.metadata.range(72+dramMemAddressWidth, 72), inputWord.metadata.range(20, 8)};
+					getMetadata.write(getMd);
+					if (inputWord.keyValid == 1)
+						keyBuffer.write(inputWord.key);
+					demuxState = DMUX_STREAM;
+				} else if (inputWord.metadata.range(111, 104) == 1) {
+					// or if finally this is a SET operation
+					metadataWord metadataWrWord = {inputWord.metadata, inputWord.SOP, inputWord.keyValid, inputWord.valueValid, inputWord.EOP};
+					metadataBuffer.write(metadataWrWord);
+					valueStoreInternalWordMd	setMd = {inputWord.metadata.range(72+dramMemAddressWidth, 72), inputWord.metadata.range(20, 8)};
+					setMetadata.write(setMd);
+					internalWord setData = {inputWord.value, 1, 0};
+					valueLength = inputWord.metadata(19, 8);
+					if (inputWord.metadata(19, 8) < 9)
+						setData.EOP = 1;
+					else
+						valueLength -= 8;
+					setValueIn.write(setData);
+					if (inputWord.keyValid == 1)
+						keyBuffer.write(inputWord.key);
+					demuxState = DMUX_SET;
 				}
 			}
 			break;
 		}
 		case DMUX_STREAM:
 		{
-			if(!accCtrl2demux.empty())
-			{
+			if(!accCtrl2demux.empty()) {
 				accCtrl2demux.read(inputWord);
 				metadataWord metadataWrWord = {inputWord.metadata, inputWord.SOP, inputWord.keyValid, inputWord.valueValid, inputWord.EOP};
-				if (wordCounter < 2)
-				{
+				if (wordCounter < 2) {
 					metadataBuffer.write(metadataWrWord);
 					wordCounter++;
 				}
@@ -227,6 +246,8 @@ void demux(stream<pipelineWord> &accCtrl2demux, stream<internalWord>	&setValueIn
 		}
 		case DMUX_SET:
 		{
+			if (accCtrl2demux.empty())
+				break;
 			accCtrl2demux.read(inputWord);
 			metadataWord metadataWrWord = {inputWord.metadata, inputWord.SOP, inputWord.keyValid, inputWord.valueValid, inputWord.EOP};
 			if (wordCounter < 2)
@@ -252,7 +273,7 @@ void demux(stream<pipelineWord> &accCtrl2demux, stream<internalWord>	&setValueIn
 
 void setPath(stream<valueStoreInternalWordMd>	&setMetadata, stream<internalWord>	&setValueIn, stream<memCtrlWord> &memWrCmd, stream<ap_uint<512> > &memWrData, stream<ap_uint<1> > &filterPop) {
 
-	#pragma HLS INTERFACE ap_ctrl_none port=return
+//#pragma HLS INTERFACE ap_ctrl_none port=return
 
 	#pragma HLS INLINE off
 	#pragma HLS pipeline II=1 enable_flush
@@ -357,7 +378,7 @@ void setPath(stream<valueStoreInternalWordMd>	&setMetadata, stream<internalWord>
 
 void setPathNoFilter(stream<valueStoreInternalWordMd>	&setMetadata, stream<internalWord>	&setValueIn, stream<memCtrlWord> &memWrCmd, stream<ap_uint<512> > &memWrData) {
 
-	#pragma HLS INTERFACE ap_ctrl_none port=return
+	//#pragma HLS INTERFACE ap_ctrl_none port=return
 
 	#pragma HLS INLINE off
 	#pragma HLS pipeline II=1 enable_flush
@@ -458,35 +479,46 @@ void setPathNoFilter(stream<valueStoreInternalWordMd>	&setMetadata, stream<inter
 	}
 }
 
-void dispatch(stream<valueStoreInternalWordMd>	&getMetadata, stream<ap_uint<12> > &valueLengthQ, stream<memCtrlWord> &memRdCmd) {
+// Send commands to read from DRAM value store.
+// @getMetadata: from demux().
+void dispatch(stream<valueStoreInternalWordMd> &getMetadata,
+	      stream<ap_uint<12> > &valueLengthQ, stream<memCtrlWord> &memRdCmd)
+{
 	#pragma HLS INLINE off
 	#pragma HLS pipeline II=1 enable_flush
 
-	valueStoreInternalWordMd getMdBuffer	= {0, 0};
-	static uint8_t					getNumOfWords	= 0;
+	valueStoreInternalWordMd getMdBuffer = {0, 0};
+	static uint8_t getNumOfWords = 0;
 
-	if (!getMetadata.empty())
-	{
-		getMetadata.read(getMdBuffer);
-		getNumOfWords = getMdBuffer.length / 64;
-		if (getMdBuffer.length > (getNumOfWords*64))
-			getNumOfWords++;
-		memCtrlWord getCtrlWord = {getMdBuffer.address, getNumOfWords};
-		memRdCmd.write(getCtrlWord);
-		valueLengthQ.write(getMdBuffer.length);
-	}
+	if (getMetadata.empty())
+		return;
+
+	getMetadata.read(getMdBuffer);
+	getNumOfWords = getMdBuffer.length / 64;
+	if (getMdBuffer.length > (getNumOfWords*64))
+		getNumOfWords++;
+
+	// Send commands to read from DRAM.
+	memCtrlWord getCtrlWord = {getMdBuffer.address, getNumOfWords};
+	memRdCmd.write(getCtrlWord);
+	valueLengthQ.write(getMdBuffer.length);
 }
 
-void receive(stream<ap_uint<12> > &valueLengthQ, stream<ap_uint<512> > &memRdData, stream<ap_uint<64> >	&getValueOut, stream<ap_uint<1> > &filterPopGet) {
+void receive(stream<ap_uint<12> > &valueLengthQ, stream<ap_uint<512> > &memRdData,
+	     stream<ap_uint<64> > &getValueOut, stream<ap_uint<1> > &filterPopGet)
+{
 	#pragma HLS INLINE off
 	#pragma HLS pipeline II=1 enable_flush
 
-	static enum gState {GET_IDLE, GET_ACC} getState;
-	static	ap_uint<512>			memInputWord 	= 0;
-	static  ap_uint<12> 		 	getValueLength 	= 0;
-	static	uint8_t					getCounter		= 0;
+	static enum gState {
+		GET_IDLE,
+		GET_ACC
+	} getState;
+	static	ap_uint<512> memInputWord 	= 0;
+	static  ap_uint<12> getValueLength 	= 0;
+	static	uint8_t getCounter		= 0;
 
-	switch(getState) {
+	switch (getState) {
 		case GET_IDLE:
 		{
 			if(!valueLengthQ.empty() && !memRdData.empty())	{
@@ -509,6 +541,9 @@ void receive(stream<ap_uint<12> > &valueLengthQ, stream<ap_uint<512> > &memRdDat
 				getCounter = 0;
 			}
 			else if (getCounter == 7) {
+				// XXX not sure. I added thischecking.
+				if (memRdData.empty())
+					break;
 				memRdData.read(memInputWord);
 				getCounter = 0;
 			}
@@ -561,15 +596,24 @@ void receiveNoFilter(stream<ap_uint<12> > &valueLengthQ, stream<ap_uint<512> > &
 	}
 }
 
-void getPath(stream<valueStoreInternalWordMd>	&getMetadata, stream<ap_uint<64> >	&getValueOut, stream<memCtrlWord> &memRdCmd, stream<ap_uint<512> > &memRdData, stream<ap_uint<1> > &filterPopGet) {
+void getPath(stream<valueStoreInternalWordMd> &getMetadata, stream<ap_uint<64> > &getValueOut,
+	     stream<memCtrlWord> &memRdCmd, stream<ap_uint<512> > &memRdData,
+	     stream<ap_uint<1> > &filterPopGet)
+{
 	#pragma HLS INLINE
 
-	static stream<ap_uint<12> >		disp2rec;						// Internal queue to store the value length of the value to be received from the memory
+	// Internal queue to store the value length of the value to be received from the memory
+	static stream<ap_uint<12> > disp2rec;
 
-	#pragma HLS STREAM variable=disp2rec 	depth=16
+	#pragma HLS STREAM variable=disp2rec 	depth=128
 
-	dispatch(getMetadata, disp2rec, memRdCmd);					// Receives the get metadata from the demux and dispatches the read request to the memory
-	receive(disp2rec, memRdData, getValueOut, filterPopGet);	// Waits for data from the memory, read them and converts them to 64-bit words. Also pops the respective get from the access control upon completion.
+	// Receives the get metadata from the demux and dispatches the read request to the memory
+	dispatch(getMetadata, disp2rec, memRdCmd);
+
+	// Waits for data from the memory,
+	// read them and converts them to 64-bit words.
+	// Also pops the respective get from the access control upon completion.
+	receive(disp2rec, memRdData, getValueOut, filterPopGet);
 }
 
 void getPathNoFilter(stream<valueStoreInternalWordMd>	&getMetadata, stream<ap_uint<64> >	&getValueOut, stream<memCtrlWord> &memRdCmd, stream<ap_uint<512> > &memRdData) {
@@ -577,14 +621,16 @@ void getPathNoFilter(stream<valueStoreInternalWordMd>	&getMetadata, stream<ap_ui
 
 	static stream<ap_uint<12> >		disp2rec;						// Internal queue to store the value length of the value to be received from the memory
 
-	#pragma HLS STREAM variable=disp2rec 	depth=16
+	#pragma HLS STREAM variable=disp2rec 	depth=128
 
 	dispatch(getMetadata, disp2rec, memRdCmd);					// Receives the get metadata from the demux and dispatches the read request to the memory
 	receiveNoFilter(disp2rec, memRdData, getValueOut);	// Waits for data from the memory, read them and converts them to 64-bit words. Also pops the respective get from the access control upon completion.
 }
 
-void remux(stream<ap_uint<64> >	&getPath2remux, stream<ap_uint<64> > &keyBuffer, stream<metadataWord>	&metadataBuffer, stream<pipelineWord> &outData) {
-	#pragma HLS INTERFACE ap_ctrl_none port=return
+void remux(stream<ap_uint<64> >	&getPath2remux, stream<ap_uint<64> > &keyBuffer,
+	   stream<metadataWord>	&metadataBuffer, stream<pipelineWord> &outData)
+{
+//#pragma HLS INTERFACE ap_ctrl_none port=return
 
 	#pragma HLS INLINE off
 	#pragma HLS pipeline II=1 enable_flush
@@ -627,8 +673,10 @@ void remux(stream<ap_uint<64> >	&getPath2remux, stream<ap_uint<64> > &keyBuffer,
 				}
 			}
 			else if (rmMdBuffer.metadata.range(111, 104) == 0 && !getPath2remux.empty()) {
-				if (rmKeyLength > 0) {	// If there is a key present
-					keyBuffer.read(outputWord.key);							// Read it
+				// If there is a key present
+				if (rmKeyLength > 0) {
+					if (!keyBuffer.empty())
+						keyBuffer.read(outputWord.key);
 					outputWord.keyValid = 1;
 					rmKeyLength > 7 ? rmKeyLength -= 8: rmKeyLength = 0;
 				}
@@ -650,7 +698,8 @@ void remux(stream<ap_uint<64> >	&getPath2remux, stream<ap_uint<64> > &keyBuffer,
 				metadataBuffer.read(rmMdBuffer);
 				if (rmKeyLength > 0) { 		// If there is a key present
 					if (!keyBuffer.empty())	{
-						keyBuffer.read(outputWord.key);		// Read it
+						if (!keyBuffer.empty())
+							keyBuffer.read(outputWord.key);
 						outputWord.keyValid = 1;
 						rmKeyLength > 7 ? rmKeyLength -= 8: rmKeyLength = 0;
 						outputWord.metadata = rmMdBuffer.metadata;
@@ -676,7 +725,8 @@ void remux(stream<ap_uint<64> >	&getPath2remux, stream<ap_uint<64> > &keyBuffer,
 		{
 			if (rmKeyLength > 0) { // If there is a key present
 				if (!keyBuffer.empty()) {
-					keyBuffer.read(outputWord.key);		// Read it
+					if (!keyBuffer.empty())
+						keyBuffer.read(outputWord.key);
 					outputWord.keyValid = 1;
 					rmKeyLength > 7 ? rmKeyLength -= 8: rmKeyLength = 0;
 					if (rmKeyLength == 0) {
@@ -737,21 +787,26 @@ void remux(stream<ap_uint<64> >	&getPath2remux, stream<ap_uint<64> > &keyBuffer,
 	}
 }
 
-void valueStoreDram(stream<pipelineWord> &inData, stream<memCtrlWord> &memRdCmd, stream<ap_uint<512> > &memRdData, stream<memCtrlWord> &memWrCmd, stream<ap_uint<512> > &memWrData, stream<pipelineWord> &outData) {
-
-	#pragma HLS INTERFACE	 ap_ctrl_none 		port=return
-
+/*
+ * @inData: some results from hastable logic
+ */
+void valueStoreDram(stream<pipelineWord> &inData,
+		    stream<memCtrlWord> &memRdCmd, stream<ap_uint<512> > &memRdData,
+		    stream<memCtrlWord> &memWrCmd, stream<ap_uint<512> > &memWrData,
+		    stream<pipelineWord> &outData)
+{
+//#pragma HLS INTERFACE	 ap_ctrl_none 		port=return
 	#pragma HLS INLINE
 
-	static stream<internalWord>				demux2setPathValue("demux2setPathValue");
-	static stream<ap_uint<64> >				getPath2remux("getPath2remux");
-	static stream<valueStoreInternalWordMd>	demux2setPathMetadata("demux2setPathMetadata");			// Address & Value Length
-	static stream<valueStoreInternalWordMd>	demux2getPath("demux2getPath");							// Address & Value Length
-	static stream<metadataWord>				metadataBuffer("vsMetadataBuffer");
-	static stream<ap_uint<64> >				keyBuffer("vsKeyBuffer");
-	static stream<ap_uint<1> >				filterPopSet("filterPopSet");
-	static stream<ap_uint<1> >				filterPopGet("filterPopGet");
-	static stream<pipelineWord> 			accCtrl2demux("accCtrl2demux");
+	static stream<internalWord>		demux2setPathValue("demux2setPathValue");
+	static stream<ap_uint<64> >		getPath2remux("getPath2remux");
+	static stream<valueStoreInternalWordMd>	demux2setPathMetadata("demux2setPathMetadata");	// Address & Value Length
+	static stream<valueStoreInternalWordMd>	demux2getPath("demux2getPath");			// Address & Value Length
+	static stream<metadataWord>		metadataBuffer("vsMetadataBuffer");
+	static stream<ap_uint<64> >		keyBuffer("vsKeyBuffer");
+	static stream<ap_uint<1> >		filterPopSet("filterPopSet");
+	static stream<ap_uint<1> >		filterPopGet("filterPopGet");
+	static stream<pipelineWord> 		accCtrl2demux("accCtrl2demux");
 
 	#pragma HLS DATA_PACK 	variable=demux2setPathValue
 	#pragma HLS DATA_PACK 	variable=demux2setPathMetadata
@@ -759,22 +814,27 @@ void valueStoreDram(stream<pipelineWord> &inData, stream<memCtrlWord> &memRdCmd,
 	#pragma HLS DATA_PACK 	variable=metadataBuffer
 	#pragma HLS DATA_PACK 	variable=accCtrl2demux
 
-	#pragma HLS STREAM variable=demux2setPathValue 		depth=96
-	#pragma HLS STREAM variable=getPath2remux 			depth=96
-	#pragma HLS STREAM variable=demux2setPathMetadata 	depth=16
-	#pragma HLS STREAM variable=demux2getPath 			depth=16
-	#pragma HLS STREAM variable=metadataBuffer 			depth=24
-	#pragma HLS STREAM variable=keyBuffer 				depth=48
-	#pragma HLS STREAM variable=filterPopGet			depth=16
-	#pragma HLS STREAM variable=filterPopSet			depth=16
-	#pragma HLS STREAM variable=accCtrl2demux			depth=16//4
+	#pragma HLS STREAM variable=demux2setPathValue 		depth=128
+	#pragma HLS STREAM variable=getPath2remux 		depth=128
+	#pragma HLS STREAM variable=demux2setPathMetadata 	depth=128
+	#pragma HLS STREAM variable=demux2getPath 		depth=128
+	#pragma HLS STREAM variable=metadataBuffer 		depth=128
+	#pragma HLS STREAM variable=keyBuffer 			depth=128
+	#pragma HLS STREAM variable=filterPopGet		depth=128
+	#pragma HLS STREAM variable=filterPopSet		depth=128
+	#pragma HLS STREAM variable=accCtrl2demux		depth=128
 
 	accessControl(inData, accCtrl2demux,  filterPopSet, filterPopGet);
+
 	demux(accCtrl2demux, demux2setPathValue, demux2setPathMetadata, demux2getPath, metadataBuffer, keyBuffer);
+
 	//demux(inData, demux2setPathValue, demux2setPathMetadata, demux2getPath, metadataBuffer, keyBuffer);
+
 	setPath(demux2setPathMetadata, demux2setPathValue, memWrCmd, memWrData, filterPopSet);
 	//setPathNoFilter(demux2setPathMetadata, demux2setPathValue, memWrCmd, memWrData);
+
 	getPath(demux2getPath, getPath2remux, memRdCmd, memRdData, filterPopGet);
 	//getPathNoFilter(demux2getPath, getPath2remux, memRdCmd, memRdData);
+
 	remux(getPath2remux, keyBuffer, metadataBuffer, outData);
 }

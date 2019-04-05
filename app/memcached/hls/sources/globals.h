@@ -1,31 +1,3 @@
-/************************************************
-Copyright (c) 2016, Xilinx, Inc.
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-
-1. Redistributions of source code must retain the above copyright notice,
-this list of conditions and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright notice,
-this list of conditions and the following disclaimer in the documentation
-and/or other materials provided with the distribution.
-
-3. Neither the name of the copyright holder nor the names of its contributors
-may be used to endorse or promote products derived from this software
-without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
-THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.// Copyright (c) 2015 Xilinx, Inc.
-************************************************/
 #ifndef _GLOBALS_H
 #define _GLOBALS_H
 
@@ -53,36 +25,52 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.// Copyright (c) 2015 Xilinx, 
 
 using namespace hls;
 
-#define splitLength	2048
-#define noOfFlashMemLocations 131072
+//#define noOfFlashMemLocations 131072
+//#define noOfFlashAddresses 32
+//#define maxFlashValueSize 63536
+//#define flashBytesPerDataWord 8
+//#define splitLength	2048
 
-#define noOfFlashAddresses 32
-#define	maxFlashValueSize 63536
-#define flashBytesPerDataWord 8
-
-#define noOfDramAddresses 64
-#define	maxDramValueSize 1024
-#define dramBytesPerDataWord 64
+//#define noOfDramAddresses 64
+//#define maxDramValueSize 1024
+//#define dramBytesPerDataWord 64
 
 const uint16_t	noOfMemLocations		= 2048;
 
+// Number of packets that are to be stored in each queue
+//const int qDepth = 8;
+//const int valueBusWidth = 8;
+//const int keyBusWidth = 8;
 
-const int qDepth 						= 8;			// Number of packets that are to be stored in each queue
-const int maxValueSize					= 65536;	// Max. supported value size in bytes
-const int maxKeySize 					= 128;		// Max supported key size in bytes
-const int valueBusWidth					= 8;
-const int keyBusWidth 					= 8;
+const int maxValueSize			= 65536;	// Max. supported value size in bytes
+const int maxKeySize 			= 128;		// Max supported key size in bytes
 const unsigned short int memIntWidth 	= 512;
-const uint8_t	noOfBins 				= 4;
-const uint8_t 	bitsPerBin				= 128;
-const uint8_t 	words2aggregate 		= 2;
-const uint8_t 	concFilterEntries		= 8;
-const uint8_t 	accFilterEntries		= 8;
-const uint8_t	dramMemAddressWidth		= 32;
+
+//
+// Each bin has 4*128=512 bits
+//
+const uint8_t	noOfBins 		= 4;
+const uint8_t 	bitsPerBin		= 128;
+
+const uint8_t 	words2aggregate 	= 2;
+
+// XXX: Origin vaule is 8
+// Even though the table itself is used to do dependency checking,
+// this somehow also decides how many requests we can serve
+// no matter there is conflict or not.
+const uint8_t 	concFilterEntries	= 8;
+
+// XXX: Origin value is 8
+const uint8_t 	accFilterEntries	= 8;
+
+
+const uint8_t	dramMemAddressWidth	= 32;
 const uint8_t	flashMemAddressWidth	= 32;
+
 const uint8_t	noOfHashTableEntries	= 10;
+
 const uint32_t	hashFunctionSeed		= 13;
-const bool 		bramOrDram				= false;	// False is BRAM, True is DRAM
+//const bool	bramOrDram			= false;	// False is BRAM, True is DRAM
 
 struct extMemCtrlWord {
 	ap_uint<dramMemAddressWidth> 	address;
@@ -174,21 +162,39 @@ struct binStatus {
 	ap_uint<1> free;
 	ap_uint<1> match;
 };
+
 struct comp2decWord {
 	binStatus	bin[noOfBins];
 };
+
+// Check memWriteWithBuddy()
+// about how they are filed
 struct decideResultWord {
+	/*
+	 * The DRAM address of the Value
+	 */
 	ap_uint<32> address;
+
+	/*
+	 * Only used in opcode is GET
+	 */
 	ap_uint<16> valueLength;
-	ap_uint<8>	operation;
-	ap_uint<1>	status;
+	ap_uint<8>  operation;
+
+	// status = 1 GET/SET FAIL
+	// status = 0 GET/SET SUCCEED
+	ap_uint<1>  status;
 };
 
+/*
+ * @address: is actually the computed hash value
+ * but weirdly this only use 6bits of it? WHY? XXX
+ */
 struct ccWord {
 	ap_uint<noOfHashTableEntries-4> 	address;
-	ap_uint<16> 						valueLength;
-	ap_uint<8>							operation;
-	ap_uint<1>							status;
+	ap_uint<16> 				valueLength;
+	ap_uint<8>				operation;
+	ap_uint<1>				status;
 };
 
 class concurrencyFilter {

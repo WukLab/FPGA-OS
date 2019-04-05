@@ -35,8 +35,13 @@ mcd_comp:
 buddy_ip:
 	make -C "../../../alloc"
 
-mcd_buddy_comp:
+temp:
 	$(VIVADO_HLS) -f run_hls.memcachedBuddy_$(TARGET_BOARD).tcl
+	$(Q)./generate_hls.sh $(TARGET_BOARD)
+	$(VIVADO) -mode tcl -source run_vivado_buddy.tcl
+
+mcd_buddy_comp:
+	#$(VIVADO_HLS) -f run_hls.memcachedBuddy_$(TARGET_BOARD).tcl
 	$(VIVADO_HLS) -f run_hls_writeConverter_$(TARGET_BOARD).tcl
 	$(VIVADO_HLS) -f run_hls_readConverter_$(TARGET_BOARD).tcl
 

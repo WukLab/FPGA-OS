@@ -36,8 +36,8 @@ void memcachedBuddy(stream<extendedAxiWord> &inData, stream<extendedAxiWord> &ou
 		    stream<struct buddy_alloc_if>& alloc,
 		    stream<struct buddy_alloc_ret_if>& alloc_ret)
 {
-
-	//#pragma HLS INTERFACE ap_ctrl_none port=return
+	#pragma HLS INTERFACE ap_ctrl_none port=return
+	#pragma HLS DATAFLOW interval=1
 
 	#pragma HLS DATA_PACK 	variable=hashTableMemRdData
 	#pragma HLS DATA_PACK 	variable=hashTableMemRdCmd
@@ -61,29 +61,33 @@ void memcachedBuddy(stream<extendedAxiWord> &inData, stream<extendedAxiWord> &ou
 	#pragma HLS INTERFACE port=dramValueStoreMemWrCmd axis
 	#pragma HLS INTERFACE port=dramValueStoreMemWrData axis
 
-	#pragma HLS INTERFACE port=alloc 			axis
+	#pragma HLS INTERFACE port=alloc 		axis
 	#pragma HLS INTERFACE port=alloc_ret 		axis
-
-	#pragma HLS DATAFLOW interval=1
 
 	static stream<pipelineWord>	requestParser2hashTable("requestParser2hashTable");
 	static stream<pipelineWord>	hashTable2valueStoreDram("hashTable2valueStoreDram");
-	static stream<pipelineWord> valueStoreDram2responseFormatter("valueStoreDram2responseFormatter");
+	static stream<pipelineWord>	valueStoreDram2responseFormatter("valueStoreDram2responseFormatter");
 
 	#pragma HLS DATA_PACK 	variable=requestParser2hashTable
 	#pragma HLS DATA_PACK 	variable=hashTable2valueStoreDram
 	#pragma HLS DATA_PACK 	variable=valueStoreDram2responseFormatter
 
-	#pragma HLS STREAM variable=requestParser2hashTable 			depth=16
-	#pragma HLS STREAM variable=hashTable2valueStoreDram			depth=16
-	#pragma HLS STREAM variable=valueStoreDram2responseFormatter	depth=16
+	#pragma HLS STREAM variable=requestParser2hashTable		depth=1024
+	#pragma HLS STREAM variable=hashTable2valueStoreDram		depth=1024
+	#pragma HLS STREAM variable=valueStoreDram2responseFormatter	depth=1024
 
 	binaryParser(inData, requestParser2hashTable);
-	hashTableWithBuddy(requestParser2hashTable, hashTable2valueStoreDram,
-					hashTableMemRdData, hashTableMemRdCmd,
-					hashTableMemWrData, hashTableMemWrCmd,
-					alloc, alloc_ret);
-	valueStoreDram(hashTable2valueStoreDram, dramValueStoreMemRdCmd, dramValueStoreMemRdData, dramValueStoreMemWrCmd, dramValueStoreMemWrData,
-					valueStoreDram2responseFormatter);
+
+	hashTableWithBuddy(requestParser2hashTable,
+			   hashTable2valueStoreDram,
+			   hashTableMemRdData, hashTableMemRdCmd,
+			   hashTableMemWrData, hashTableMemWrCmd,
+			   alloc, alloc_ret);
+
+	valueStoreDram(hashTable2valueStoreDram,
+		       dramValueStoreMemRdCmd, dramValueStoreMemRdData,
+		       dramValueStoreMemWrCmd, dramValueStoreMemWrData,
+		       valueStoreDram2responseFormatter);
+
 	binaryResponse(valueStoreDram2responseFormatter, outData);
 }

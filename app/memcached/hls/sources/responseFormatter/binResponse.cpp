@@ -61,12 +61,18 @@ ap_uint<8> length2keep_mapping(uint8_t lengthValue) {
 	}
 }
 
-void response_f(stream<pipelineWord> &respInput, stream<ap_uint<248> > &metadataBuffer, stream<ap_uint<64> > &valueBuffer) {
+void response_f(stream<pipelineWord> &respInput,
+		stream<ap_uint<248> > &metadataBuffer, stream<ap_uint<64> > &valueBuffer)
+{
 	#pragma HLS INLINE off
 	#pragma HLS pipeline II=1 enable_flush
 
-	static ap_uint<2>			inWordCounter 			= 0;
-	static ap_uint<248>			bf_metadataTempBuffer 	= 0;		// This value stores the metadata coming from the pipeline and parallelizes the 3 words, so that they are reshuffled in the back-end function.
+	// This value stores the metadata coming from the pipeline
+	// and parallelizes the 3 words, so that they are
+	// reshuffled in the back-end function.
+	static ap_uint<248> bf_metadataTempBuffer = 0;
+	static ap_uint<2> inWordCounter = 0;
+
 	// Storage path. Reads data of the bus and stores them into the buffers
 	if (!valueBuffer.full() && !metadataBuffer.full() && !respInput.empty()) {
 		pipelineWord tempInput;
@@ -85,8 +91,7 @@ void response_f(stream<pipelineWord> &respInput, stream<ap_uint<248> > &metadata
 			if (tempInput.valueValid == 1)
 				valueBuffer.write(tempInput.value);
 			inWordCounter++;
-		}
-		else if (inWordCounter > 0) {
+		} else if (inWordCounter > 0) {
 			if (inWordCounter < 2) {
 				bf_metadataTempBuffer.range(247, 124) = tempInput.metadata;
 				if (inWordCounter == 1)
@@ -102,17 +107,19 @@ void response_f(stream<pipelineWord> &respInput, stream<ap_uint<248> > &metadata
 	}
 }
 
-void response_r(stream<ap_uint<248> > &metadataBuffer, stream<ap_uint<64> > &valueBuffer, stream<extendedAxiWord> &respOutput) {
+void response_r(stream<ap_uint<248> > &metadataBuffer, stream<ap_uint<64> > &valueBuffer,
+		stream<extendedAxiWord> &respOutput)
+{
 	#pragma HLS INLINE off
 	#pragma HLS pipeline II=1 enable_flush
 
 	//Output path. Reads data from the internal buffers, reorders metadata and produces headers as needed and outputs them to the bus
-	static uint16_t				valueLength				= 0;
-	static uint8_t				br_outWordCounter		= 0;
-	static uint8_t				outOpCode				= 0;
-	static uint8_t				errorCode				= 0;
+	static uint16_t			valueLength		= 0;
+	static uint8_t			br_outWordCounter	= 0;
+	static uint8_t			outOpCode		= 0;
+	static uint8_t			errorCode		= 0;
 	static ap_uint<32>  		resp_ValueConvertTemp 	= 0;
-	ap_uint<1> 					readTemp 				= 0;
+	ap_uint<1> 			readTemp 		= 0;
 
 	static ap_uint<248>		outMetadataTempBuffer;		// This value store the metadata coming from the UDP until they can be written into the metadatabuffer.
 	static ap_uint<64>		xtrasBuffer = 0;
@@ -248,17 +255,18 @@ void response_r(stream<ap_uint<248> > &metadataBuffer, stream<ap_uint<64> > &val
 	}
 }
 
-void binaryResponse(stream<pipelineWord> &inData_rf, stream<extendedAxiWord> &outData_rf) {
+void binaryResponse(stream<pipelineWord> &inData_rf, stream<extendedAxiWord> &outData_rf)
+{
+	#pragma HLS INLINE
+
 	#pragma HLS DATA_PACK variable=inData_rf
 	//#pragma HLS DATA_PACK variable=outData_rf
 
-	#pragma HLS INLINE
-
 	static stream<ap_uint<248> >	metadataBuffer_rf("metadataBuffer_rf");		// Internal queue to store the metadata words
-	static stream<ap_uint<64> >		valueBuffer_rf("valueBuffer_rf");			// Internal queue to store the value words
+	static stream<ap_uint<64> >	valueBuffer_rf("valueBuffer_rf");		// Internal queue to store the value words
 
-	#pragma HLS STREAM variable=metadataBuffer_rf 	depth=8
-	#pragma HLS STREAM variable=valueBuffer_rf 		depth=1024
+	#pragma HLS STREAM variable=metadataBuffer_rf 	depth=512
+	#pragma HLS STREAM variable=valueBuffer_rf 	depth=1024
 
 	response_f(inData_rf, metadataBuffer_rf, valueBuffer_rf);
 	response_r(metadataBuffer_rf, valueBuffer_rf, outData_rf);

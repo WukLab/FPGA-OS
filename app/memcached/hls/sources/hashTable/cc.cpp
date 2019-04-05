@@ -28,37 +28,79 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.// Copyright (c) 2015 Xilinx, 
 ************************************************/
 #include "../globals.h"
 
-void concurrencyControl(stream<hashTableInternalWord> &in2cc, stream<internalMdWord> &in2ccMd, stream<ap_uint<32> > &hash2cc, stream<hashTableInternalWord> &cc2memRead, stream<internalMdWord> &cc2memReadMd, stream<ap_uint<1> > &dec2cc)
+/*
+ * Inputs:
+ * @in2cc is the key
+ * @in2ccMd is some metadata such as operation
+ * @hash2cc is the computed 32 bits hash value
+ * @dec2cc: from memWriteWithBuddy(). Decision/results of this request.
+ *
+ * Outputs:
+ * @cc2memRead: is the key
+ * @cc2memReadMd: is the metadate
+ * (pass through as in2cc)
+ *
+ * hashFilter is the table that saves _all_ in-flisht requests.
+ * It can be used to check if there is any RAW dependency.
+ * But it also limits how many in-flight request we can have.
+ *
+ * hashFilter is pushed when a request comes in and no dependency detected.
+ * hashFilter is poped when TODO?
+ */
+void concurrencyControl(stream<hashTableInternalWord> &in2cc,
+			stream<internalMdWord> &in2ccMd, stream<ap_uint<32> > &hash2cc,
+                        stream<hashTableInternalWord> &cc2memRead,
+			stream<internalMdWord> &cc2memReadMd, stream<ap_uint<1> > &dec2cc)
 {
-
+	// All functions called from this concurrencyControl()
+	// will be inlined. So no need to write for those.
 	#pragma HLS INLINE region
 	#pragma HLS pipeline II=1 enable_flush
 
 	static concurrencyFilter hashFilter;
 
-	static enum concState {CC_IDLE = 0, CC_WAIT, CC_PUSH, CC_STREAM, CC_POP_IDLE, CC_POP_WAIT} ccState;
-	static	hashTableInternalWord 	ccInputWord 		= {0, 0, 0};
-	static 	internalMdWord 			ccInputWordMd		= {0, 0, 0, 0};
-	ap_uint<32>						hashInputWord		= 0;
-	static ccWord 					ccCompareElement 	= {0, 0, 0, 0};
+	static enum concState {
+		CC_IDLE = 0,
+		CC_WAIT,
+		CC_PUSH,
+		CC_STREAM,
+		CC_POP_IDLE,
+		CC_POP_WAIT
+	} ccState;
+	static hashTableInternalWord ccInputWord = {0, 0, 0};
+	static  internalMdWord ccInputWordMd = {0, 0, 0, 0};
+	ap_uint<32> hashInputWord = 0;
+	static ccWord ccCompareElement = {0, 0, 0, 0};
 
 	switch(ccState)
 	{
 		case CC_IDLE:
-		{	// This part of the code pops the filter if the appropriate signal is detected in the dec2cc stream. This has to take place in parallel with all other operations.
-			if (dec2cc.empty() == false)
+			// This part of the code pops the filter if the
+			// appropriate signal is detected in the dec2cc stream.
+			// This has to take place in parallel with all other operations.
+			if (dec2cc.empty() == false) {
 				ccState = CC_POP_IDLE;
-			else if (in2ccMd.empty() == false && in2cc.empty() == false && hash2cc.empty() == false)
-			{
-				in2ccMd.read(ccInputWordMd);
+			} else if (in2ccMd.empty() == false && in2cc.empty() == false && hash2cc.empty() == false) {
 				in2cc.read(ccInputWord);
+				in2ccMd.read(ccInputWordMd);
 				hash2cc.read(hashInputWord);
+
+				// XXX hashInputWord is the computed hash value why -4?
+				// All types of operations are pushed into this checking FIFO.
 				ccCompareElement.address = hashInputWord.range(noOfHashTableEntries-4, 0);
 				ccCompareElement.operation = ccInputWordMd.operation;
+
+				// Assign 32b hash value
+				// what a fucking shitty name.
 				ccInputWordMd.metadata = hashInputWord;
-				if (hashFilter.compare(ccCompareElement) || hashFilter.full()) // If the pipeline is to be stalled
+
+				// TODO
+				// Even if there is no conflict,
+				// the hashFilter has to be large enough
+				// to not block any incoming requests..
+				if (hashFilter.compare(ccCompareElement) || hashFilter.full()) {
 					ccState = CC_WAIT;
-				else {
+				} else {
 					/*ccCompareElement.status = 1;
 					hashFilter.push(ccCompareElement);
 					cc2memReadMd.write(ccInputWordMd);
@@ -69,39 +111,54 @@ void concurrencyControl(stream<hashTableInternalWord> &in2cc, stream<internalMdW
 				}
 			}
 			break;
-		}
+
 		case CC_WAIT:
-		{
 			if (dec2cc.empty() == false)
 				ccState = CC_POP_WAIT;
 			else {
-				if (!hashFilter.full() && !hashFilter.compare(ccCompareElement)) // If the pipeline is to be stalled
+				// If the pipeline is to be stalled
+				if (!hashFilter.full() && !hashFilter.compare(ccCompareElement))
 					ccState = CC_PUSH;
 			}
 			break;
-		}
+
 		case CC_PUSH:
-		{
+			// This state pushes the saved stuff into the hashFilter
+			// it will be checked by later requests
+			//
+			// Also push the key and metadata into another two streams.
+
 			ccCompareElement.status = 1;
 			hashFilter.push(ccCompareElement);
-			cc2memReadMd.write(ccInputWordMd);
+
 			cc2memRead.write(ccInputWord);
+			cc2memReadMd.write(ccInputWordMd);
+
 			if (ccInputWord.EOP != 1)
 				ccState = CC_STREAM;
 			else
 				ccState = CC_IDLE;
 			break;
-		}
+
 		case CC_STREAM:
-		{
+			if (in2cc.empty())
+				break;
 			in2cc.read(ccInputWord);
 			cc2memRead.write(ccInputWord);
 			if (ccInputWord.EOP == 1)
 				ccState = CC_IDLE;
 			break;
-		}
+
+		/*
+		 * XXX
+		 * Okay, now I know stuff is pushed
+		 * when a request comes in
+		 * when it got pop'ed?
+		 */
 		case CC_POP_IDLE:
 		{
+			if (dec2cc.empty())
+				break;
 			ap_uint<1> pop = 0;
 			dec2cc.read(pop);
 			if (pop == 1)
@@ -111,6 +168,8 @@ void concurrencyControl(stream<hashTableInternalWord> &in2cc, stream<internalMdW
 		}
 		case CC_POP_WAIT:
 		{
+			if (dec2cc.empty())
+				break;
 			ap_uint<1> pop = 0;
 			dec2cc.read(pop);
 			if (pop == 1)

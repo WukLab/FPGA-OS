@@ -30,7 +30,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.// Copyright (c) 2015 Xilinx, 
 #include <pthread.h>
 #include <atomic>
 
-#define TB_DEBUG_PRINT 0
+#define TB_DEBUG_PRINT 1
 
 #define totalSimCycles    50000//0    // Defines how many additional C simulation cycles will be executed after the input file has been read in. Used to make sure all the request traverse the entire pipeline.
 
