@@ -193,7 +193,7 @@ module legofpga_mac_qsfp
 	wire [2:0] txoutclksel_in_0;
 	wire [2:0] rxoutclksel_in_0;
 
-	wire dclk, clk_100, clk_125, clk_locked;
+	wire dclk, clk_100, clk_125, clk_150, clk_locked;
 
 /*
 	// AN/LT Stats Signals
@@ -311,6 +311,7 @@ module legofpga_mac_qsfp
 		/* Ouputs */
 		.clk_100		(clk_100),
 		.clk_125		(clk_125),
+		.clk_150                (clk_150),
 		.clk_locked		(clk_locked)
 	);
 
@@ -332,7 +333,7 @@ module legofpga_mac_qsfp
 	wire from_net_tready;
 
 	wire from_net_clk_390_rst_n, to_net_clk_390_rst_n;
-	wire clk_125_rst_n;
+	wire clk_125_rst_n, clk_150_rst_n;
 
 	/*
 	 * Those output reset from MAC are already synced to
@@ -347,11 +348,17 @@ module legofpga_mac_qsfp
 		.signal_out          (clk_125_rst_n)
 	);
 
+	user_cdc_sync u_sync_clk_150_rst_N (
+		.clk                 (clk_150),
+		.signal_in           (from_net_clk_390_rst_n),
+		.signal_out          (clk_150_rst_n)
+	);
+
 	LegoFPGA_axis64_KVS u_LegoFPGA (
 		.sys_rst		(sys_reset),
 
-		.clk_125		(clk_125),
-		.clk_125_rst_n		(clk_125_rst_n),
+		.clk_150		(clk_150),
+		.clk_150_rst_n		(clk_150_rst_n),
 
 		// For MC
 		.C0_SYS_CLK_0_clk_n		(default_sysclk_300_clk_n),

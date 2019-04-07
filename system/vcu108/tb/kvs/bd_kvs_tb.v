@@ -18,7 +18,7 @@ parameter TIMEOUT_THRESH = 100000000;
 	wire		default_sysclk_300_clk_p;
 	wire		default_sysclk_300_clk_n;
     
-	reg         	sysclk_125_clk_ref;
+	reg         	sysclk_150_clk_ref;
 	reg         	sysclk_300_clk_ref;
 	reg         	sysclk_390_clk_ref;
 
@@ -38,7 +38,7 @@ parameter TIMEOUT_THRESH = 100000000;
 	wire        ddr4_reset_n;
 
 	reg             sys_reset;
-	reg		sysclk_125_rst_n;
+	reg		sysclk_150_rst_n;
 	reg		sysclk_390_rst_n;
 
 	reg [63:0] tx_tdata;
@@ -73,8 +73,8 @@ parameter TIMEOUT_THRESH = 100000000;
 		.mac_ready			(1'b1),
 
 		// General logic
-		.clk_125			(sysclk_125_clk_ref),
-		.clk_125_rst_n			(sysclk_125_rst_n),
+		.clk_150			(sysclk_150_clk_ref),
+		.clk_150_rst_n			(sysclk_150_rst_n),
 
 		.from_net_clk_390		(sysclk_390_clk_ref),
 		.from_net_clk_390_rst_n		(sysclk_390_rst_n),
@@ -135,10 +135,10 @@ parameter TIMEOUT_THRESH = 100000000;
 	initial begin
 		mc_enable_model = 1'b0;
 		enable_send = 1'b0;
-		sysclk_125_rst_n = 1'b1;
+		sysclk_150_rst_n = 1'b1;
 		sysclk_390_rst_n = 1'b1;
 
-		sysclk_125_clk_ref = 1;
+		sysclk_150_clk_ref = 1;
 		sysclk_300_clk_ref = 1;
 		sysclk_390_clk_ref = 1;
 
@@ -159,11 +159,11 @@ parameter TIMEOUT_THRESH = 100000000;
 		wait(mc_ddr4_ui_clk_rst_n == 1'b1);
 
 		// Reset others
-		@(posedge sysclk_125_clk_ref);
-		sysclk_125_rst_n = 0;
+		@(posedge sysclk_150_clk_ref);
+		sysclk_150_rst_n = 0;
 		#50000000
-		@(posedge sysclk_125_clk_ref);
-                sysclk_125_rst_n = 1;
+		@(posedge sysclk_150_clk_ref);
+                sysclk_150_rst_n = 1;
 
 	        @(posedge sysclk_390_clk_ref);
                 sysclk_390_rst_n = 0;
@@ -177,11 +177,11 @@ parameter TIMEOUT_THRESH = 100000000;
 
 	// Clock generation
 	always
+		#3333333.333 sysclk_150_clk_ref = ~sysclk_150_clk_ref;
+
+	always
 		#1666666.667 sysclk_300_clk_ref = ~sysclk_300_clk_ref;
 	    
-	always
-		#4000000.000 sysclk_125_clk_ref = ~sysclk_125_clk_ref;
-
 	always
 		#1280000.000 sysclk_390_clk_ref = ~sysclk_390_clk_ref;
 
@@ -194,6 +194,8 @@ parameter TIMEOUT_THRESH = 100000000;
 	reg [63:0] nr_requests_send, nr_requests_received;
 
 	integer infd, outfd, pktlen, finished_send;
+
+	reg [63:0] this_packet_start, this_packet_end;
 
 	// Send Data to DUT
 	initial begin
@@ -225,8 +227,16 @@ parameter TIMEOUT_THRESH = 100000000;
 
 	      while (!finished_send) begin
 		  $fscanf(infd,"%d\n",pktlen);
-		  nr_requests_send = nr_requests_send + 1;
-
+		  
+		  // Take a break
+		  if (pktlen == 0) begin
+		      wait(nr_requests_send == nr_requests_received);
+		  end else begin
+		      nr_requests_send = nr_requests_send + 1;
+		      this_packet_start = $time;
+		      $display("Send packet [%d] %d", nr_requests_send, $time);
+                  end
+ 
 		  while (pktlen != 0) begin
 		      if (tx_tready) begin
 			  $fscanf(infd,"%h %h\n",tx_tdata, tx_tkeep);
@@ -255,8 +265,13 @@ parameter TIMEOUT_THRESH = 100000000;
 
 		  # CLK_PERIOD;
 		  tx_tvalid = 0;
-		  
-		  //wait(nr_requests_send == nr_requests_received);
+
+/*
+		  wait(nr_requests_send == nr_requests_received);
+		  $display("This packet [%d - %d], latency: %d",
+		  	this_packet_start, this_packet_end,
+			this_packet_end - this_packet_start);
+*/
 	      end
 	end
 
@@ -288,9 +303,13 @@ parameter TIMEOUT_THRESH = 100000000;
 				receive_end = $time;
 			end
 		    	nr_requests_received = nr_requests_received + 1;
+		    	$display("%t: nr_sent: %d nr_received: %d",
+		    	          $time, nr_requests_send, nr_requests_received);
+
+		    	this_packet_end = $time;
 		    end
 
-		    $display("%t: %h %h %d", $time, rx_tdata, rx_tkeep, rx_tlast);
+		    //$display("%t: %h %h %d", $time, rx_tdata, rx_tkeep, rx_tlast);
 		    $fdisplay(outfd, "%h %h %d", rx_tdata, rx_tkeep, rx_tlast);
 		    # CLK_PERIOD;
 		end
