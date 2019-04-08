@@ -1,19 +1,22 @@
-VIVADO         = vivado
-VIVADO_PRJ_DIR = generated_vivado_project
-VIVADO_PRJ     = $(VIVADO_PRJ_DIR)/generated_vivado_project.xpr
+#
+# Copyright (c) 2019, Wuklab, Purdue University.
+#
+
+VIVADO        = vivado
 
 ifeq ($(TARGET_BOARD), )
   TARGET_BOARD = vcu108
+  export TARGET_BOARD
 endif
 
 all:
+	$(Q)./generate_hls.sh $(TARGET_BOARD)
 	$(VIVADO) -mode tcl -source run_vivado_$(TARGET_BOARD).tcl
 
 g:
-	$(VIVADO) $(VIVADO_PRJ)
+	$(VIVADO) generated_vivado_project/generated_vivado_project.xpr
 
 clean:
-	rm -rf $(VIVADO_PRJ_DIR)
 	find ./ -name "generated_hls_project" | xargs rm -rf
 	find ./ -name "generated_vivado_project" | xargs rm -rf
 	find ./ -name "*.log" | xargs rm -rf
