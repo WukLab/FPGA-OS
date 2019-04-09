@@ -37,7 +37,8 @@ module axi_wdata_chs #(
     output reg                  drop_done
 );
 
-reg        rd_en, tx_en, drop_latch = 0, done_latch = 0, t_c = 0, count = 0;
+reg        rd_en, tx_en, t_c = 0, count = 0;
+reg [6:0]  drop_count = 'b0, done_count = 'b0;
 reg [1:0]  state, state_n;
 
 localparam BUF_WID  = USER_WIDTH + DATA_WIDTH + STRB_WIDTH + 1; 
@@ -94,9 +95,11 @@ always @(state or data_out or out_mwvalid or in_mwready or done or drop) begin
     rd_en = 0;
     case (state)
         0 : begin /* IDLE */ 
-                if ( drop | drop_latch ) begin
+                if ( drop | drop_count != 0 ) begin
+                    drop_count = drop ? drop_count+1 : drop_count;
                     state_n    = 2'd2;
-                end else if (done | done_latch) begin
+                end else if (done | done_count != 0) begin
+                    done_count = done ? done_count+1 : done_count;
                     state_n    = 2'd1;
                     t_c        = 0; 
                 end else begin
@@ -106,7 +109,6 @@ always @(state or data_out or out_mwvalid or in_mwready or done or drop) begin
                 drop_done = 0;
             end
         1 : begin /* Translation success - READ from fifo and SEND till last */
-                done_latch = 0;
                 rd_en = 1;
                 tx_en = 1;
                 if (w_empty) begin
@@ -116,28 +118,27 @@ always @(state or data_out or out_mwvalid or in_mwready or done or drop) begin
                 else if (data_out[0]) begin
                     state_n = 2'b0;
                     t_c     = 1;
+                    done_count = done_count - 1'b1;
                 end else if ( out_mwvalid & ~in_mwready ) begin
                     rd_en   = 0;                 
                 end
                 if ( drop ) begin
-                    drop_latch = 1;
+                    drop_count = drop_count + 1'b1;
                 end
                 /* if the next address translated while sending the current keep it so that even that can be sent*/
-                /* TODO :: probably keep a count as well */
                 if ( done & out_mwvalid ) begin
-                    done_latch = 1;
+                    done_count = done_count + 1'b1;
                 end
             end
         2 : begin  /* translation failed - READ from fifo and DROP till last */
-                drop_latch = 0;
                 rd_en = 1;
                 if ( data_out[0] ) begin
                     state_n   = 2'b0;
                     drop_done = 1;
+                    drop_count = drop_count - 1'b1;
                 end
-                /* TODO :: probably keep a count as well */
                 if (done) begin
-                    done_latch = 1;
+                    done_count = done_count + 1'b1;
                 end
             end
     endcase

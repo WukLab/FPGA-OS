@@ -144,6 +144,7 @@ always @( posedge apclk ) begin
                       if ( (fromApp_axis_tvalid | ~empty) & count == 0 ) begin
                           tx_en   <= 1;
                           tx_data <= eth_hdr0;
+                          tx_last <= 'b0;
                           tx_keep <= 'hFF;
                           count   <= count + 1;
                       end else if (count == 1) begin
@@ -179,7 +180,7 @@ always @( posedge apclk ) begin
                        end else begin
                            rd_en   <= 0;
                        end
-                       if (tmp_tlast) begin
+                       if (tmp_tlast & toNet_axis_tready) begin
                            rd_en   <= 0;
                            state   <= HDR;
                        end

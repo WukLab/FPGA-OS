@@ -443,6 +443,27 @@ set_property -name "steps.write_bitstream.args.verbose" -value "0" -objects $obj
 # set the current impl run
 current_run -implementation [get_runs impl_1]
 
+##################################################################
+# package and export  the design as IP 
+##################################################################
+ipx::package_project -root_dir ${origin_dir}/../../../generated_ip/app_mcd_net_hdr_handle -vendor wuklab -library user -taxonomy UserIP -import_files -force
+
+ipx::infer_bus_interface apclk xilinx.com:signal:clock_rtl:1.0 [ipx::current_core]
+ipx::add_bus_parameter FREQ_HZ [ipx::get_bus_interfaces apclk -of_objects [ipx::current_core]]
+ipx::infer_bus_interface apresetn xilinx.com:signal:reset_rtl:1.0 [ipx::current_core]
+set_property value fromApp_axis:toApp_axis:toNet_axis:fromNet_axis [ipx::get_bus_parameters ASSOCIATED_BUSIF -of_objects [ipx::get_bus_interfaces apclk -of_objects [ipx::current_core]]]
+ipx::associate_bus_interfaces -busif fromApp_axis -clock apclk [ipx::current_core]
+ipx::associate_bus_interfaces -busif fromNet_axis -clock apclk [ipx::current_core]
+ipx::associate_bus_interfaces -busif toApp_axis -clock apclk [ipx::current_core]
+ipx::associate_bus_interfaces -busif toNet_axis -clock apclk [ipx::current_core]
+ipx::associate_bus_interfaces -clock apclk -reset apresetn -clear [ipx::current_core]
+set_property core_revision 2 [ipx::current_core]
+ipx::create_xgui_files [ipx::current_core]
+ipx::update_checksums [ipx::current_core]
+ipx::save_core [ipx::current_core]
+
+update_ip_catalog -rebuild
+
 puts "INFO: Project created:${_xil_proj_name_}"
 
 exit

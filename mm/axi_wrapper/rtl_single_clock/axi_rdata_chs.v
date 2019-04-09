@@ -54,7 +54,7 @@ localparam NUM_RD_BEAT = DATA_WID/32;
 
 reg       rd_en, tx_en, drop_seen; 
 reg [1:0] state, state_n;
-reg [7:0] count;
+reg [7:0] count, drop_count;
 wire [BUF_WID-1:0] data_in, data_out;
 wire      wr_en, r_empty, r_full;
 
@@ -74,94 +74,71 @@ assign wr_en       = in_mrvalid & out_mrready;
 
 always @(posedge clk) begin
     if (~reset_) begin
+        state <= 2'b0;
+        rd_en <= 'b0;
         {out_rid, out_rdata, out_rresp, out_rlast, out_ruser} <= 'b0; 
         out_srvalid <= 'b0;
-        state       <= 'b0;
         count       <= 'b0;
         drop_done   <= 1'b0; 
     end else begin
-        if (tx_en) begin
-            if ( state_n == 2 | count != 0 ) begin
-                out_rid     <= in_arid;
-                out_rdata   <= {NUM_RD_BEAT{32'hdead_dead}};
-                out_rresp   <= DECERR;
-                out_ruser   <= in_aruser;
-                if (count == 0) begin
-                    count     <= count + 1;
-                    out_rlast <= ( in_arlen == 1 ) ? 'b1 : 'b0;
+        case (state)
+            0 : begin /* IDLE */ 
+                    if (drop | drop_count != 0 ) begin
+                        state <= 2;
+                    end else if (~r_empty) begin
+                        state <= 1;
+                        rd_en <= 1;
+                    end 
+                    out_srvalid <= 0;
+                    {out_rid, out_rdata, out_rresp, out_rlast, out_ruser} <= 'b0; 
+                    drop_done   <= 1'b0; 
                 end
-                else if (in_srready) begin
-                    if ( count == in_arlen - 1 ) begin
-                        out_rlast <= 1'b1;
-                        drop_done <= 1'b1; 
+            1 : begin /* READ */
+                    if (in_srready) begin
+                        out_srvalid <= 1;
+                        out_rid     <= data_out[ID_END-1:3]        ;
+                        out_rdata   <= data_out[DATA_END-1:ID_END] ;
+                        out_rresp   <= data_out[1:0]               ;
+                        out_ruser   <= data_out[BUF_WID-1:DATA_END];
+                        out_rlast   <= data_out[2:2]               ;
+                        if (data_out[2:2]) begin
+                            state       <= 0;
+                            rd_en       <= 0;
+                        end else begin
+                            rd_en       <= 1;
+                        end
                     end else begin
-                        out_rlast <= 1'b0;
-                        count     <= count + 1; 
+                        rd_en <= 0;
+                    end
+                    if (drop) begin
+                        drop_count <= drop_count + 1;
                     end
                 end
-            end else begin
-                out_rid     <= data_out[ID_END-1:3]        ;
-                out_rdata   <= data_out[DATA_END-1:ID_END] ;
-                out_rresp   <= data_out[1:0]               ;
-                out_ruser   <= data_out[BUF_WID-1:DATA_END];
-                out_rlast   <= data_out[2:2]               ;
-            end
-            out_srvalid <= 1'b1;
-        end
-        else if (in_srready & out_srvalid ) begin
-            out_srvalid <= 1'b0;
-            out_rlast   <= 1'b0;
-            count       <=  'b0; 
-            drop_done   <= 1'b0; 
-        end
+            2 : begin  /* DROP */
+                    out_srvalid <= 1;
+                    out_rid     <= in_arid;
+                    out_rdata   <= {NUM_RD_BEAT{32'hdead_dead}};
+                    out_rresp   <= DECERR;
+                    out_ruser   <= in_aruser;
+                    if (count == 0) begin
+                        count     <= count + 1;
+                        out_rlast <= ( in_arlen == 1 ) ? 'b1 : 'b0;
+                        state     <= ( in_arlen == 1 ) ? 'b0 : state;
+                    end
+                    else if (in_srready) begin
+                        if ( count == in_arlen - 1 ) begin
+                            out_rlast <= 1'b1;
+                            drop_done <= 1'b1; 
+                            state     <= 0;
+                            drop_count  <= drop_count - 1;
+                        end else begin
+                            out_rlast <= 1'b0;
+                            count     <= count + 1; 
+                        end
+                    end
+                end
+        endcase
     end
-end
-
-always @(posedge clk) begin
-    if (~reset_) begin
-        state <= 2'b0;
-    end else begin
-        state <= state_n;
-    end
-end
-
-/* TODO :: Add burst considerations as well FSM is a placeholder for that - some extra LUTs very small number wasted here */
-always @(state or drop or data_out or r_empty or count ) begin
-    state_n = state;
-    rd_en = 0;
-    tx_en = 0;
-    case (state)
-        0 : begin /* IDLE */ 
-                if (drop | drop_seen) begin
-                    state_n = 2;
-                end else if (~r_empty) begin
-                    state_n = 1;
-                end
-                drop_seen = 0;
-            end
-        1 : begin /* READ */
-                rd_en = 1;
-                tx_en = 1;
-                if (r_empty) begin
-                    rd_en   = 0;
-                    tx_en   = 0;
-                end else if (data_out[2:2]) begin
-                    state_n = 0;
-                end else if (out_srvalid & ~in_srready) begin
-                    rd_en   = 0;                 
-                end
-                
-                if (drop) begin
-                    drop_seen = 1;
-                end
-            end
-        2 : begin  /* DROP */
-                tx_en = 1;
-                if ( count == in_arlen - 1 ) begin
-                    state_n = 0;
-                end
-            end
-    endcase
 end
 
 /* instantiating the FIFO for the read data worst case when the original requester is not ready to accept the read data*/

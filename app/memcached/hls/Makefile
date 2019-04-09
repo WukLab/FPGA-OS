@@ -12,7 +12,7 @@ ifeq ($(TARGET_BOARD), )
   TARGET_BOARD = vcu108
 endif
 
-.DEFAULT_GOAL := mcd_top
+.DEFAULT_GOAL := mcd_buddy_top
 
 mcd_top: mcd_comp ip mcd_prj
 mcd_buddy_top: mcd_buddy_comp buddy_ip ip mcd_buddy_prj

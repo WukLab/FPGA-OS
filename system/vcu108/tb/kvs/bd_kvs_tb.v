@@ -8,8 +8,8 @@
 module bd_kvs_tb;
 
 // Change this to absolute path
-parameter IN_FILEPATH="/root/ys/FPGA/system/vcu108/tb/kvs/input.txt";
-parameter OUT_FILEPATH="/root/ys/FPGA/system/vcu108/tb/kvs/output.txt";
+parameter IN_FILEPATH="./input.txt";
+parameter OUT_FILEPATH="./output.txt";
 
 // 390MHZ for network
 parameter CLK_PERIOD = 2560000;

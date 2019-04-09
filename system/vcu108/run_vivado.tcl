@@ -249,6 +249,8 @@ set files [list \
  [file normalize "${origin_dir}/tb/ddr4_model/temp_mem.txt"] \
  [file normalize "${origin_dir}/tb/ddr4_model/temp_second_mem.txt"] \
  [file normalize "${origin_dir}/tb/ddr4_model/microblaze_mcs_0.sv"] \
+ [file normalize "${origin_dir}/tb/kvs/output.txt"] \
+ [file normalize "${origin_dir}/tb/kvs/input.txt"] \
 ]
 add_files -norecurse -fileset $obj $files
 

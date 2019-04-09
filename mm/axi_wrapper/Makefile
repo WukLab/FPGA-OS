@@ -1,9 +1,9 @@
 VIVADO         = vivado
 VIVADO_PRJ_DIR = generated_vivado_project
-VIVADO_PRJ     = $(VIVADO_PROJ_DIR)/generated_vivado_project.xpr
+VIVADO_PRJ     = $(VIVADO_PRJ_DIR)/generated_vivado_project.xpr
 
 ifeq ($(TARGET_BOARD), )
-  TARGET_BOARD = arty_a7
+  TARGET_BOARD = vcu108
 endif
 
 all:
@@ -14,4 +14,4 @@ g:
 
 clean:
 	rm -rf $(VIVADO_PRJ_DIR)
-	rm vivado*
+	rm -rf vivado*

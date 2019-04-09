@@ -27,7 +27,11 @@ module axi_mmu_wrapper_sync #(
 	parameter AXI_WUSER_WIDTH  = 2,
 	parameter AXI_BUSER_WIDTH  = 2,
 	parameter AXI_ARUSER_WIDTH = 2,
-	parameter AXI_RUSER_WIDTH  = 2
+	parameter AXI_RUSER_WIDTH  = 2,
+    /* VIRT_ADDR + LENGTH + SIZE */
+    parameter AXIS_TO_MM_WIDTH    = AXI_ADDR_WIDTH + 8 + 3,
+    /* PHY_ADDR + DONE/DROP */
+    parameter AXIS_FROM_MM_WIDTH  = AXI_ADDR_WIDTH + 1
 )
 (
 /* 
@@ -138,25 +142,30 @@ module axi_mmu_wrapper_sync #(
     output                       s_axi_RVALID,
     input                        s_axi_RREADY,
 
-/* Output to traslation module */
-    output [AXI_ADDR_WIDTH-1:0] virt_rd_addr,
-    output                [2:0] virt_rd_size,
-    output                [7:0] virt_rd_len,
-    output [AXI_ADDR_WIDTH-1:0] virt_wr_addr,
-    output                [2:0] virt_wr_size,
-    output                [7:0] virt_wr_len,
-    output                      start_rd_translation,
-    output                      start_wr_translation,
-    input  [AXI_ADDR_WIDTH-1:0] phys_rd_addr,
-    input  [AXI_ADDR_WIDTH-1:0] phys_wr_addr,
-    input                       rd_trans_done,
-    input                       rd_drop,
-    input                       wr_trans_done,
-    input                       wr_drop
+/* connections with MMU */
+/* axis stream data to the MMU - data packing -- ADDR_WIDTH-1:0 - virtual address , ADDR_WIDTH+7:ADDR_WIDTH -- length , last 3 bits - size */
+    output [AXIS_TO_MM_WIDTH-1:0] toMM_RD_tdata,
+    output                          toMM_RD_tvalid,
+    input                           toMM_RD_tready,
+    
+    output [AXIS_TO_MM_WIDTH-1:0] toMM_WR_tdata,
+    output                          toMM_WR_tvalid,
+    input                           toMM_WR_tready,
+
+/* axis from the MMU -- data packing -- MSB == 0 -> drop, MSB == 1 -> done, lower ADDR_WIDTH is the physical address */
+    input [AXIS_FROM_MM_WIDTH-1:0] fromMM_RD_tdata,
+    input                          fromMM_RD_tvalid,
+    output                         fromMM_RD_tready,
+     
+    input [AXIS_FROM_MM_WIDTH-1:0] fromMM_WR_tdata,
+    input                          fromMM_WR_tvalid,
+    output                         fromMM_WR_tready
 );
 
 //Reg
-reg  firstw = 0, firstr = 0, rtrig, wtrig, rd_nxt_waddr_d, rd_nxt_raddr_d, r_nxt_tmp, w_nxt_tmp, drpr = 0, drpw = 0;
+reg  firstw , firstr , toMM_RD_tvalid, toMM_WR_tvalid, drpr, drpw;
+reg [AXIS_TO_MM_WIDTH-1:0] toMM_RD_tdata, toMM_WR_tdata;
+reg rd_nxt_raddr_l, rd_nxt_waddr_l;
 
 //Wire
 wire [AXI_ID_WIDTH-1:0] tmp_awid, tmp_arid;
@@ -166,63 +175,81 @@ wire [2:0] tmp_awsize, tmp_arsize, tmp_awprot, tmp_arprot;
 wire [3:0] tmp_awcache, tmp_arcache;
 wire [AXI_AWUSER_WIDTH-1:0] tmp_awuser;
 wire [AXI_ARUSER_WIDTH-1:0] tmp_aruser;
-wire  [1:0] tmp_awburst, tmp_arburst;
-wire        tmp_awlock , tmp_arlock, t_wdone, t_rdone, r_drop, w_drop, rd_nxt_waddr, rd_nxt_raddr;
-wire        rd_rxbuf_empty, wr_rxbuf_empty, rd_drop_done, w_drop_done;
+wire [1:0] tmp_awburst, tmp_arburst;
+wire       tmp_awlock , tmp_arlock, t_wdone, t_rdone, r_drop, w_drop, rd_nxt_waddr, rd_nxt_raddr;
+wire       rd_rxbuf_empty, wr_rxbuf_empty, rd_drop_done, w_drop_done, rd_txn_sent, wr_txn_sent;
 
-assign virt_rd_addr = tmp_araddr;
-assign virt_rd_size = tmp_arsize;
-assign virt_rd_len  = tmp_arlen;
-assign virt_wr_addr = tmp_awaddr;
-assign virt_wr_size = tmp_awsize;
-assign virt_wr_len  = tmp_awlen;
+assign fromMM_RD_tready = 1;
+assign fromMM_WR_tready = 1;
 
-assign p_waddr = phys_wr_addr;
-assign p_raddr = phys_rd_addr;
-assign t_rdone = rd_trans_done;
-assign t_wdone = wr_trans_done;
-assign r_drop  = rd_drop;
-assign w_drop  = wr_drop;
-
-assign start_rd_translation = s_aresetn & ~rd_rxbuf_empty ? rtrig | rd_nxt_raddr_d : 'b0;
-assign start_wr_translation = s_aresetn & ~wr_rxbuf_empty ? wtrig | rd_nxt_waddr_d : 'b0;
+assign p_raddr = fromMM_RD_tvalid & fromMM_RD_tready & fromMM_RD_tdata[AXI_ADDR_WIDTH] ? fromMM_RD_tdata [AXI_ADDR_WIDTH-1:0] : 'h0; 
+assign p_waddr = fromMM_WR_tvalid & fromMM_WR_tready & fromMM_WR_tdata[AXI_ADDR_WIDTH] ? fromMM_WR_tdata [AXI_ADDR_WIDTH-1:0] : 'h0;
+assign t_wdone = fromMM_WR_tvalid & fromMM_WR_tready & fromMM_WR_tdata[AXI_ADDR_WIDTH];
+assign t_rdone = fromMM_RD_tvalid & fromMM_RD_tready & fromMM_RD_tdata[AXI_ADDR_WIDTH];
+assign w_drop  = fromMM_WR_tvalid & fromMM_WR_tready & ~fromMM_WR_tdata[AXI_ADDR_WIDTH];
+assign r_drop  = fromMM_RD_tvalid & fromMM_RD_tready & ~fromMM_RD_tdata[AXI_ADDR_WIDTH];
 
 /* can be more efficient -- once rd and wr triggered don't do anything -- gate the clock */
 always @(posedge s_axi_clk) begin
-   if (~firstr & s_axi_ARVALID & s_axi_ARREADY & ~drpr ) begin
-       firstr <= 1;
-       rtrig  <= 1;
-   end else if (r_drop) begin
-       drpr   <= 1;
-   end else if (rd_drop_done) begin
-       drpr   <= 0;
-   end else if ( rd_rxbuf_empty & ~drpr ) begin
-       firstr <= 0;
-       rtrig  <= 0;
-   end else begin
-       rtrig  <= 0;
-   end
-   if (~firstw & s_axi_AWVALID & s_axi_AWREADY & ~drpw ) begin
-       firstw <= 1;
-       wtrig  <= 1;
-   end else if (w_drop) begin
-       drpw   <= 1;
-   end else if (w_drop_done) begin
-       drpw   <= 0;
-   end else if (wr_rxbuf_empty & ~drpw ) begin
-       firstw <= 0;
-       wtrig  <= 0;
-   end else begin
-       wtrig  <= 0;
-   end
-   r_nxt_tmp <= rd_nxt_waddr;
-   w_nxt_tmp <= rd_nxt_raddr;
-   rd_nxt_waddr_d <= r_nxt_tmp;
-   rd_nxt_raddr_d <= w_nxt_tmp;
+    if (~s_aresetn) begin
+        toMM_RD_tvalid  <= 'b0;
+        toMM_RD_tdata   <= 'b0;
+        toMM_WR_tvalid  <= 'b0;
+        toMM_WR_tdata   <= 'b0;
+        firstr          <= 'b0;
+        firstw          <= 'b0;
+        drpr            <= 'b0;
+        drpw            <= 'b0;
+        rd_nxt_waddr_l  <= 'b0;
+        rd_nxt_raddr_l  <= 'b0;
+    end else begin
+        if (((~firstr & ~drpr) | rd_nxt_raddr_l ) &  ~rd_rxbuf_empty) begin
+            if (~firstr) begin
+                firstr      <= 1;
+            end
+            toMM_RD_tvalid  <= 1;
+            toMM_RD_tdata   <=  { tmp_arsize, tmp_arlen, tmp_araddr };
+            rd_nxt_raddr_l  <= 'b0;
+        end else if (r_drop) begin
+            drpr   <= 1;
+        end else if (rd_drop_done) begin
+            drpr   <= 0;
+            if ( rd_rxbuf_empty ) begin
+                firstr <= 0;
+            end
+        end else begin
+            if (toMM_RD_tready) begin
+                toMM_RD_tvalid  <= 0;
+            end
+        end
+        if (((~firstw & ~drpw) | rd_nxt_waddr_l) & ~wr_rxbuf_empty) begin
+            if (~firstw) begin
+                firstw      <= 1'b1;
+            end
+            toMM_WR_tvalid  <= 1'b1;
+            toMM_WR_tdata   <=  { tmp_awsize, tmp_awlen, tmp_awaddr };
+            rd_nxt_waddr_l  <= 'b0;
+        end else if (w_drop) begin
+            drpw   <= 1;
+        end else if (w_drop_done) begin
+            drpw   <= 0;
+            if ( wr_rxbuf_empty ) begin
+                firstw <= 0;
+            end
+        end else begin
+            if (toMM_WR_tready) begin
+                toMM_WR_tvalid  <= 0;
+            end
+        end
+        if (rd_nxt_waddr) 
+            rd_nxt_waddr_l <= rd_nxt_waddr;
+        if (rd_nxt_raddr) 
+            rd_nxt_raddr_l <= rd_nxt_raddr;
+    end
 end
 
-assign rd_nxt_waddr = wr_trans_done | w_drop_done; /* for write drop don't stop anything */
-assign rd_nxt_raddr = rd_trans_done | rd_drop_done; /* for read drops wait till read data has been completed*/
+assign rd_nxt_waddr = t_wdone | w_drop_done; /* for write drop => clear the write data buffer TODO :: ?? jump pointer ?? and if done then wait for all data to be sent */
+assign rd_nxt_raddr = t_rdone | rd_drop_done; /* for read drops wait till read data has been completed*/
 
 /* Write Data */
 axi_addr_ch_rxs #(
@@ -402,7 +429,7 @@ axi_addr_ch_txs #(
                            .out_valid (m_axi_ARVALID),
                            .in_ready  (m_axi_ARREADY),
                            .phy_addr  (p_raddr),
-                           .t_done    (t_rdone)                          
+                           .t_done    (t_rdone)
                          );
 
 /* Read Data channel */
