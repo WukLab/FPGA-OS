@@ -14,7 +14,7 @@
 # 4) Change exported IP parameters
 
 # Create a project
-open_project	-reset generated_hls_project 
+open_project	-reset generated_hls_project
 
 # The source file and test bench
 add_files	core.cpp	-cflags "-I../../include"
@@ -36,11 +36,11 @@ open_solution -reset solution1
 # ArtyA7:	xc7a100tcsg324-1
 #
 set_part {xc7a100tcsg324-1}
-create_clock -period 10 -name default
+create_clock -period 6.66 -name default
 config_rtl  -encoding onehot -reset control  -reset_level high  -vivado_impl_strategy default -vivado_phys_opt place -vivado_synth_design_args {-directive sdx_optimization_effort_high} -vivado_synth_strategy default
 set_clock_uncertainty 1.25
 
-# Simulate the C code 
+# Simulate the C code
 # csim_design
 
 # Synthesis the C code
@@ -50,5 +50,5 @@ csynth_design
 export_design -format ip_catalog -display_name "SYSMMU" -description "System Memory Chunk Unit, for permission Check" -vendor "purdue.wuklab" -version "1.0"
 
 # Do not perform any other steps
-# - The basic project will be opened in the GUI 
+# - The basic project will be opened in the GUI
 exit

@@ -7,50 +7,18 @@
 
 #include <fpga/axis_sysmmu.h>
 
-struct sysmmu_indata {
-	/*
-	 * physical memory datapath input interface, only for permission check
-	 *
-	 * pid: 	application id
-	 * in_addr:	address in
-	 * in_len:	axi transfer burst length
-	 * in_size:	axi transfer burst size
-	 */
-	ap_uint<PID_WIDTH>	pid;
-	ap_uint<PA_WIDTH>	in_addr;
-	ap_uint<8>		in_len;
-	ap_uint<3>		in_size;
-};
+void
+sysmmu_data_hanlder(hls::stream<sysmmu_indata>& rd_in, hls::stream<sysmmu_outdata>& rd_out,
+		    hls::stream<sysmmu_indata>& wr_in, hls::stream<sysmmu_outdata>& wr_out);
+void
+sysmmu_ctrl_hanlder(hls::stream<sysmmu_ctrl_if>& ctrlpath, hls::stream<ap_uint<1> >& ctrl_stat);
 
-struct sysmmu_outdata {
-	/*
-	 * physical memory datapath output interface, only for permission check
-	 *
-	 * out_addr: physical address out
-	 * drop: 1 if error occurs, 0 if success
-	 */
-	ap_uint<PA_WIDTH>	out_addr;
-	ap_uint<1>		drop;
-};
+void sysmmu_data_read(hls::stream<sysmmu_indata>& rd_in, hls::stream<sysmmu_outdata>& rd_out);
+void sysmmu_data_write(hls::stream<sysmmu_indata>& wr_in, hls::stream<sysmmu_outdata>& wr_out);
 
-struct sysmmu_entry{
-	ap_uint<1>		valid;
-	ap_uint<1>		rw;
-	ap_uint<PID_WIDTH>	pid;
-};
-
-void sysmmu_data_hanlder(struct sysmmu_indata& rd_in, struct sysmmu_outdata* rd_out,
-			 struct sysmmu_indata& wr_in, struct sysmmu_outdata* wr_out);
-void sysmmu_ctrl_hanlder(hls::stream<struct sysmmu_ctrl_if>& ctrlpath, ap_uint<1>* stat);
-
-void sysmmu_data_read(struct sysmmu_indata& rd_in, struct sysmmu_outdata* rd_out);
-void sysmmu_data_write(struct sysmmu_indata& wr_in, struct sysmmu_outdata* wr_out);
-
-ap_uint<1> insert(struct sysmmu_ctrl_if& ctrl);
-ap_uint<1> del(struct sysmmu_ctrl_if& ctrl);
-ap_uint<1> check_read(struct sysmmu_indata& rd_in);
-ap_uint<1> check_write(struct sysmmu_indata& wr_in);
-
-
+ap_uint<1> insert(sysmmu_ctrl_if& ctrl);
+ap_uint<1> del(sysmmu_ctrl_if& ctrl);
+void check_read(hls::stream<sysmmu_indata>& rd_in, hls::stream<sysmmu_outdata>& rd_out);
+void check_write(hls::stream<sysmmu_indata>& wr_in, hls::stream<sysmmu_outdata>& wr_out);
 
 #endif /* _SYSMMU_H_ */

@@ -24,6 +24,38 @@ enum {
 	WRITE = 1,
 };
 
+struct sysmmu_entry{
+	ap_uint<1>		valid;
+	ap_uint<1>		rw;
+	ap_uint<PID_WIDTH>	pid;
+};
+
+struct sysmmu_indata{
+	/*
+	 * physical memory datapath input interface, only for permission check
+	 *
+	 * in_addr:	address in
+	 * in_len:	axi transfer burst length
+	 * in_size:	axi transfer burst size
+	 * pid: 	application id
+	 */
+	ap_uint<PA_WIDTH>	in_addr;
+	ap_uint<PID_WIDTH>	pid;
+	ap_uint<8>		in_len;
+	ap_uint<3>		in_size;
+};
+
+struct sysmmu_outdata{
+	/*
+	 * physical memory datapath output interface, only for permission check
+	 *
+	 * out_addr: physical address out
+	 * drop: 1 if error occurs, 0 if success
+	 */
+	ap_uint<PA_WIDTH>	out_addr;
+	ap_uint<1>		drop;
+};
+
 struct sysmmu_alloc_if {
 	/*
 	 * physical memory unit memory ctrl structure, this interface sits
@@ -72,10 +104,11 @@ struct sysmmu_ctrl_if {
 };
 
 void chunk_alloc(hls::stream<sysmmu_alloc_if>& alloc, hls::stream<sysmmu_alloc_ret_if>& alloc_ret,
-		 hls::stream<struct sysmmu_ctrl_if>& ctrl, ap_uint<1>& ctrl_ret, ap_uint<1>* stat);
+		 hls::stream<sysmmu_ctrl_if>& ctrl, ap_uint<1>& ctrl_ret, ap_uint<1>* stat);
 
-void mm_segment_top(hls::stream<struct sysmmu_ctrl_if>& ctrl, ap_uint<1>* ctrl_stat,
-		    struct sysmmu_indata& rd_in, struct sysmmu_outdata* rd_out,
-		    struct sysmmu_indata& wr_in, struct sysmmu_outdata* wr_out);
+void
+mm_segment_top(hls::stream<sysmmu_ctrl_if>& ctrl, hls::stream<ap_uint<1> >& ctrl_stat,
+	       hls::stream<sysmmu_indata>& rd_in, hls::stream<sysmmu_outdata>& rd_out,
+	       hls::stream<sysmmu_indata>& wr_in, hls::stream<sysmmu_outdata>& wr_out);
 
 #endif /* _LEGO_FPGA_AXIS_SYSMMU_ */

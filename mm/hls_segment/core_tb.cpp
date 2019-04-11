@@ -24,9 +24,11 @@ int data_test(ap_uint<PA_WIDTH> addr, ap_uint<PID_WIDTH> pid,
 		ap_uint<PA_WIDTH> size, ap_uint<1> rw)
 {
 	struct sysmmu_indata in_rd = {0,0,0,0}, in_wr = {0,0,0,0};
-	struct sysmmu_outdata out_rd = {0,0}, out_wr = {0,0};
+	struct sysmmu_outdata out = {0,0};
+	hls::stream<struct sysmmu_indata> rdin_path, wrin_path;
+	hls::stream<struct sysmmu_outdata> rdout_path, wrout_path;
 	hls::stream<struct sysmmu_ctrl_if> ctrlpath_dummy;
-	ap_uint<1> result, dummy;
+	hls::stream<ap_uint<1> > dummy_ret;
 
 	if (rw == WRITE) {
 		/* write */
@@ -41,6 +43,8 @@ int data_test(ap_uint<PA_WIDTH> addr, ap_uint<PID_WIDTH> pid,
 			in_wr.in_size = order_base_2<PA_WIDTH>(ap_uint<PA_WIDTH>(size(7,0) >> 1));
 		else
 			in_wr.in_size = 7;
+
+		wrin_path.write(in_wr);
 
 		std::cout << "[ACCESS] Address:" << std::hex << std::setw(10) << in_wr.in_addr
 				<< " IDX:" << std::dec << std::setw(3) << CHUNK_IDX(in_wr.in_addr)
@@ -63,6 +67,8 @@ int data_test(ap_uint<PA_WIDTH> addr, ap_uint<PID_WIDTH> pid,
 		else
 			in_rd.in_size = 7;
 
+		rdin_path.write(in_rd);
+
 		std::cout << "[ACCESS] Address:" << std::hex << std::setw(10) << in_rd.in_addr
 				<< " IDX:" << std::dec << std::setw(3) << CHUNK_IDX(in_rd.in_addr)
 				<< " PID:" <<  in_rd.pid
@@ -72,22 +78,26 @@ int data_test(ap_uint<PA_WIDTH> addr, ap_uint<PID_WIDTH> pid,
 				<< " RW:" << std::dec << rw;
 	}
 
-	mm_segment_top(ctrlpath_dummy, &dummy, in_rd, &out_rd, in_wr, &out_wr);
+	mm_segment_top(ctrlpath_dummy, dummy_ret, rdin_path, rdout_path, wrin_path, wrout_path);
 
 	if (rw) {
-		return out_wr.drop ? -1 : 0;
+		while(wrout_path.empty());
+		out = wrout_path.read();
 	} else {
-		return out_rd.drop ? -1 : 0;
+		while(rdout_path.empty());
+		out = rdout_path.read();
 	}
+	return out.drop ? -1 : 0;
 }
 
 int ctrl_test(ap_uint<1> opcode, ap_uint<PA_WIDTH> addr, ap_uint<PID_WIDTH> pid, ap_uint<1> rw)
 {
-	struct sysmmu_indata in_rd = {0,0,0,0}, in_wr = {0,0,0,0};
-	struct sysmmu_outdata out_rd = {0,0}, out_wr = {0,0};
+	hls::stream<struct sysmmu_indata> rdin_path, wrin_path;
+	hls::stream<struct sysmmu_outdata> rdout_path, wrout_path;
 	hls::stream<struct sysmmu_ctrl_if> ctrlpath;
 	struct sysmmu_ctrl_if req;
-	ap_uint<1> result;
+	hls::stream<ap_uint<1> > result;
+	ap_uint<1> ret;
 
 	req.opcode = opcode;
 	req.idx = CHUNK_IDX(addr);
@@ -106,10 +116,14 @@ int ctrl_test(ap_uint<1> opcode, ap_uint<PA_WIDTH> addr, ap_uint<PID_WIDTH> pid,
 			<< " Real Size:" << std::hex << std::setw(10) << "N/A"
 			<< " RW:" << std::dec << req.rw;
 
+	/* first call to trigger state change */
+	mm_segment_top(ctrlpath, result, rdin_path, rdout_path, wrin_path, wrout_path);
+	if (result.empty())
+		ret = 1;
+	else
+		ret = result.read();
 
-	mm_segment_top(ctrlpath, &result, in_rd, &out_rd, in_wr, &out_wr);
-
-	return result ? -1 : 0;
+	return ret ? -1 : 0;
 }
 
 int print_result(int real, int expect)
