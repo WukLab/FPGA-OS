@@ -1,6 +1,6 @@
 /* ------------------------------------------------------------------------------
- * Title      : AXI based MMU IP 
- * Project    : LegoFPGA 
+ * Title      : AXI based MMU IP
+ * Project    : LegoFPGA
  * ------------------------------------------------------------------------------
  * File       : axi_rdata_ch
  * -----------------------------------------------------------------------------
@@ -38,11 +38,11 @@ module axi_rdata_chs #(
     output reg                out_rlast,
     output reg                out_srvalid,
     input                     in_srready, /*ready from App/Interconnect*/
-                        
-    input   [ID_WID-1:0] in_arid, 
+
+    input   [ID_WID-1:0] in_arid,
     input [USER_WID-1:0] in_aruser,
     input          [2:0] in_arsize,
-    input          [7:0] in_arlen, 
+    input          [7:0] in_arlen,
     input                drop,
     output reg           drop_done
 );
@@ -52,7 +52,7 @@ localparam ID_END   = 3 + ID_WID;
 localparam DATA_END = ID_END + DATA_WID;
 localparam NUM_RD_BEAT = DATA_WID/32;
 
-reg       rd_en, tx_en, drop_seen; 
+reg       rd_en, tx_en, drop_seen;
 reg [1:0] state, state_n;
 reg [7:0] count, drop_count;
 wire [BUF_WID-1:0] data_in, data_out;
@@ -76,25 +76,26 @@ always @(posedge clk) begin
     if (~reset_) begin
         state <= 2'b0;
         rd_en <= 'b0;
-        {out_rid, out_rdata, out_rresp, out_rlast, out_ruser} <= 'b0; 
+        {out_rid, out_rdata, out_rresp, out_rlast, out_ruser} <= 'b0;
         out_srvalid <= 'b0;
         count       <= 'b0;
-        drop_done   <= 1'b0; 
+        drop_done   <= 1'b0;
     end else begin
         case (state)
-            0 : begin /* IDLE */ 
+            0 : begin /* IDLE */
                     if (drop | drop_count != 0 ) begin
                         state <= 2;
                     end else if (~r_empty) begin
                         state <= 1;
                         rd_en <= 1;
-                    end 
+                    end
                     out_srvalid <= 0;
-                    {out_rid, out_rdata, out_rresp, out_rlast, out_ruser} <= 'b0; 
-                    drop_done   <= 1'b0; 
+                    {out_rid, out_rdata, out_rresp, out_rlast, out_ruser} <= 'b0;
+                    drop_done   <= 1'b0;
+                    count       <= 'b0;
                 end
             1 : begin /* READ */
-                    if (in_srready) begin
+                    if (in_srready & ~r_empty) begin
                         out_srvalid <= 1;
                         out_rid     <= data_out[ID_END-1:3]        ;
                         out_rdata   <= data_out[DATA_END-1:ID_END] ;
@@ -118,7 +119,7 @@ always @(posedge clk) begin
                     out_srvalid <= 1;
                     out_rid     <= in_arid;
                     out_rdata   <= {NUM_RD_BEAT{32'hdead_dead}};
-                    out_rresp   <= DECERR;
+                    out_rresp   <= SLVERR;
                     out_ruser   <= in_aruser;
                     if (count == 0) begin
                         count     <= count + 1;
@@ -128,12 +129,12 @@ always @(posedge clk) begin
                     else if (in_srready) begin
                         if ( count == in_arlen - 1 ) begin
                             out_rlast <= 1'b1;
-                            drop_done <= 1'b1; 
+                            drop_done <= 1'b1;
                             state     <= 0;
                             drop_count  <= drop_count - 1;
                         end else begin
                             out_rlast <= 1'b0;
-                            count     <= count + 1; 
+                            count     <= count + 1;
                         end
                     end
                 end
@@ -142,7 +143,7 @@ always @(posedge clk) begin
 end
 
 /* instantiating the FIFO for the read data worst case when the original requester is not ready to accept the read data*/
-synch_fifo #(.DW(BUF_WID), .FIFO_DEPTH(BUF_SZ))  RDATA_BUF( 
+synch_fifo #(.DW(BUF_WID), .FIFO_DEPTH(BUF_SZ))  RDATA_BUF(
                                                     .clk       (clk),
                                                     .rst_      (reset_),
                                                     .wr_en     (wr_en),

@@ -1,11 +1,11 @@
 /*------------------------------------------------------------------------------
  * Title      : AXI based MMU IP
- * Project    : LegoFPGA 
+ * Project    : LegoFPGA
  *------------------------------------------------------------------------------
- * File       : axi_mmu_wrapper 
+ * File       : axi_mmu_wrapper
  * -----------------------------------------------------------------------------
  * Description: This is the top level for the MMU IP. It acts as slave to a master
- *              AXI and sends virtual address to translation unit and on successful 
+ *              AXI and sends virtual address to translation unit and on successful
  *              translation receives a done and the Physical address which is sent
  *              to the slave (Memory controller or other consumer).
  * ------------------------------------------------------------------------------
@@ -28,13 +28,13 @@ module axi_mmu_wrapper_sync #(
 	parameter AXI_BUSER_WIDTH  = 2,
 	parameter AXI_ARUSER_WIDTH = 2,
 	parameter AXI_RUSER_WIDTH  = 2,
-    /* VIRT_ADDR + LENGTH + SIZE */
-    parameter AXIS_TO_MM_WIDTH    = AXI_ADDR_WIDTH + 8 + 3,
-    /* PHY_ADDR + DONE/DROP */
-    parameter AXIS_FROM_MM_WIDTH  = AXI_ADDR_WIDTH + 1
+    /* VIRT_ADDR + ID + LENGTH + SIZE + padding */
+    parameter AXIS_TO_MM_WIDTH    = AXI_ADDR_WIDTH + AXI_ID_WIDTH + 8 + 3 + 5,
+    /* PHY_ADDR + DONE/DROP + padding*/
+    parameter AXIS_FROM_MM_WIDTH  = AXI_ADDR_WIDTH + 1 + 7
 )
 (
-/* 
+/*
  * AXI clk and reset single clock domain
  */
     input         s_axi_clk,
@@ -63,7 +63,7 @@ module axi_mmu_wrapper_sync #(
     output                  [3:0] m_axi_AWCACHE,
     output [AXI_AWUSER_WIDTH-1:0] m_axi_AWUSER,
     output                        m_axi_AWLOCK,
-    output                        m_axi_AWVALID, 
+    output                        m_axi_AWVALID,
     input                         m_axi_AWREADY,
 
 /*WRITE DATA CHANNEL*/
@@ -120,9 +120,9 @@ module axi_mmu_wrapper_sync #(
     output                  [1:0] m_axi_ARBURST,
     output [AXI_ARUSER_WIDTH-1:0] m_axi_ARUSER,
     output                        m_axi_ARLOCK,
-    output                        m_axi_ARVALID, 
+    output                        m_axi_ARVALID,
     input                         m_axi_ARREADY,
-    
+
 /* READ DATA CHANNEL*/
 /* read data channel of MMU sharing interface with slave sys/mem AXI */
     input    [AXI_ID_WIDTH-1:0] m_axi_RID,
@@ -132,7 +132,7 @@ module axi_mmu_wrapper_sync #(
     input                       m_axi_RLAST,
     input                       m_axi_RVALID,
     output                      m_axi_RREADY,
-    
+
 /* read data channel of MMU sharing interface with actual master i.e. App/interconnect */
     output    [AXI_ID_WIDTH-1:0] s_axi_RID,
     output  [AXI_DATA_WIDTH-1:0] s_axi_RDATA,
@@ -143,11 +143,17 @@ module axi_mmu_wrapper_sync #(
     input                        s_axi_RREADY,
 
 /* connections with MMU */
-/* axis stream data to the MMU - data packing -- ADDR_WIDTH-1:0 - virtual address , ADDR_WIDTH+7:ADDR_WIDTH -- length , last 3 bits - size */
+/*
+ * axis stream data to the MMU - data packing
+ * ADDR_WIDTH-1:0					-- virtual address,
+ * ADDR_WIDTH+AXI_ID_WIDTH-1:ADDR_WIDTH			-- transaction ID, used for PID,
+ * ADDR_WIDTH+AXI_ID_WIDTH+7:ADDR_WIDTH+AXI_ID_WIDTH	-- length
+ * ADDR_WIDTH+AXI_ID_WIDTH+10:ADDR_WIDTH+AXI_ID_WIDTH+8	-- size
+ */
     output [AXIS_TO_MM_WIDTH-1:0] toMM_RD_tdata,
     output                          toMM_RD_tvalid,
     input                           toMM_RD_tready,
-    
+
     output [AXIS_TO_MM_WIDTH-1:0] toMM_WR_tdata,
     output                          toMM_WR_tvalid,
     input                           toMM_WR_tready,
@@ -156,7 +162,7 @@ module axi_mmu_wrapper_sync #(
     input [AXIS_FROM_MM_WIDTH-1:0] fromMM_RD_tdata,
     input                          fromMM_RD_tvalid,
     output                         fromMM_RD_tready,
-     
+
     input [AXIS_FROM_MM_WIDTH-1:0] fromMM_WR_tdata,
     input                          fromMM_WR_tvalid,
     output                         fromMM_WR_tready
@@ -182,12 +188,12 @@ wire       rd_rxbuf_empty, wr_rxbuf_empty, rd_drop_done, w_drop_done, rd_txn_sen
 assign fromMM_RD_tready = 1;
 assign fromMM_WR_tready = 1;
 
-assign p_raddr = fromMM_RD_tvalid & fromMM_RD_tready & fromMM_RD_tdata[AXI_ADDR_WIDTH] ? fromMM_RD_tdata [AXI_ADDR_WIDTH-1:0] : 'h0; 
-assign p_waddr = fromMM_WR_tvalid & fromMM_WR_tready & fromMM_WR_tdata[AXI_ADDR_WIDTH] ? fromMM_WR_tdata [AXI_ADDR_WIDTH-1:0] : 'h0;
-assign t_wdone = fromMM_WR_tvalid & fromMM_WR_tready & fromMM_WR_tdata[AXI_ADDR_WIDTH];
-assign t_rdone = fromMM_RD_tvalid & fromMM_RD_tready & fromMM_RD_tdata[AXI_ADDR_WIDTH];
-assign w_drop  = fromMM_WR_tvalid & fromMM_WR_tready & ~fromMM_WR_tdata[AXI_ADDR_WIDTH];
-assign r_drop  = fromMM_RD_tvalid & fromMM_RD_tready & ~fromMM_RD_tdata[AXI_ADDR_WIDTH];
+assign p_raddr = fromMM_RD_tvalid & fromMM_RD_tready & ~fromMM_RD_tdata[AXI_ADDR_WIDTH] ? fromMM_RD_tdata [AXI_ADDR_WIDTH-1:0] : 'h0;
+assign p_waddr = fromMM_WR_tvalid & fromMM_WR_tready & ~fromMM_WR_tdata[AXI_ADDR_WIDTH] ? fromMM_WR_tdata [AXI_ADDR_WIDTH-1:0] : 'h0;
+assign t_wdone = fromMM_WR_tvalid & fromMM_WR_tready & ~fromMM_WR_tdata[AXI_ADDR_WIDTH];
+assign t_rdone = fromMM_RD_tvalid & fromMM_RD_tready & ~fromMM_RD_tdata[AXI_ADDR_WIDTH];
+assign w_drop  = fromMM_WR_tvalid & fromMM_WR_tready & fromMM_WR_tdata[AXI_ADDR_WIDTH];
+assign r_drop  = fromMM_RD_tvalid & fromMM_RD_tready & fromMM_RD_tdata[AXI_ADDR_WIDTH];
 
 /* can be more efficient -- once rd and wr triggered don't do anything -- gate the clock */
 always @(posedge s_axi_clk) begin
@@ -208,7 +214,7 @@ always @(posedge s_axi_clk) begin
                 firstr      <= 1;
             end
             toMM_RD_tvalid  <= 1;
-            toMM_RD_tdata   <=  { tmp_arsize, tmp_arlen, tmp_araddr };
+            toMM_RD_tdata   <=  { 5'b0, tmp_arsize, tmp_arlen, tmp_arid, tmp_araddr };
             rd_nxt_raddr_l  <= 'b0;
         end else if (r_drop) begin
             drpr   <= 1;
@@ -227,7 +233,7 @@ always @(posedge s_axi_clk) begin
                 firstw      <= 1'b1;
             end
             toMM_WR_tvalid  <= 1'b1;
-            toMM_WR_tdata   <=  { tmp_awsize, tmp_awlen, tmp_awaddr };
+            toMM_WR_tdata   <=  { 5'b0, tmp_awsize, tmp_awlen, tmp_awid, tmp_awaddr };
             rd_nxt_waddr_l  <= 'b0;
         end else if (w_drop) begin
             drpw   <= 1;
@@ -241,9 +247,9 @@ always @(posedge s_axi_clk) begin
                 toMM_WR_tvalid  <= 0;
             end
         end
-        if (rd_nxt_waddr) 
+        if (rd_nxt_waddr)
             rd_nxt_waddr_l <= rd_nxt_waddr;
-        if (rd_nxt_raddr) 
+        if (rd_nxt_raddr)
             rd_nxt_raddr_l <= rd_nxt_raddr;
     end
 end
@@ -283,7 +289,7 @@ axi_addr_ch_rxs #(
                            .i_buf_rd  (rd_nxt_waddr),
                            .buf_empty (wr_rxbuf_empty)
                          );
-                     
+
 axi_addr_ch_txs #(
     .ADDR_WIDTH(AXI_ADDR_WIDTH),
 	.ID_WIDTH  (AXI_ID_WIDTH),
@@ -363,12 +369,12 @@ axi_bresp_chs #(
                         .out_sbuser (s_axi_BUSER),
                         .out_sbvalid(s_axi_BVALID),
                         .in_sbready (s_axi_BREADY),
-                        
+
                         .in_awid    (tmp_awid),
                         .in_awuser  (tmp_awuser),
                         .drop       (w_drop)
                       );
-        
+
 /* Read Address */
 axi_addr_ch_rxs #(
     .BUF_SZ    (AR_BUF_SZ),
@@ -401,7 +407,7 @@ axi_addr_ch_rxs #(
                            .i_buf_rd  (rd_nxt_raddr),
                            .buf_empty (rd_rxbuf_empty)
                          );
-                     
+
 axi_addr_ch_txs #(
     .ADDR_WIDTH(AXI_ADDR_WIDTH),
 	.ID_WIDTH  (AXI_ID_WIDTH),
@@ -441,7 +447,7 @@ axi_rdata_chs #(
 )
              AXI_RDAT_CH ( .clk        (s_axi_clk),
                            .reset_     (s_aresetn),
-                          
+
                            .in_rid     (m_axi_RID),
                            .in_rdata   (m_axi_RDATA),
                            .in_rresp   (m_axi_RRESP),
@@ -449,7 +455,7 @@ axi_rdata_chs #(
                            .in_rlast   (m_axi_RLAST),
                            .in_mrvalid (m_axi_RVALID),
                            .out_mrready(m_axi_RREADY),
-                       
+
                            .out_rid    (s_axi_RID),
                            .out_rdata  (s_axi_RDATA),
                            .out_rresp  (s_axi_RRESP),
@@ -457,7 +463,7 @@ axi_rdata_chs #(
                            .out_rlast  (s_axi_RLAST),
                            .out_srvalid(s_axi_RVALID),
                            .in_srready (s_axi_RREADY),
-                           
+
                            .in_arid    (tmp_arid),
                            .in_aruser  (tmp_aruser),
                            .in_arsize  (tmp_arsize),
