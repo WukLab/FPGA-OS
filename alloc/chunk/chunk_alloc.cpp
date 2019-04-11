@@ -1,42 +1,38 @@
 #include "chunk_alloc.h"
 
-Chunk_alloc::Chunk_alloc()
-{
-#pragma HLS DATA_PACK variable=chunk_bitmap
-	chunk_bitmap = 0;
-}
 
-void
-Chunk_alloc::handler(hls::stream<sysmmu_alloc_if>& alloc, hls::stream<sysmmu_alloc_ret_if>& alloc_ret,
-		     hls::stream<struct sysmmu_ctrl_if>& ctrl, ap_uint<1>& ctrl_ret, ap_uint<1>* stat)
+static ap_uint<TABLE_SIZE> chunk_bitmap = 0;
+
+void handler(hls::stream<sysmmu_alloc_if>& alloc,
+	     hls::stream<sysmmu_alloc_ret_if>& alloc_ret,
+	     hls::stream<sysmmu_ctrl_if>& ctrl,
+	     hls::stream<ap_uint<1> >& ctrl_ret)
 {
 #pragma HLS INLINE
-#pragma HLS PIPELINE
-	if (alloc.empty()) {
-		*stat = 0;
-		return;
-	}
 
-	struct sysmmu_alloc_if req = alloc.read();
+	if (alloc.empty())
+		return;
+
+	sysmmu_alloc_if req;
+	alloc.read(req);
 	switch (req.opcode) {
 	case CHUNK_ALLOC:
-		Chunk_alloc::alloc(req, alloc_ret, ctrl, ctrl_ret, stat);
+		malloc(req, alloc_ret, ctrl, ctrl_ret);
 		break;
 	case CHUNK_FREE:
-		Chunk_alloc::free(req, alloc_ret, ctrl, ctrl_ret, stat);
+		free(req, alloc_ret, ctrl, ctrl_ret);
 		break;
-	default:
-		*stat = 1;
 	}
 }
 
-void
-Chunk_alloc::alloc(struct sysmmu_alloc_if& alloc, hls::stream<sysmmu_alloc_ret_if>& alloc_ret,
-		   hls::stream<struct sysmmu_ctrl_if>& ctrl, ap_uint<1>& ctrl_ret, ap_uint<1>* stat)
+void malloc(sysmmu_alloc_if& alloc,
+	    hls::stream<sysmmu_alloc_ret_if>& alloc_ret,
+	    hls::stream<sysmmu_ctrl_if>& ctrl,
+	    hls::stream<ap_uint<1> >& ctrl_ret)
 {
-#pragma HLS PIPELINE
-	struct sysmmu_ctrl_if req;
-	struct sysmmu_alloc_ret_if ret;
+	sysmmu_ctrl_if req;
+	sysmmu_alloc_ret_if ret = {0, 1};
+	ap_uint<1> ctrl_stat;
 	ap_uint<PA_WIDTH> i;
 	for (i = 0; i < TABLE_SIZE; i++) {
 		if (!chunk_bitmap.get_bit(i)) {
@@ -49,22 +45,29 @@ Chunk_alloc::alloc(struct sysmmu_alloc_if& alloc, hls::stream<sysmmu_alloc_ret_i
 			break;
 		}
 	}
-	if (i < TABLE_SIZE && ctrl_ret == 0) {
-		ret.addr = ADDR(i, CHUNK_SHIFT);
-		alloc_ret.write(ret);
-		*stat = 0;
-	} else {
-		*stat = 1;
+
+	/* waiting for response */
+	while (i < TABLE_SIZE && ctrl_ret.empty());
+	if (i < TABLE_SIZE) {
+		ctrl_stat = ctrl_ret.read();
+		if (ctrl_stat == 0) {
+			ret.addr = ADDR(i, CHUNK_SHIFT);
+			ret.stat = 0;
+		}
 	}
+
+	/* write response whatever */
+	alloc_ret.write(ret);
 }
 
-void
-Chunk_alloc::free(struct sysmmu_alloc_if& alloc, hls::stream<sysmmu_alloc_ret_if>& alloc_ret,
-		  hls::stream<struct sysmmu_ctrl_if>& ctrl, ap_uint<1>& ctrl_ret, ap_uint<1>* stat)
+void free(sysmmu_alloc_if& alloc,
+	  hls::stream<sysmmu_alloc_ret_if>& alloc_ret,
+	  hls::stream<sysmmu_ctrl_if>& ctrl,
+	  hls::stream<ap_uint<1> >& ctrl_ret)
 {
-#pragma HLS PIPELINE
-	struct sysmmu_ctrl_if req;
-	struct sysmmu_alloc_ret_if ret;
+	sysmmu_ctrl_if req;
+	sysmmu_alloc_ret_if ret = {0, 0};
+	ap_uint<1> ctrl_stat;
 	ap_uint<TABLE_TYPE> idx = CHUNK_IDX(alloc.addr);
 
 	if (chunk_bitmap.get_bit(idx)) {
@@ -73,16 +76,21 @@ Chunk_alloc::free(struct sysmmu_alloc_if& alloc, hls::stream<sysmmu_alloc_ret_if
 		req.pid = alloc.pid;
 		req.rw = alloc.rw;
 		ctrl.write(req);
+
+		/* waiting for response */
+		while (ctrl_ret.empty());
+
+		ctrl_stat = ctrl_ret.read();
+		if (ctrl_stat == 0) {
+			chunk_bitmap.set_bit(idx, 0);
+			ret.stat = 0;
+		} else {
+			ret.stat = 1;
+		}
 	} else {
-		*stat = 1;
+		ret.stat = 1;
 	}
 
-	if (ctrl_ret == 0) {
-		chunk_bitmap.set_bit(idx, 0);
-		ret.addr = alloc.addr;
-		alloc_ret.write(ret);
-		*stat = 0;
-	} else {
-		*stat = 1;
-	}
+	/* write response whatever */
+	alloc_ret.write(ret);
 }

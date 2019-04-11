@@ -85,6 +85,7 @@ struct sysmmu_alloc_ret_if {
 	 * addr: address assigned, useless when request is FREE
 	 */
 	ap_uint<PA_WIDTH>	addr;
+	ap_uint<1>		stat;
 };
 
 struct sysmmu_ctrl_if {
@@ -103,12 +104,17 @@ struct sysmmu_ctrl_if {
 	ap_uint<TABLE_TYPE>	idx;
 };
 
-void chunk_alloc(hls::stream<sysmmu_alloc_if>& alloc, hls::stream<sysmmu_alloc_ret_if>& alloc_ret,
-		 hls::stream<sysmmu_ctrl_if>& ctrl, ap_uint<1>& ctrl_ret, ap_uint<1>* stat);
+void chunk_alloc(hls::stream<sysmmu_alloc_if>& alloc,
+		 hls::stream<sysmmu_alloc_ret_if>& alloc_ret,
+		 hls::stream<sysmmu_ctrl_if>& ctrl,
+		 hls::stream<ap_uint<1> >& ctrl_ret);
 
 void
-mm_segment_top(hls::stream<sysmmu_ctrl_if>& ctrl, hls::stream<ap_uint<1> >& ctrl_stat,
-	       hls::stream<sysmmu_indata>& rd_in, hls::stream<sysmmu_outdata>& rd_out,
-	       hls::stream<sysmmu_indata>& wr_in, hls::stream<sysmmu_outdata>& wr_out);
+mm_segment_top(hls::stream<sysmmu_ctrl_if>& ctrl,
+	       hls::stream<ap_uint<1> >& ctrl_stat,
+	       hls::stream<sysmmu_indata>& rd_in,
+	       hls::stream<sysmmu_outdata>& rd_out,
+	       hls::stream<sysmmu_indata>& wr_in,
+	       hls::stream<sysmmu_outdata>& wr_out);
 
 #endif /* _LEGO_FPGA_AXIS_SYSMMU_ */

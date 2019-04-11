@@ -37,7 +37,7 @@ open_solution -reset solution1
 #
 set_part {xc7a100tcsg324-1}
 create_clock -period 8 -name default
-config_rtl  -encoding onehot -reset control  -reset_level high  -vivado_impl_strategy default -vivado_phys_opt place -vivado_synth_design_args {-directive sdx_optimization_effort_high} -vivado_synth_strategy default
+config_rtl  -encoding onehot -reset all -reset_level low -vivado_impl_strategy default -vivado_phys_opt place -vivado_synth_design_args {-directive sdx_optimization_effort_high} -vivado_synth_strategy default
 set_clock_uncertainty 1.25
 
 # Simulate the C code 
