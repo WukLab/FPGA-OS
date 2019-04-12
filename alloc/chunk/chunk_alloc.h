@@ -7,23 +7,19 @@
 
 #include <fpga/axis_sysmmu.h>
 
-class Chunk_alloc
-{
-public:
-	Chunk_alloc();
-	~Chunk_alloc() {}
+void handler(hls::stream<sysmmu_alloc_if>& alloc,
+	     hls::stream<sysmmu_alloc_ret_if>& alloc_ret,
+	     hls::stream<sysmmu_ctrl_if>& ctrl,
+	     hls::stream<ap_uint<1> >& ctrl_ret);
 
-	void handler(hls::stream<sysmmu_alloc_if>& alloc, hls::stream<sysmmu_alloc_ret_if>& alloc_ret,
-		     hls::stream<struct sysmmu_ctrl_if>& ctrl, ap_uint<1>& ctrl_ret, ap_uint<1>* stat);
+void malloc(sysmmu_alloc_if& alloc,
+	    hls::stream<sysmmu_alloc_ret_if>& alloc_ret,
+	    hls::stream<sysmmu_ctrl_if>& ctrl,
+	    hls::stream<ap_uint<1> >& ctrl_ret);
 
-private:
-	ap_uint<TABLE_SIZE> chunk_bitmap;
-
-	void alloc(struct sysmmu_alloc_if& alloc, hls::stream<sysmmu_alloc_ret_if>& alloc_ret,
-		   hls::stream<struct sysmmu_ctrl_if>& ctrl, ap_uint<1>& ctrl_ret, ap_uint<1>* stat);
-	void free(struct sysmmu_alloc_if& alloc, hls::stream<sysmmu_alloc_ret_if>& alloc_ret,
-		  hls::stream<struct sysmmu_ctrl_if>& ctrl, ap_uint<1>& ctrl_ret, ap_uint<1>* stat);
-};
-
+void free(sysmmu_alloc_if& alloc,
+	  hls::stream<sysmmu_alloc_ret_if>& alloc_ret,
+	  hls::stream<sysmmu_ctrl_if>& ctrl,
+	  hls::stream<ap_uint<1> >& ctrl_ret);
 
 #endif /* _CHUNK_ALLOC_H_ */

@@ -3,20 +3,17 @@
 ## Interface
 
 - Relevant Files:
-  - `include/fpga/axis_sysmmu_alloc.h`: sysmmu allocation hls stream interface
-  - `include/fpga/sysmmu_type.h`: system mmu opcode
-  - `include/fpga/mem_common.h`: return status
+  - `include/fpga/axis_sysmmu.h`: sysmmu allocation hls stream interface and opcode
 
 
 - Sample Code:
 ```c++
     void chunk_allocator_caller()
     {
-        axis_sysmmu_alloc alloc;
-        axis_sysmmu_alloc_ret alloc_ret;
+        hls::stream<sysmmu_alloc_if> alloc;
+        hls::stream<sysmmu_alloc_ret_if> alloc_ret;
         sysmmu_alloc_if req;
         sysmmu_alloc_ret_if ret;
-        RET_STATUS stat;
 
         /*
         * replace capitalized part with your own
@@ -25,13 +22,16 @@
         req.idx = CHUNK_IDX(addr);
         req.pid = PID;
         req.rw = RW;
-        ctrlpath.write(req); // send request to sysmmu
+        alloc.write(req); // send request to sysmmu
 
-        if (stat == SUCCESS) {
-            // if your request is alloc, you can read from alloc_ret
-            // if your request is free, you are good to go
+        /* read return */
+        while (alloc_ret.empty());
+        ret = alloc_ret.read();
+
+        if (ret == 0) {
+            // request success
         } else {
-            // out of memory
+            // out of memory or some internal error
         }
     }
 
