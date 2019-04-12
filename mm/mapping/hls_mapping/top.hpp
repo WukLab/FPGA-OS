@@ -15,8 +15,9 @@ using namespace hls;
 #define PAGING_VIRTUAL_WIDTH	32
 #define PAGING_PHYSICAL_WIDTH	32
 
-#define MEM_BUS_WIDTH	512
-#define MEM_BUS_TKEEP	64
+#define MEM_BUS_WIDTH		512
+#define NR_BYTES_MEM_BUS	(MEM_BUS_WIDTH/8)
+#define MEM_BUS_TKEEP		NR_BYTES_MEM_BUS
 
 /*
  * XXX
@@ -27,11 +28,12 @@ using namespace hls;
 
 #define MAPPING_REQUEST_READ		(0)
 #define MAPPING_REQUEST_WRITE		(1)
+#define MAPPING_SET			(2)
 
 struct paging_request {
 	ap_uint<PAGING_VIRTUAL_WIDTH>	address;
-	ap_uint<PAGING_VIRTUAL_WIDTH>	length;	
-	ap_uint<1>			opcode;
+	ap_uint<PAGING_VIRTUAL_WIDTH>	length;
+	ap_uint<8>			opcode;
 };
 
 struct paging_reply {
@@ -39,18 +41,36 @@ struct paging_reply {
 	ap_uint<1>			status;
 };
 
-#define PI_STATE_HIT	1
-#define PI_STATE_MISS	2
+#define PI_STATE_HIT_BRAM	(0x0001)
+#define PI_STATE_HIT_DRAM	(0x0010)
+#define PI_STATE_MISS_BRAM	(0x0100)
+#define PI_STATE_MISS_DRAM	(0x1000)
+
+#define PI_OPCODE_GET		1
+#define PI_OPCODE_SET		2
+#define PI_OPCODE_UNKNOWN	3
+
+#define PI_CHANNEL_READ		0
+#define PI_CHANNEL_WRITE	1
 
 struct pipeline_info {
 	/* From input */
 	ap_uint<PAGING_VIRTUAL_WIDTH>		input;
 	ap_uint<PAGING_VIRTUAL_WIDTH>		length;
-	ap_uint<1>				opcode;
+	ap_uint<8>				opcode;
+	ap_uint<1>				channel;
 
-	/* Intermidiate info during processing */
+	/*
+	 * @hash: the computed hash value, used to index array.
+	 * @slot: matched slot number in the BRAM hash bucket
+	 * @slot: matched slot number in the DRAM hash bucket
+	 */
 	ap_uint<NR_BITS_HASH>			hash;
-	ap_uint<8>				pi_state;
+	ap_uint<NR_BITS_BUCKET>			hb_bram;
+	ap_uint<NR_BITS_BUCKET>			hb_dram;
+	int					slot;
+	int					slot_dram;
+	int					pi_state;
 
 	/* For output */
 	ap_uint<PAGING_PHYSICAL_WIDTH>		output;

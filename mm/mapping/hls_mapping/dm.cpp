@@ -9,8 +9,17 @@
 #include "top.hpp"
 #include "dm.hpp"
 
-
-#define MAPPING_TABLE_ADDRESS_BASE	(0x1000)
+/*
+ * For both DRAM and BRAM, the @address filed of mem_cmd
+ * is the index to the corresponding hashtable. And the
+ * @length is also 1, because we only read one bucket.
+ *
+ * For BRAM: we just pass the index out to our HLS-based
+ * BRAM hashtable, which will use it correctly.
+ *
+ * For DRAM: we need to transate the index to real DRAM
+ * address using the size of hash bucket.
+ */
 
 /*
  * I @mem_read_cmd: memory read commands from this IP
@@ -37,13 +46,14 @@ void DRAM_rd_pipe(stream<struct mem_cmd> *mem_read_cmd,
 
 		in_cmd = mem_read_cmd->read();
 
-		out_cmd.btt = in_cmd.length;
+		out_cmd.btt = NR_BYTES_MEM_BUS;
 		out_cmd.type = DM_CMD_TYPE_INCR;
 		out_cmd.dsa = 0;
 		out_cmd.eof = 1;
 		out_cmd.drr = 0;
-		out_cmd.start_address = in_cmd.address + MAPPING_TABLE_ADDRESS_BASE;
 		out_cmd.rsvd = 0;
+		out_cmd.start_address = (in_cmd.address * NR_BYTES_MEM_BUS) +
+					MAPPING_TABLE_ADDRESS_BASE;
 		dm_read_cmd->write(out_cmd);
 	}
 
@@ -81,13 +91,14 @@ void DRAM_wr_pipe(stream<struct mem_cmd> *mem_write_cmd,
 
 		in_cmd = mem_write_cmd->read();
 
-		out_cmd.btt = in_cmd.length;
+		out_cmd.btt = NR_BYTES_MEM_BUS;
 		out_cmd.type = DM_CMD_TYPE_INCR;
 		out_cmd.dsa = 0;
 		out_cmd.eof = 1;
 		out_cmd.drr = 0;
-		out_cmd.start_address = in_cmd.address + MAPPING_TABLE_ADDRESS_BASE;
 		out_cmd.rsvd = 0;
+		out_cmd.start_address = (in_cmd.address * NR_BYTES_MEM_BUS) +
+					MAPPING_TABLE_ADDRESS_BASE;
 		dm_write_cmd->write(out_cmd);
 	}
 
@@ -106,6 +117,7 @@ void DRAM_wr_pipe(stream<struct mem_cmd> *mem_write_cmd,
 		status = dm_write_status->read();
 	}
 }
+
 /*
  * I @mem_read_cmd: memory read commands from this IP
  * O @mem_read_data: internal read data buffer

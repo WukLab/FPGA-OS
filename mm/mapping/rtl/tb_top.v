@@ -132,12 +132,17 @@ parameter CLK_PERIOD = 3333333;
 		#1666666.667 sysclk_300_clk_ref = ~sysclk_300_clk_ref;
 
 	integer infd, finished_send, req_type;
+	integer nr_tx, nr_rx;
+
+	integer nr_to_send = 5;
 
 	// Send datapath requests
 	initial begin
 		finished_send = 0;
 		infd = 0;
 		req_type = 0;
+		nr_tx = 0;
+		nr_rx = 0;
 
 		out_read_tready = 1;
 		out_write_tready = 1;
@@ -154,11 +159,14 @@ parameter CLK_PERIOD = 3333333;
 		@(posedge sysclk_300_clk_ref);
 
 		while (!finished_send) begin
-			$fscanf(infd, "%d\n", req_type);
+			//$fscanf(infd, "%d\n", req_type);
+			req_type = 0;
 			if (req_type == 0) begin
 				// Read request
 				if (in_read_tready) begin
-					$fscanf(infd, "%h\n", in_read_tdata);
+					//$fscanf(infd, "%h\n", in_read_tdata);
+					in_read_tdata = 0;
+
 					in_read_tvalid = 1;
 				end else begin
 					in_read_tvalid = 0;
@@ -172,8 +180,11 @@ parameter CLK_PERIOD = 3333333;
 					in_write_tvalid = 0;
 				end
 			end
+			nr_tx = nr_tx + 1;
 
-			if ($feof(infd)) begin
+			nr_to_send = nr_to_send - 1;
+
+			if (nr_to_send == 0) begin
 				finished_send = 1;
 				$display("Finish sending.");
 			end
@@ -182,6 +193,28 @@ parameter CLK_PERIOD = 3333333;
 		  	in_read_tvalid = 0;
 		  	in_write_tvalid = 0;
 		end
+	end
+
+	initial begin
+		wait(enable_send == 1'b1);
+		@(posedge sysclk_300_clk_ref);
+
+		while (1) begin
+			if (out_read_tvalid) begin
+				nr_rx = nr_rx + 1;
+				$display("nr_rx: %d", nr_rx);
+				#CLK_PERIOD;
+			end else begin
+				#CLK_PERIOD;
+			end
+		end
+	end
+
+	initial begin
+		wait(finished_send == 1);
+		wait(nr_tx == nr_rx);
+		//$display("DONE: nr_tx: %d nr_rx: %d", nr_tx, nr_rx);
+		$finish;
 	end
 
 endmodule;

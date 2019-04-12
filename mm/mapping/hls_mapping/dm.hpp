@@ -9,6 +9,8 @@
 
 using namespace hls;
 
+#define MAPPING_TABLE_ADDRESS_BASE	(0)
+
 /*
  * This is the AXI-Stream format required by datamover.
  * The width of data and keep can be configured though.

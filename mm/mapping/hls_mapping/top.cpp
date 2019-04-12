@@ -18,8 +18,10 @@ void buffer_req_read(stream<struct paging_request> *in,
 	struct paging_request req;
 	if (!in->empty()) {
 		req = in->read();
-		req.opcode = MAPPING_REQUEST_READ;
 		out->write(req);
+		/*
+		 * Don't change it's opcode at this point.
+		 */
 	}
 }
 
