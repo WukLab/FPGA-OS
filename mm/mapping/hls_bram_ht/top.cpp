@@ -6,6 +6,7 @@
 #include <ap_int.h>
 #include <hls_stream.h>
 #include <fpga/kernel.h>
+#include <fpga/axis_mapping.h>
 #include "../hls_mapping/hash.hpp"
 #include "../hls_mapping/dm.hpp"
 

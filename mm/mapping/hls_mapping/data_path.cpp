@@ -19,13 +19,13 @@ using namespace hls;
  * Forge incoming requets into internal pipeline
  * words. Should at the top level.
  */
-void remux(stream<struct paging_request> *rd,
-	   stream<struct paging_request> *wr,
+void remux(stream<struct mapping_request> *rd,
+	   stream<struct mapping_request> *wr,
 	   stream<struct pipeline_info> *out)
 {
 #pragma HLS PIPELINE
 
-	struct paging_request req = { 0 };
+	struct mapping_request req = { 0 };
 
 	if (!rd->empty()) {
 		struct pipeline_info info = { 0 };
@@ -364,12 +364,12 @@ void fill_S1(stream<struct pipeline_info>	*pi_in,
 }
 
 void demux(stream<struct pipeline_info> *pi_in,
-	   stream<struct paging_reply> *rd_reply,
-	   stream<struct paging_reply> *wr_reply)
+	   stream<struct mapping_reply> *rd_reply,
+	   stream<struct mapping_reply> *wr_reply)
 {
 #pragma HLS PIPELINE
 
-	struct paging_reply reply = { 0 };
+	struct mapping_reply reply = { 0 };
 	struct pipeline_info pi = { 0 };
 
 	if (!pi_in->empty()) {
@@ -394,10 +394,10 @@ void demux(stream<struct pipeline_info> *pi_in,
  * O @write_cmd: commands to do memory write
  * O @write_data: data to write
  */
-void data_path(stream<struct paging_request> *rd_request,
-	       stream<struct paging_request> *wr_request,
-	       stream<struct paging_reply> *rd_reply,
-	       stream<struct paging_reply> *wr_reply,
+void data_path(stream<struct mapping_request> *rd_request,
+	       stream<struct mapping_request> *wr_request,
+	       stream<struct mapping_reply> *rd_reply,
+	       stream<struct mapping_reply> *wr_reply,
 
 	       stream<struct mem_cmd>		*DRAM_rd_cmd,
 	       stream<struct mem_cmd>		*DRAM_wr_cmd,

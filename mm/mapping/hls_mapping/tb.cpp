@@ -20,8 +20,8 @@ using namespace hls;
 
 int main(void)
 {
-	stream<struct paging_request> in_read, in_write;
-	stream<struct paging_reply> out_read, out_write;
+	stream<struct mapping_request> in_read, in_write;
+	stream<struct mapping_reply> out_read, out_write;
 	stream<struct dm_cmd> DRAM_rd_cmd("DRAM_rd_cmd"), DRAM_wr_cmd("DRAM_wr_cmd");
 	stream<struct dm_cmd> BRAM_rd_cmd("BRAM_rd_cmd"), BRAM_wr_cmd("BRAM_wr_cmd");
 	stream<struct axis_mem> DRAM_rd_data("DRAM_rd_data"), DRAM_wr_data("DRAM_wr_data");
@@ -30,7 +30,7 @@ int main(void)
 	stream<ap_uint<8> > BRAM_rd_status("BRAM_rd_status"), BRAM_wr_status("BRAM_wr_status");
 	int _cycle, k, j;
 
-	struct paging_request _in_read, _in_write;
+	struct mapping_request _in_read, _in_write;
 
 	struct hash_bucket *ht_bram;
 	struct hash_bucket *ht_dram;
@@ -81,7 +81,7 @@ int main(void)
 			   &BRAM_rd_status, &BRAM_wr_status);
 
 		if (!out_read.empty()) {
-			struct paging_reply out = { 0 };
+			struct mapping_reply out = { 0 };
 			out = out_read.read();
 
 			dp("[Cycle %3d] Output (RD): [ouput: %#x status: %#x]\n", _cycle,
@@ -89,7 +89,7 @@ int main(void)
 		}
 
 		if (!out_write.empty()) {
-			struct paging_reply out = { 0 };
+			struct mapping_reply out = { 0 };
 			out = out_write.read();
 
 			dp("[Cycle %3d] Output (WR): [ouput: %#x status: %#x]\n", _cycle,

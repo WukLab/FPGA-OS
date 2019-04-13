@@ -9,13 +9,13 @@
 #include "top.hpp"
 #include "dm.hpp"
 
-void buffer_req_read(stream<struct paging_request> *in,
-		     stream<struct paging_request> *out)
+void buffer_req_read(stream<struct mapping_request> *in,
+		     stream<struct mapping_request> *out)
 {
 #pragma HLS PIPELINE
 #pragma HLS INLINE off
 
-	struct paging_request req;
+	struct mapping_request req;
 	if (!in->empty()) {
 		req = in->read();
 		out->write(req);
@@ -25,13 +25,13 @@ void buffer_req_read(stream<struct paging_request> *in,
 	}
 }
 
-void buffer_req_write(stream<struct paging_request> *in,
-		      stream<struct paging_request> *out)
+void buffer_req_write(stream<struct mapping_request> *in,
+		      stream<struct mapping_request> *out)
 {
 #pragma HLS PIPELINE
 #pragma HLS INLINE off
 
-	struct paging_request req;
+	struct mapping_request req;
 	if (!in->empty()) {
 		req = in->read();
 		req.opcode = MAPPING_REQUEST_WRITE;
@@ -39,10 +39,10 @@ void buffer_req_write(stream<struct paging_request> *in,
 	}
 }
 
-void paging_top(hls::stream<struct paging_request>	*in_read,
-	        hls::stream<struct paging_request>	*in_write,
-	        hls::stream<struct paging_reply>	*out_read,
-	        hls::stream<struct paging_reply>	*out_write,
+void paging_top(hls::stream<struct mapping_request>	*in_read,
+	        hls::stream<struct mapping_request>	*in_write,
+	        hls::stream<struct mapping_reply>	*out_read,
+	        hls::stream<struct mapping_reply>	*out_write,
 
 		hls::stream<struct dm_cmd>		*DRAM_rd_cmd,
 		hls::stream<struct dm_cmd>		*DRAM_wr_cmd,
@@ -89,8 +89,8 @@ void paging_top(hls::stream<struct paging_request>	*in_read,
 #pragma HLS DATA_PACK variable=BRAM_rd_cmd
 #pragma HLS DATA_PACK variable=BRAM_wr_cmd
 
-	static stream<struct paging_request>	fifo_read_req;
-	static stream<struct paging_request>	fifo_write_req;
+	static stream<struct mapping_request>	fifo_read_req;
+	static stream<struct mapping_request>	fifo_write_req;
 #pragma HLS STREAM variable=fifo_read_req	depth=256
 #pragma HLS STREAM variable=fifo_write_req	depth=256
 
