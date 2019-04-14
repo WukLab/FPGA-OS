@@ -23,7 +23,7 @@ void rdm_mapping(stream<struct net_axis_512> *from_net,
 		 stream<struct mapping_request> *map_req,
 		 stream<struct mapping_reply> *map_ret);
 
-#define NR_UNITS_PER_PKT	(4)
+#define NR_UNITS_PER_PKT	(2)
 #define NR_PACKETS		(3)
 #define BUF_SIZE		(1024)
 
@@ -81,7 +81,7 @@ next_pkt:
 			}
 
 			/* The first packet: WRITE */
-			if (i == 0) {
+			if (i == 10000) {
 				/* The first unit is eth/ip/udp/lego header */
 				if (j == 0) {
 					tmp.data(47, 0) = 0xAABBCCDDEEFF;
@@ -95,7 +95,7 @@ next_pkt:
 			}
 
 			/* The second packet: READ */
-			if (i == 1) {
+			if (i == 1 || i == 0) {
 				/* The first unit is eth/ip/udp/lego header */
 				if (j == 0) {
 					tmp.data(47, 0) = 0xAABBCCDDEEFF;
@@ -155,7 +155,7 @@ next_pkt:
 				req.order.to_uint());
 
 			ret.stat = 0;
-			ret.addr = 0x100;
+			ret.addr = 0x101;
 			alloc_ret.write(ret);
 		}
 

@@ -34,7 +34,9 @@ void DRAM_rd_pipe(stream<struct mem_cmd> *mem_read_cmd,
 		  stream<struct axis_mem> *dm_read_data,
 		  stream<ap_uint<8> > *dm_read_status)
 {
-#pragma HLS pipeline II=1 enable_flush
+#pragma HLS PIPELINE
+#pragma HLS INLINE
+#pragma HLS INTERFACE ap_ctrl_none port=return
 
 	/*
 	 * Read commands from internal FIFO,
@@ -83,7 +85,9 @@ void DRAM_wr_pipe(stream<struct mem_cmd> *mem_write_cmd,
 		   stream<struct axis_mem> *dm_write_data,
 		   stream<ap_uint<8> > *dm_write_status)
 {
-#pragma HLS PIPELINE II=1 enable_flush
+#pragma HLS PIPELINE
+#pragma HLS INLINE
+#pragma HLS INTERFACE ap_ctrl_none port=return
 
 	if (!mem_write_cmd->empty() && !dm_write_cmd->full()) {
 		struct mem_cmd in_cmd;
@@ -131,7 +135,9 @@ void BRAM_rd_pipe(stream<struct mem_cmd> *mem_read_cmd,
 		  stream<struct axis_mem> *dm_read_data,
 		  stream<ap_uint<8> > *dm_read_status)
 {
-#pragma HLS pipeline II=1 enable_flush
+#pragma HLS PIPELINE
+#pragma HLS INLINE
+#pragma HLS INTERFACE ap_ctrl_none port=return
 
 	/*
 	 * Read commands from internal FIFO,
@@ -179,7 +185,9 @@ void BRAM_wr_pipe(stream<struct mem_cmd> *mem_write_cmd,
 		   stream<struct axis_mem> *dm_write_data,
 		   stream<ap_uint<8> > *dm_write_status)
 {
-#pragma HLS PIPELINE II=1 enable_flush
+#pragma HLS PIPELINE
+#pragma HLS INLINE
+#pragma HLS INTERFACE ap_ctrl_none port=return
 
 	if (!mem_write_cmd->empty() && !dm_write_cmd->full()) {
 		struct mem_cmd in_cmd;

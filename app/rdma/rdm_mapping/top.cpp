@@ -74,13 +74,31 @@ static void parser(stream<struct net_axis_512> *d_in,
 	};
 }
 
+/*
+ * A real simple native virtual address
+ * allocation function.
+ */
+#define RDM_VA_PAGE_SIZE	(0x1000)
+static unsigned long rdm_alloc_va(unsigned long length)
+{
+#pragma HLS INLINE
+	static unsigned long __alloc_va = 0x1000;
+	unsigned long ret;
+
+	ret = __alloc_va;
+	__alloc_va += round_up(length, RDM_VA_PAGE_SIZE);
+
+	PR("len: %x, ret: %x, __alloc_va: %x\n", length, ret, __alloc_va);
+	return ret;
+}
+
 enum ALLOC_STATE {
 	ALLOC_IDLE,
 	ALLOC_WRITE_STREAM,
 	ALLOC_WAIT_ALLOC,
 };
 
-static void alloc(stream<struct pipeline_info> *pi_in,
+static void alloc_address(stream<struct pipeline_info> *pi_in,
 		  stream<struct pipeline_info> *pi_out,
 		  stream<struct net_axis_512> *d_in,
 		  stream<struct net_axis_512> *d_out,
@@ -105,7 +123,7 @@ static void alloc(stream<struct pipeline_info> *pi_in,
 		if (pi.opcode == APP_RDMA_OPCODE_ALLOC) {
 			struct buddy_alloc_if req;
 
-			// TODO calculate order based on length
+			// XXX calculate order based on length
 			req.order = 1; 
 
 			req.addr = 0;
@@ -139,16 +157,11 @@ static void alloc(stream<struct pipeline_info> *pi_in,
 			if (ret.stat == 0) {
 				pi.alloc_status = PI_ALLOC_SUCCEED;
 				pi.alloc_pa = ret.addr.to_uint();
-
-				/*
-				 * XXX
-				 * Buddy gave us PA
-				 * We still need to allocate VA by ourself..
-				 */
-				pi.alloc_va = 0;
+				pi.alloc_va = rdm_alloc_va(pi.length);
 			} else {
 				pi.alloc_status = PI_ALLOC_FAIL;
 				pi.alloc_pa = 0;
+				pi.alloc_va = 0;
 			}
 			pi_out->write(pi);
 			state = ALLOC_IDLE;
@@ -191,9 +204,21 @@ static void map(stream<struct pipeline_info> *pi_in,
 		 * Alloc will use SET, read/write use GET.
 		 */
 		if (pi.opcode == APP_RDMA_OPCODE_ALLOC) {
-			req.address = pi.va;
-			req.length = pi.pa;
-			req.opcode = MAPPING_SET;
+			if (pi.alloc_status == PI_ALLOC_SUCCEED) {
+				/*
+				 * [key, value] = [va, pa]
+				 */
+				req.address = pi.alloc_va;
+				req.length = pi.alloc_pa;
+				req.opcode = MAPPING_SET;
+			} else {
+				/*
+				 * If allocation already failed,
+				 * no need to do SET.
+				 */
+				pi_out->write(pi);
+				break;
+			}
 		} else {
 			req.address = pi.va;
 			req.length = 0;
@@ -273,8 +298,12 @@ static void access(stream<struct pipeline_info> *pi_in,
 				pi.app_header.data(7, 0) = APP_RDMA_OPCODE_REPLY_ALLOC;
 				pi.app_header.data(71, 8) = pi.alloc_va;
 				pi.app_header.data(135, 72) = pi.alloc_pa;
+				PR("alloc_va: %#lx, alloc_pa: %#lx\n",
+					pi.app_header.data(71,8).to_uint(), pi.app_header.data(135,72).to_uint());
 			} else {
 				pi.app_header.data(7, 0) = APP_RDMA_OPCODE_REPLY_ALLOC_ERROR;
+				pi.app_header.data(71, 8) = 0;
+				pi.app_header.data(135, 72) = 0;
 			}
 			pi.app_header.last = 1;
 			d_out->write(pi.app_header);
@@ -313,7 +342,7 @@ static void access(stream<struct pipeline_info> *pi_in,
 		break;
 	case ACCESS_READ:
 		d.keep(NR_BYTES_AXIS_512 - 1, 0) = 0xffffffffffffffff;
-		d.data = dram[offset + pi.pa_index];
+		data = dram[offset + pi.pa_index];
 		offset++;
 
 		if (offset >= pi.nr_units) {
@@ -347,6 +376,18 @@ static void reply(stream<struct net_axis_512> *to_net,
 	}
 }
 
+void buffering(stream<struct net_axis_512> *d_in,
+	       stream<struct net_axis_512> *d_out)
+{
+#pragma HLS INLINE off
+#pragma HLS PIPELINE
+	if (!d_in->empty()) {
+		struct net_axis_512 d;
+		d = d_in->read();
+		d_out->write(d);
+	}
+}
+
 void rdm_mapping(stream<struct net_axis_512> *from_net,
 	         stream<struct net_axis_512> *to_net,
 	         ap_uint<512> *dram,
@@ -377,24 +418,49 @@ void rdm_mapping(stream<struct net_axis_512> *from_net,
 	static stream<struct pipeline_info> PI_map_to_access("PI_map_to_access");
 	static stream<struct pipeline_info> PI_access_to_reply("PI_access_to_reply");
 
-	static stream<struct net_axis_512> D_parser_to_alloc("D_parser_to_alloc");
-	static stream<struct net_axis_512> D_alloc_to_map("D_alloc_to_map");
-	static stream<struct net_axis_512> D_map_to_access("D_map_to_access");
-	static stream<struct net_axis_512> D_access_to_reply("D_access_to_reply");
-
 #pragma HLS STREAM variable=PI_parser_to_alloc	depth=256
 #pragma HLS STREAM variable=PI_alloc_to_map	depth=256
 #pragma HLS STREAM variable=PI_map_to_access	depth=256
 #pragma HLS STREAM variable=PI_access_to_reply	depth=256
 
+#if 0
+#pragma HLS DATA_PACK variable=PI_parser_to_alloc
+#pragma HLS DATA_PACK variable=PI_alloc_to_map   
+#pragma HLS DATA_PACK variable=PI_map_to_access  
+#pragma HLS DATA_PACK variable=PI_access_to_reply
+#endif
+
+	static stream<struct net_axis_512> D_buffer_to_parser("D_buffer_to_parser");
+	static stream<struct net_axis_512> D_parser_to_alloc("D_parser_to_alloc");
+	static stream<struct net_axis_512> D_alloc_to_map("D_alloc_to_map");
+	static stream<struct net_axis_512> D_map_to_access("D_map_to_access");
+	static stream<struct net_axis_512> D_access_to_reply("D_access_to_reply");
+
+#pragma HLS STREAM variable=D_buffer_to_parser	depth=256
 #pragma HLS STREAM variable=D_parser_to_alloc	depth=256
 #pragma HLS STREAM variable=D_alloc_to_map	depth=256
 #pragma HLS STREAM variable=D_map_to_access	depth=256
 #pragma HLS STREAM variable=D_access_to_reply	depth=256
 
-	parser(from_net, &D_parser_to_alloc, &PI_parser_to_alloc);
+#if 0
+#pragma HLS DATA_PACK variable=D_buffer_to_parser
+#pragma HLS DATA_PACK variable=D_parser_to_alloc
+#pragma HLS DATA_PACK variable=D_alloc_to_map
+#pragma HLS DATA_PACK variable=D_map_to_access
+#pragma HLS DATA_PACK variable=D_access_to_reply
+#endif
 
-	alloc(&PI_parser_to_alloc, &PI_alloc_to_map, &D_parser_to_alloc, &D_alloc_to_map,
+	buffering(from_net, &D_buffer_to_parser);
+
+	parser(&D_buffer_to_parser, &D_parser_to_alloc, &PI_parser_to_alloc);
+
+	/*
+	 * The original name of this function is simply alloc().
+	 * But Vivado Simulation will complain it fail to find
+	 * all of io ports of this func.. After changing to alloc_address()
+	 * it passed.. isn't this some bug of Vivado?
+	 */
+	alloc_address(&PI_parser_to_alloc, &PI_alloc_to_map, &D_parser_to_alloc, &D_alloc_to_map,
 		alloc_req, alloc_ret);
 
 	map(&PI_alloc_to_map, &PI_map_to_access, &D_alloc_to_map, &D_map_to_access,

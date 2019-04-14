@@ -18,5 +18,6 @@ void buddy_allocator(hls::stream<struct buddy_alloc_if>& alloc,
 #pragma HLS INTERFACE axis register port=alloc_ret
 #pragma HLS INTERFACE m_axi depth=AXI_DEPTH port=dram offset=off
 
-	buddy.handler(alloc, alloc_ret, dram);
+	if (!alloc.empty())
+		buddy.handler(alloc, alloc_ret, dram);
 }

@@ -1,15 +1,14 @@
 /*
- * This testbench is used to verify the whole KVS block diagram design.
- * Network inputs are read from a file and network outputs are saved as well.
+ * This testbench is used to verify the whole RDM BD
  */
 
 `timescale 1fs/1fs
 
-module KVS_BD_tb;
+module RDM_BD_tb;
 
 // Change this to absolute path
-parameter IN_FILEPATH="./input.txt";
-parameter OUT_FILEPATH="./output.txt";
+parameter IN_FILEPATH="/root/ys/FPGA/system/vcu108/tb/rdm/input.txt";
+parameter OUT_FILEPATH="/root/ys/FPGA/system/vcu108/tb/rdm/output.txt";
 
 // 390MHZ for network
 parameter CLK_PERIOD = 2560000;
@@ -18,7 +17,6 @@ parameter TIMEOUT_THRESH = 100000000;
 	wire		default_sysclk_300_clk_p;
 	wire		default_sysclk_300_clk_n;
     
-	reg         	sysclk_150_clk_ref;
 	reg         	sysclk_300_clk_ref;
 	reg         	sysclk_390_clk_ref;
 
@@ -38,7 +36,6 @@ parameter TIMEOUT_THRESH = 100000000;
 	wire        ddr4_reset_n;
 
 	reg             sys_reset;
-	reg		sysclk_150_rst_n;
 	reg		sysclk_390_rst_n;
 
 	reg [63:0] tx_tdata;
@@ -61,7 +58,7 @@ parameter TIMEOUT_THRESH = 100000000;
 
 	reg enable_send;
 
-	LegoFPGA_axis64_KVS	DUT (
+	LegoFPGA_axis_RDM_mapping	DUT (
 		// DDR4 MC
 		.C0_SYS_CLK_0_clk_n		(default_sysclk_300_clk_n),
 		.C0_SYS_CLK_0_clk_p		(default_sysclk_300_clk_p),
@@ -71,10 +68,6 @@ parameter TIMEOUT_THRESH = 100000000;
 
 		.sys_rst			(sys_reset),
 		.mac_ready			(1'b1),
-
-		// General logic
-		.clk_150			(sysclk_150_clk_ref),
-		.clk_150_rst_n			(sysclk_150_rst_n),
 
 		.from_net_clk_390		(sysclk_390_clk_ref),
 		.from_net_clk_390_rst_n		(sysclk_390_rst_n),
@@ -135,10 +128,8 @@ parameter TIMEOUT_THRESH = 100000000;
 	initial begin
 		mc_enable_model = 1'b0;
 		enable_send = 1'b0;
-		sysclk_150_rst_n = 1'b1;
 		sysclk_390_rst_n = 1'b1;
 
-		sysclk_150_clk_ref = 1;
 		sysclk_300_clk_ref = 1;
 		sysclk_390_clk_ref = 1;
 
@@ -158,13 +149,6 @@ parameter TIMEOUT_THRESH = 100000000;
 		wait(mc_init_calib_complete == 1'b1);
 		wait(mc_ddr4_ui_clk_rst_n == 1'b1);
 
-		// Reset others
-		@(posedge sysclk_150_clk_ref);
-		sysclk_150_rst_n = 0;
-		#50000000
-		@(posedge sysclk_150_clk_ref);
-                sysclk_150_rst_n = 1;
-
 	        @(posedge sysclk_390_clk_ref);
                 sysclk_390_rst_n = 0;
                 #50000000
@@ -174,10 +158,6 @@ parameter TIMEOUT_THRESH = 100000000;
 		#50000000
 		enable_send = 1'b1;
 	end
-
-	// Clock generation
-	always
-		#3333333.333 sysclk_150_clk_ref = ~sysclk_150_clk_ref;
 
 	always
 		#1666666.667 sysclk_300_clk_ref = ~sysclk_300_clk_ref;

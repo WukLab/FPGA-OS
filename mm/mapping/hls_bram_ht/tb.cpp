@@ -30,8 +30,8 @@ int main(void)
 {
 	stream<struct dm_cmd> rd_cmd, wr_cmd;
 	stream<struct axis_mem> rd_data, wr_data;
-	struct dm_cmd cmd;
-	struct axis_mem data;
+	struct dm_cmd cmd = {0};
+	struct axis_mem data = {0};
 	stream<ap_uint<8> > rd_status, wr_status;
 
 	cmd.start_address = 1;
@@ -43,9 +43,13 @@ int main(void)
 		printf("RD data: %#x\n", d.data.to_uint());
 	}
 
-	data.data = 0x100;
+	data.data(0,0) = 1;
+	data.data(256,256) = 1;
+	data.data(511,510) = 0x3;
 	wr_cmd.write(cmd);
 	wr_data.write(data);
+	bram_hashtable(&rd_cmd, &wr_cmd, &rd_data, &wr_data, &rd_status, &wr_status);
+	bram_hashtable(&rd_cmd, &wr_cmd, &rd_data, &wr_data, &rd_status, &wr_status);
 	bram_hashtable(&rd_cmd, &wr_cmd, &rd_data, &wr_data, &rd_status, &wr_status);
 
 	rd_cmd.write(cmd);

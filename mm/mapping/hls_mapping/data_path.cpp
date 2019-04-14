@@ -24,11 +24,12 @@ void remux(stream<struct mapping_request> *rd,
 	   stream<struct pipeline_info> *out)
 {
 #pragma HLS PIPELINE
-
-	struct mapping_request req = { 0 };
+#pragma HLS INLINE off
+#pragma HLS INTERFACE ap_ctrl_none port=return
 
 	if (!rd->empty()) {
 		struct pipeline_info info = { 0 };
+		struct mapping_request req = { 0 };
 
 		req = rd->read();
 
@@ -46,6 +47,7 @@ void remux(stream<struct mapping_request> *rd,
 		out->write(info);
 	} else if (!wr->empty()) {
 		struct pipeline_info info = { 0 };
+		struct mapping_request req = { 0 };
 
 		req = wr->read();
 
@@ -69,22 +71,42 @@ void read_bram(stream<struct pipeline_info> *pi_in,
 	       stream<struct mem_cmd> *BRAM_rd_cmd)
 {
 #pragma HLS PIPELINE
+#pragma HLS INLINE off
 #pragma HLS INTERFACE ap_ctrl_none port=return
 
-	struct pipeline_info pi = { 0 };
-	struct mem_cmd cmd = { 0 };
-	int index = 0;
+	if (!pi_in->empty()) {
+		struct pipeline_info pi = { 0 };
+		struct mem_cmd cmd = { 0 };
+		int index = 0;
 
-	if (pi_in->empty())
-		return;
+		pi = pi_in->read();
+		pi_out->write(pi);
 
-	pi = pi_in->read();
-	pi_out->write(pi);
+		index = pi.hash(NR_HT_BUCKET_BRAM_SHIFT - 1, 0);
+		cmd.address = index;
+		cmd.length = 1;
+		BRAM_rd_cmd->write(cmd);
+	}
+}
 
-	index = pi.hash(NR_HT_BUCKET_BRAM_SHIFT - 1, 0);
-	cmd.address = index;
-	cmd.length = 1;
-	BRAM_rd_cmd->write(cmd);
+static int __compare(ap_uint<512> hb, ap_uint<32> input)
+{
+#pragma HLS INLINE
+#if 1
+	int i = NR_SLOTS_PER_BUCKET;
+	for (i = 0; i < NR_SLOTS_PER_BUCKET; i++) {
+		if (hb((i + 1) * NR_BITS_KEY - 1, i * NR_BITS_KEY) ==
+		    input(NR_BITS_KEY - 1, 0)) {
+			break;
+		}
+	}
+	return i;
+#else
+	if (hb(31,0) == input)
+		return 0;
+	else
+		return 7;
+#endif
 }
 
 /*
@@ -100,36 +122,47 @@ void compare_bram(stream<struct pipeline_info> *pi_in,
 		  stream<struct mem_cmd> *DRAM_rd_cmd)
 {
 #pragma HLS PIPELINE
+#pragma HLS INLINE off
 #pragma HLS INTERFACE ap_ctrl_none port=return
-
-	struct pipeline_info pi = { 0 };
-	ap_uint<MEM_BUS_WIDTH> hb = 0;
-	struct mem_cmd cmd = { 0 };
-	int i = 0;
-	bool hit = false;
 
 	/* Wait until we received data from BRAM */
 	if (!pi_in->empty() && !BRAM_rd_data->empty()) {
+		struct pipeline_info pi = { 0 };
+		ap_uint<MEM_BUS_WIDTH> hb = 0;
+		int i;
+		bool hit;
+
 		pi = pi_in->read();
 		hb = BRAM_rd_data->read();
 		pi.hb_bram = hb;
 
-		for (i = 0; i < NR_SLOTS_PER_BUCKET; i++) {
-			if (hb((i + 1) * NR_BITS_KEY - 1, i * NR_BITS_KEY) == pi.input) {
-				hit = true;
-				pi.slot = i;
-				pi.output_status = 0;
-				pi.output = hb((i + 1) * NR_BITS_VAL - 1 + NR_BITS_VAL_OFF,
-					       i * NR_BITS_VAL + NR_BITS_VAL_OFF);
-			}
+		i = __compare(hb, pi.input);
+		if (i < NR_SLOTS_PER_BUCKET)
+			hit = true;
+		else
+			hit = false;
+
+		if (hit) {
+			pi.pi_state = PI_STATE_HIT_BRAM;
+			pi.slot = i;
+			pi.output_status = PI_OUTPUT_SUCCEED;
+			pi.output = hb((i + 1) * NR_BITS_VAL - 1 + NR_BITS_VAL_OFF,
+					i * NR_BITS_VAL + NR_BITS_VAL_OFF);
+		} else {
+			pi.pi_state = PI_STATE_MISS_BRAM;
+			pi.slot = 0;
+			pi.output_status = PI_OUTPUT_FAILURE;
+			pi.output = 0;
 		}
 
-		if (hit)
-			pi.pi_state = PI_STATE_HIT_BRAM;
-		else
-			pi.pi_state = PI_STATE_MISS_BRAM;
-
-		if (!(hit && pi.opcode == PI_OPCODE_GET)) {
+		if (!(pi.opcode == PI_OPCODE_GET && hit)) {
+			/*
+			 * Three cases walk into here:
+			 * SET + HIT
+			 * SET + MISS
+			 * GET + MISS
+			 */
+			struct mem_cmd cmd = { 0 };
 			cmd.address = pi.hash(NR_HT_BUCKET_DRAM_SHIFT - 1, 0);
 			cmd.length = 1;
 			DRAM_rd_cmd->write(cmd);
@@ -177,6 +210,7 @@ static inline int find_empty_slot(ap_uint<NR_SLOTS_PER_BUCKET> in)
 			break;
 		}
 	}
+	PR("Slot: %d\n", slot);
 	return slot;
 }
 
@@ -191,11 +225,9 @@ void fill_S2(stream<struct pipeline_info> *pi_in,
 #pragma HLS INLINE off
 #pragma HLS INTERFACE ap_ctrl_none port=return
 
-	struct pipeline_info pi = { 0 };
-
 	if (!pi_in->empty()) {
+		struct pipeline_info pi = { 0 };
 		pi = pi_in->read();
-
 		if (pi.opcode == PI_OPCODE_SET) {
 			/*
 			 * Write back to BRAM
@@ -209,6 +241,9 @@ void fill_S2(stream<struct pipeline_info> *pi_in,
 				/*
 				 * Find a new slot if any.
 				 * Otherwise it will override existing un-matched slot.
+				 *
+				 * Since BRAM HT is not using any chaining,
+				 * it's OKAY to override by design.
 				 */
 				slot_b = find_empty_slot(pi.hb_bram(NR_BITS_BITMAP_OFF + NR_SLOTS_PER_BUCKET - 1,
 								    NR_BITS_BITMAP_OFF));
@@ -234,9 +269,11 @@ void fill_S2(stream<struct pipeline_info> *pi_in,
 				slot_d = pi.slot_dram;
 			} else {
 				/*
-				 * XXX
 				 * Find a new slot if any.
-				 * Currently, we override. Ideally, should chain.
+				 *
+				 * XXX
+				 * Since DRAM is supposed to chain conflicts,
+				 * this is against design. Temporary solution.
 				 */
 				slot_d = find_empty_slot(pi.hb_dram(NR_BITS_BITMAP_OFF + NR_SLOTS_PER_BUCKET - 1,
 								    NR_BITS_BITMAP_OFF));
@@ -253,6 +290,12 @@ void fill_S2(stream<struct pipeline_info> *pi_in,
 			DRAM_wr_cmd->write(cmd_d);
 			DRAM_wr_data->write(pi.hb_dram);
 
+			/*
+			 * SET should always succed for now.
+			 * although it might be true if we later on we add
+			 * dynamic allocation and chaining etc.
+			 */
+			pi.output_status = PI_OUTPUT_SUCCEED;
 			pi_out->write(pi);
 		} else if (pi.opcode == PI_OPCODE_GET) {
 			if (((pi.pi_state & PI_STATE_MISS_BRAM) == PI_STATE_MISS_BRAM) &&
@@ -267,15 +310,17 @@ void fill_S2(stream<struct pipeline_info> *pi_in,
 				slot_b = find_empty_slot(pi.hb_bram(NR_BITS_BITMAP_OFF + NR_SLOTS_PER_BUCKET - 1,
 								    NR_BITS_BITMAP_OFF));
 
+				PR(" *** MISS bram, hit DRAM, replace slot: %d\n", slot_b);
 				/* Copy the data from the cached DRAM HB */
-				pi.hb_bram(NR_BITS_BITMAP_OFF + slot_b, NR_BITS_BITMAP_OFF + slot_b) = 1;
+				pi.hb_bram(NR_BITS_BITMAP_OFF + slot_b,
+					   NR_BITS_BITMAP_OFF + slot_b) = 1;
 
 				pi.hb_bram((slot_b + 1) * NR_BITS_KEY - 1,
 					    slot_b * NR_BITS_KEY) = pi.hb_dram((pi.slot_dram + 1) * NR_BITS_KEY - 1,
 					   					pi.slot_dram * NR_BITS_KEY);
 
 				pi.hb_bram((slot_b + 1) * NR_BITS_VAL - 1 + NR_BITS_VAL_OFF,
-					    slot_b * NR_BITS_VAL + NR_BITS_VAL_OFF) = pi.hb_bram((pi.slot_dram + 1) * NR_BITS_VAL - 1 + NR_BITS_VAL_OFF,
+					    slot_b * NR_BITS_VAL + NR_BITS_VAL_OFF) = pi.hb_dram((pi.slot_dram + 1) * NR_BITS_VAL - 1 + NR_BITS_VAL_OFF,
 					    							  pi.slot_dram * NR_BITS_VAL + NR_BITS_VAL_OFF);
 
 				cmd_b.address = pi.hash(NR_HT_BUCKET_BRAM_SHIFT - 1, 0);
@@ -319,27 +364,26 @@ void fill_S1(stream<struct pipeline_info>	*pi_in,
 		break;
 	case FILL_READ_DATA:
 		ap_uint<MEM_BUS_WIDTH> hb = 0;
-		int i = 0, index = 0;
-		bool hit = false;
+		int i ;
+		bool hit;
 
 		if (DRAM_rd_data->empty())
 			break;
 		hb = DRAM_rd_data->read();
 		pi.hb_dram = hb;
 
-		/* Check if the DRAM HB has the key */
-		for (i = 0; i < NR_SLOTS_PER_BUCKET; i++) {
-			if (hb((i + 1) * NR_BITS_KEY - 1, i * NR_BITS_KEY) == pi.input) {
-				hit = true;
-				pi.slot_dram = i;
-				pi.output_status = 0;
-				pi.output = hb((i + 1) * NR_BITS_VAL - 1 + NR_BITS_VAL_OFF,
-					       i * NR_BITS_VAL + NR_BITS_VAL_OFF);
-			}
-		}
+		i = __compare(hb, pi.input);
+		if (i < NR_SLOTS_PER_BUCKET)
+			hit = true;
+		else
+			hit = false;
 
 		if (hit) {
-			pi.pi_state |= PI_STATE_HIT_DRAM;
+			pi.pi_state = pi.pi_state | PI_STATE_HIT_DRAM;
+			pi.slot_dram = i;
+			pi.output_status = PI_OUTPUT_SUCCEED;
+			pi.output = hb((i + 1) * NR_BITS_VAL - 1 + NR_BITS_VAL_OFF,
+				       i * NR_BITS_VAL + NR_BITS_VAL_OFF);
 		} else {
 			/*
 			 * XXX
@@ -353,9 +397,9 @@ void fill_S1(stream<struct pipeline_info>	*pi_in,
 			 * If DRAM is empty, all requests other than 0
 			 * will come to here.
 			 */
-			pi.pi_state |= PI_STATE_MISS_DRAM;
+			pi.pi_state = pi.pi_state | PI_STATE_MISS_DRAM;
+			pi.output_status = PI_OUTPUT_FAILURE;
 			pi.output = 0;
-			pi.output_status = 1;
 		}
 		pi_out->write(pi);
 		state = FILL_IDLE;
@@ -368,18 +412,21 @@ void demux(stream<struct pipeline_info> *pi_in,
 	   stream<struct mapping_reply> *wr_reply)
 {
 #pragma HLS PIPELINE
-
-	struct mapping_reply reply = { 0 };
-	struct pipeline_info pi = { 0 };
+#pragma HLS INLINE off
+#pragma HLS INTERFACE ap_ctrl_none port=return
 
 	if (!pi_in->empty()) {
+		struct mapping_reply reply = { 0 };
+		struct pipeline_info pi = { 0 };
+
 		pi = pi_in->read();
 
 		reply.address = pi.output;
 		reply.status = pi.output_status;
+		reply.__internal_status = pi.pi_state;
 		if (pi.channel == PI_CHANNEL_READ)
 			rd_reply->write(reply);
-		else if (pi.opcode == MAPPING_REQUEST_WRITE)
+		else if (pi.channel == MAPPING_REQUEST_WRITE)
 			wr_reply->write(reply);
 	}
 }
@@ -424,6 +471,13 @@ void data_path(stream<struct mapping_request> *rd_request,
 #pragma HLS STREAM variable=PI_fillS1_to_fillS2		depth=256
 #pragma HLS STREAM variable=PI_fillS2_to_out		depth=256
 
+#if 0
+#pragma HLS DATA_PACK variable=PI_pipeline_info
+#pragma HLS DATA_PACK variable=PI_hash_to_compare
+#pragma HLS DATA_PACK variable=PI_compare_to_fillS1
+#pragma HLS DATA_PACK variable=PI_fillS1_to_fillS2
+#pragma HLS DATA_PACK variable=PI_fillS2_to_out
+#endif
 	remux(rd_request, wr_request, &PI_pipeline_info);
 
 	compute_hash(&PI_pipeline_info, &PI_hash_to_compare);

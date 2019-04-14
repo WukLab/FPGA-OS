@@ -15,4 +15,6 @@
 # endif
 #endif
 
+#define round_up(x, y)		(((x-1) | y-1)+1)
+
 #endif /* _LEGO_FPGA_KERNEL_H_ */

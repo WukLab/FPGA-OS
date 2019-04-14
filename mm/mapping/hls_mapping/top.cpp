@@ -94,6 +94,9 @@ void paging_top(hls::stream<struct mapping_request>	*in_read,
 #pragma HLS STREAM variable=fifo_read_req	depth=256
 #pragma HLS STREAM variable=fifo_write_req	depth=256
 
+#pragma HLS DATA_PACK variable=fifo_read_req
+#pragma HLS DATA_PACK variable=fifo_write_req
+
 	static stream<struct mem_cmd> fifo_DRAM_rd_cmd("fifo_DRAM_rd_cmd");
 	static stream<struct mem_cmd> fifo_DRAM_wr_cmd("fifo_DRAM_wr_cmd");
 	static stream<struct mem_cmd> fifo_BRAM_rd_cmd("fifo_BRAM_rd_cmd");
@@ -102,6 +105,11 @@ void paging_top(hls::stream<struct mapping_request>	*in_read,
 #pragma HLS STREAM variable=fifo_DRAM_wr_cmd	depth=256
 #pragma HLS STREAM variable=fifo_BRAM_rd_cmd	depth=256
 #pragma HLS STREAM variable=fifo_BRAM_wr_cmd	depth=256
+
+#pragma HLS DATA_PACK variable=fifo_DRAM_rd_cmd
+#pragma HLS DATA_PACK variable=fifo_DRAM_wr_cmd
+#pragma HLS DATA_PACK variable=fifo_BRAM_rd_cmd
+#pragma HLS DATA_PACK variable=fifo_BRAM_wr_cmd
 
 	static stream<ap_uint<MEM_BUS_WIDTH> > fifo_DRAM_rd_data("fifo_DRAM_rd_data");
 	static stream<ap_uint<MEM_BUS_WIDTH> > fifo_DRAM_wr_data("fifo_DRAM_wr_data");

@@ -5,15 +5,18 @@
 #ifndef _MAPPING_HASH_H_
 #define _MAPPING_HASH_H_
 
+#include <fpga/axis_mapping.h>
+
 /*
  * The width of the compuated hash value
  */
 #define NR_BITS_HASH		32
 
-#define NR_HT_BUCKET_BRAM_SHIFT	8
-#define NR_HT_BUCKET_DRAM_SHIFT	20
-#define NR_HT_BUCKET_BRAM	(1 << NR_HT_BUCKET_BRAM_SHIFT)
-#define NR_HT_BUCKET_DRAM	(1 << NR_HT_BUCKET_DRAM_SHIFT)
+/*
+ * The following configurations config the
+ * internal structure of the bucket, for both
+ * DRAM and BRAM.
+ */
 
 #define NR_BITS_KEY		32
 #define NR_BITS_VAL		32
@@ -23,7 +26,6 @@
  * Assume 32bits address space and chained
  * bucket is 64B aligned. Thus 32-6=26.
  */
-#define NR_BITS_BUCKET		512
 #define NR_BITS_CHAIN_ADDR	26
 #define NR_BITS_CHAIN_FLAG	1
 #define NR_BITS_RESERVED								  \

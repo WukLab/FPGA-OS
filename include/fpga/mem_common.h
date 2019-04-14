@@ -46,10 +46,14 @@
 #define PID_WIDTH		8
 #define PA_WIDTH		32
 #define CHUNK_SHIFT		29
-#define BUDDY_MAX_SHIFT		32
-#define BUDDY_MIN_SHIFT		8
 #define BUDDY_SET_ORDER		1
-#define BUDDY_START             0x0
+#define BUDDY_MIN_SHIFT		8
+
+#define BUDDY_MAX_SHIFT		30
+#define BUDDY_START             0x10000000
+#define BUDDY_MANAGED_SIZE	(1<<BUDDY_MAX_SHIFT)
+#define BUDDY_END               (BUDDY_START + BUDDY_MANAGED_SIZE)
+
 #define BUDDY_META_OFF          (BUDDY_START)
 
 #define SIZE(shift)		(1UL << shift)
@@ -80,7 +84,6 @@
 
 #define BUDDY_META_SIZE         ((1 << (3 * LEVEL_MAX)) / 7)
 #define BUDDY_USER_OFF          (BUDDY_META_OFF + BUDDY_META_SIZE)
-#define BUDDY_END               (BUDDY_START + (1 << BUDDY_MAX_SHIFT))
 
 /*
  * define only for simulation use

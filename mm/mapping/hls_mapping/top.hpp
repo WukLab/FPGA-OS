@@ -36,6 +36,9 @@ using namespace hls;
 #define PI_CHANNEL_READ		0
 #define PI_CHANNEL_WRITE	1
 
+#define PI_OUTPUT_SUCCEED	0
+#define PI_OUTPUT_FAILURE	1
+
 struct pipeline_info {
 	/* From input */
 	ap_uint<MAPPING_VIRTUAL_WIDTH>		input;
@@ -53,7 +56,7 @@ struct pipeline_info {
 	ap_uint<NR_BITS_BUCKET>			hb_dram;
 	int					slot;
 	int					slot_dram;
-	int					pi_state;
+	unsigned int				pi_state;
 
 	/* For output */
 	ap_uint<MAPPING_PHYSICAL_WIDTH>		output;

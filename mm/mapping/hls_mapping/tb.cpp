@@ -45,10 +45,10 @@ int main(void)
 
 	for (_cycle = 0, k = 0, j = 0; _cycle < NR_CYCLES_RUN; _cycle++) {
 #if 1
-#define NR_SET	10
+#define NR_SET	8
 		if (_cycle % 10 == 0 && k < NR_SET) {
-			_in_read.address =  0x10000 * (k+1);
-			_in_read.length = k + 1;
+			_in_read.address =  0x100 * (k+1);
+			_in_read.length = 0x66666660 + k;
 			_in_read.opcode = MAPPING_SET;
 			in_read.write(_in_read);
 			k++;
@@ -59,11 +59,11 @@ int main(void)
 #endif
 
 #if 1
-		if (_cycle > 200) {
+		if (_cycle > 100) {
 #define NR_GET	1
 			if (j < NR_GET) {
-				_in_read.address =  0x10000 * (j+1);
-				_in_read.length = 64;
+				_in_read.address =  0x100 * (j+1);
+				_in_read.length = 0;
 				_in_read.opcode = MAPPING_REQUEST_READ;
 				in_read.write(_in_read);
 				j++;

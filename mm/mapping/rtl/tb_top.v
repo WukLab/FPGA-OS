@@ -2,7 +2,7 @@
 
 module mapping_tb_top;
 
-parameter IN_FILEPATH="/root/Github/FPGA/mm/mapping/rtl/input.txt";
+parameter IN_FILEPATH="/root/ys/FPGA/mm/mapping/rtl/input.txt";
 parameter CLK_PERIOD = 3333333;
 
 	wire        ddr4_act_n;
@@ -48,7 +48,7 @@ parameter CLK_PERIOD = 3333333;
 	wire out_ctl_tvalid;
 	reg out_ctl_tready;
 
-	mapping_ip_top DUT (
+	mapping_ip_top_TB DUT (
 		.c0_sys_clk_i_0			(sysclk_300_clk_ref),
 		.sys_rst_0			(sys_reset),
 		.mc_ddr4_ui_clk_rst_n		(mc_ddr4_ui_clk_rst_n),
@@ -134,8 +134,6 @@ parameter CLK_PERIOD = 3333333;
 	integer infd, finished_send, req_type;
 	integer nr_tx, nr_rx;
 
-	integer nr_to_send = 5;
-
 	// Send datapath requests
 	initial begin
 		finished_send = 0;
@@ -159,13 +157,12 @@ parameter CLK_PERIOD = 3333333;
 		@(posedge sysclk_300_clk_ref);
 
 		while (!finished_send) begin
-			//$fscanf(infd, "%d\n", req_type);
+			$fscanf(infd, "%d\n", req_type);
 			req_type = 0;
 			if (req_type == 0) begin
 				// Read request
 				if (in_read_tready) begin
-					//$fscanf(infd, "%h\n", in_read_tdata);
-					in_read_tdata = 0;
+					$fscanf(infd, "%h\n", in_read_tdata);
 
 					in_read_tvalid = 1;
 				end else begin
@@ -182,9 +179,7 @@ parameter CLK_PERIOD = 3333333;
 			end
 			nr_tx = nr_tx + 1;
 
-			nr_to_send = nr_to_send - 1;
-
-			if (nr_to_send == 0) begin
+			if ($feof(infd)) begin
 				finished_send = 1;
 				$display("Finish sending.");
 			end
@@ -192,6 +187,10 @@ parameter CLK_PERIOD = 3333333;
 		  	#CLK_PERIOD;
 		  	in_read_tvalid = 0;
 		  	in_write_tvalid = 0;
+		  	
+		  	if (nr_tx == 1) begin
+		  	   wait(nr_tx == nr_rx);
+		  	end
 		end
 	end
 
@@ -202,7 +201,7 @@ parameter CLK_PERIOD = 3333333;
 		while (1) begin
 			if (out_read_tvalid) begin
 				nr_rx = nr_rx + 1;
-				$display("nr_rx: %d", nr_rx);
+				$display("nr_rx: %d Data: %h", nr_rx, out_read_tdata);
 				#CLK_PERIOD;
 			end else begin
 				#CLK_PERIOD;

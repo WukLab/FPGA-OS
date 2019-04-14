@@ -243,11 +243,11 @@ set_property -name "top_lib" -value "xil_defaultlib" -objects $obj
 # Adding sources referenced in BDs, if not already added
 
 
-# Proc to create BD mapping_ip_top
-proc cr_bd_mapping_ip_top { parentCell } {
+# Proc to create BD mapping_ip_top_TB
+proc cr_bd_mapping_ip_top_TB { parentCell } {
 
   # CHANGE DESIGN NAME HERE
-  set design_name mapping_ip_top
+  set design_name mapping_ip_top_TB
 
   common::send_msg_id "BD_TCL-003" "INFO" "Currently there is no design <$design_name> in project, so creating one..."
 
@@ -468,7 +468,7 @@ proc create_hier_cell_ht_bram { parentCell nameHier } {
 
   # Create port connections
   connect_bd_net -net ddr4_0_c0_ddr4_ui_clk [get_bd_pins ap_clk] [get_bd_pins axis_data_fifo_0/s_axis_aclk] [get_bd_pins axis_data_fifo_1/s_axis_aclk] [get_bd_pins axis_data_fifo_2/s_axis_aclk] [get_bd_pins axis_data_fifo_3/s_axis_aclk] [get_bd_pins axis_data_fifo_4/s_axis_aclk] [get_bd_pins axis_data_fifo_5/s_axis_aclk] [get_bd_pins bram_hashtable_0/ap_clk]
-  connect_bd_net -net util_vector_logic_0_Res [get_bd_pins mc_ddr4_ui_clk_rst_n] [get_bd_pins axis_data_fifo_0/s_axis_aresetn] [get_bd_pins axis_data_fifo_1/s_axis_aresetn] [get_bd_pins axis_data_fifo_4/s_axis_aresetn] [get_bd_pins axis_data_fifo_5/s_axis_aresetn] [get_bd_pins bram_hashtable_0/ap_rst_n]
+  connect_bd_net -net util_vector_logic_0_Res [get_bd_pins mc_ddr4_ui_clk_rst_n] [get_bd_pins axis_data_fifo_0/s_axis_aresetn] [get_bd_pins axis_data_fifo_1/s_axis_aresetn] [get_bd_pins axis_data_fifo_2/s_axis_aresetn] [get_bd_pins axis_data_fifo_3/s_axis_aresetn] [get_bd_pins axis_data_fifo_4/s_axis_aresetn] [get_bd_pins axis_data_fifo_5/s_axis_aresetn] [get_bd_pins bram_hashtable_0/ap_rst_n]
 
   # Restore current instance
   current_bd_instance $oldCurInst
@@ -636,7 +636,7 @@ proc create_hier_cell_Buffer_ToBeRemoved { parentCell nameHier } {
   # Create instance: axi_datamover, and set properties
   set axi_datamover [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_datamover:5.1 axi_datamover ]
   set_property -dict [ list \
-   CONFIG.c_dummy {1} \
+   CONFIG.c_dummy {0} \
    CONFIG.c_m_axi_mm2s_data_width {512} \
    CONFIG.c_m_axi_mm2s_id_width {8} \
    CONFIG.c_m_axi_s2mm_data_width {512} \
@@ -701,19 +701,401 @@ proc create_hier_cell_Buffer_ToBeRemoved { parentCell nameHier } {
   save_bd_design
   close_bd_design $design_name 
 }
+# End of cr_bd_mapping_ip_top_TB()
+cr_bd_mapping_ip_top_TB ""
+set_property IS_MANAGED "0" [get_files mapping_ip_top_TB.bd ] 
+set_property REGISTERED_WITH_MANAGER "1" [get_files mapping_ip_top_TB.bd ] 
+set_property SYNTH_CHECKPOINT_MODE "Hierarchical" [get_files mapping_ip_top_TB.bd ] 
+
+# Proc to create BD mapping_ip_top
+proc cr_bd_mapping_ip_top { parentCell } {
+
+  # CHANGE DESIGN NAME HERE
+  set design_name mapping_ip_top
+
+  common::send_msg_id "BD_TCL-003" "INFO" "Currently there is no design <$design_name> in project, so creating one..."
+
+  create_bd_design $design_name
+
+  set bCheckIPsPassed 1
+  ##################################################################
+  # CHECK IPs
+  ##################################################################
+  set bCheckIPs 1
+  if { $bCheckIPs == 1 } {
+     set list_check_ips "\ 
+  xilinx.com:ip:axi_crossbar:2.1\
+  xilinx.com:ip:axi_datamover:5.1\
+  purdue.wuklab:hls:paging_top:1.0\
+  xilinx.com:ip:axis_data_fifo:1.1\
+  purdue.wuklab:hls:bram_hashtable:1.0\
+  "
+
+   set list_ips_missing ""
+   common::send_msg_id "BD_TCL-006" "INFO" "Checking if the following IPs exist in the project's IP catalog: $list_check_ips ."
+
+   foreach ip_vlnv $list_check_ips {
+      set ip_obj [get_ipdefs -all $ip_vlnv]
+      if { $ip_obj eq "" } {
+         lappend list_ips_missing $ip_vlnv
+      }
+   }
+
+   if { $list_ips_missing ne "" } {
+      catch {common::send_msg_id "BD_TCL-115" "ERROR" "The following IPs are not found in the IP Catalog:\n  $list_ips_missing\n\nResolution: Please add the repository containing the IP(s) to the project." }
+      set bCheckIPsPassed 0
+   }
+
+  }
+
+  if { $bCheckIPsPassed != 1 } {
+    common::send_msg_id "BD_TCL-1003" "WARNING" "Will not continue with creation of design due to the error(s) above."
+    return 3
+  }
+
+  
+# Hierarchical cell: ht_bram
+proc create_hier_cell_ht_bram { parentCell nameHier } {
+
+  variable script_folder
+
+  if { $parentCell eq "" || $nameHier eq "" } {
+     catch {common::send_msg_id "BD_TCL-102" "ERROR" "create_hier_cell_ht_bram() - Empty argument(s)!"}
+     return
+  }
+
+  # Get object for parentCell
+  set parentObj [get_bd_cells $parentCell]
+  if { $parentObj == "" } {
+     catch {common::send_msg_id "BD_TCL-100" "ERROR" "Unable to find parent cell <$parentCell>!"}
+     return
+  }
+
+  # Make sure parentObj is hier blk
+  set parentType [get_property TYPE $parentObj]
+  if { $parentType ne "hier" } {
+     catch {common::send_msg_id "BD_TCL-101" "ERROR" "Parent <$parentObj> has TYPE = <$parentType>. Expected to be <hier>."}
+     return
+  }
+
+  # Save current instance; Restore later
+  set oldCurInst [current_bd_instance .]
+
+  # Set parent object as current
+  current_bd_instance $parentObj
+
+  # Create cell and set as current instance
+  set hier_obj [create_bd_cell -type hier $nameHier]
+  current_bd_instance $hier_obj
+
+  # Create interface pins
+  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 M_AXIS
+  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 M_AXIS1
+  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 M_AXIS2
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 S_AXIS
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 S_AXIS1
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 S_AXIS2
+
+  # Create pins
+  create_bd_pin -dir I -type clk ap_clk
+  create_bd_pin -dir I -type rst mc_ddr4_ui_clk_rst_n
+
+  # Create instance: axis_data_fifo_0, and set properties
+  set axis_data_fifo_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_data_fifo:1.1 axis_data_fifo_0 ]
+  set_property -dict [ list \
+   CONFIG.FIFO_DEPTH {16} \
+ ] $axis_data_fifo_0
+
+  # Create instance: axis_data_fifo_1, and set properties
+  set axis_data_fifo_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_data_fifo:1.1 axis_data_fifo_1 ]
+  set_property -dict [ list \
+   CONFIG.FIFO_DEPTH {16} \
+ ] $axis_data_fifo_1
+
+  # Create instance: axis_data_fifo_2, and set properties
+  set axis_data_fifo_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_data_fifo:1.1 axis_data_fifo_2 ]
+  set_property -dict [ list \
+   CONFIG.FIFO_DEPTH {16} \
+ ] $axis_data_fifo_2
+
+  # Create instance: axis_data_fifo_3, and set properties
+  set axis_data_fifo_3 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_data_fifo:1.1 axis_data_fifo_3 ]
+  set_property -dict [ list \
+   CONFIG.FIFO_DEPTH {16} \
+ ] $axis_data_fifo_3
+
+  # Create instance: axis_data_fifo_4, and set properties
+  set axis_data_fifo_4 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_data_fifo:1.1 axis_data_fifo_4 ]
+  set_property -dict [ list \
+   CONFIG.FIFO_DEPTH {16} \
+ ] $axis_data_fifo_4
+
+  # Create instance: axis_data_fifo_5, and set properties
+  set axis_data_fifo_5 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_data_fifo:1.1 axis_data_fifo_5 ]
+  set_property -dict [ list \
+   CONFIG.FIFO_DEPTH {16} \
+ ] $axis_data_fifo_5
+
+  # Create instance: bram_hashtable_0, and set properties
+  set bram_hashtable_0 [ create_bd_cell -type ip -vlnv purdue.wuklab:hls:bram_hashtable:1.0 bram_hashtable_0 ]
+
+  # Create interface connections
+  connect_bd_intf_net -intf_net axis_data_fifo_0_M_AXIS1 [get_bd_intf_pins axis_data_fifo_0/M_AXIS] [get_bd_intf_pins bram_hashtable_0/BRAM_rd_cmd_V]
+  connect_bd_intf_net -intf_net axis_data_fifo_1_M_AXIS1 [get_bd_intf_pins M_AXIS] [get_bd_intf_pins axis_data_fifo_1/M_AXIS]
+  connect_bd_intf_net -intf_net axis_data_fifo_2_M_AXIS [get_bd_intf_pins axis_data_fifo_2/M_AXIS] [get_bd_intf_pins bram_hashtable_0/BRAM_wr_cmd_V]
+  connect_bd_intf_net -intf_net axis_data_fifo_3_M_AXIS [get_bd_intf_pins axis_data_fifo_3/M_AXIS] [get_bd_intf_pins bram_hashtable_0/BRAM_wr_data]
+  connect_bd_intf_net -intf_net axis_data_fifo_4_M_AXIS [get_bd_intf_pins M_AXIS1] [get_bd_intf_pins axis_data_fifo_4/M_AXIS]
+  connect_bd_intf_net -intf_net axis_data_fifo_5_M_AXIS [get_bd_intf_pins M_AXIS2] [get_bd_intf_pins axis_data_fifo_5/M_AXIS]
+  connect_bd_intf_net -intf_net bram_hashtable_0_BRAM_rd_data [get_bd_intf_pins axis_data_fifo_1/S_AXIS] [get_bd_intf_pins bram_hashtable_0/BRAM_rd_data]
+  connect_bd_intf_net -intf_net bram_hashtable_0_BRAM_rd_status_V_V [get_bd_intf_pins axis_data_fifo_4/S_AXIS] [get_bd_intf_pins bram_hashtable_0/BRAM_rd_status_V_V]
+  connect_bd_intf_net -intf_net bram_hashtable_0_BRAM_wr_status_V_V [get_bd_intf_pins axis_data_fifo_5/S_AXIS] [get_bd_intf_pins bram_hashtable_0/BRAM_wr_status_V_V]
+  connect_bd_intf_net -intf_net mapping_hls_top_BRAM_rd_cmd_V [get_bd_intf_pins S_AXIS] [get_bd_intf_pins axis_data_fifo_0/S_AXIS]
+  connect_bd_intf_net -intf_net mapping_hls_top_BRAM_wr_cmd_V [get_bd_intf_pins S_AXIS1] [get_bd_intf_pins axis_data_fifo_2/S_AXIS]
+  connect_bd_intf_net -intf_net mapping_hls_top_BRAM_wr_data [get_bd_intf_pins S_AXIS2] [get_bd_intf_pins axis_data_fifo_3/S_AXIS]
+
+  # Create port connections
+  connect_bd_net -net ddr4_0_c0_ddr4_ui_clk [get_bd_pins ap_clk] [get_bd_pins axis_data_fifo_0/s_axis_aclk] [get_bd_pins axis_data_fifo_1/s_axis_aclk] [get_bd_pins axis_data_fifo_2/s_axis_aclk] [get_bd_pins axis_data_fifo_3/s_axis_aclk] [get_bd_pins axis_data_fifo_4/s_axis_aclk] [get_bd_pins axis_data_fifo_5/s_axis_aclk] [get_bd_pins bram_hashtable_0/ap_clk]
+  connect_bd_net -net util_vector_logic_0_Res [get_bd_pins mc_ddr4_ui_clk_rst_n] [get_bd_pins axis_data_fifo_0/s_axis_aresetn] [get_bd_pins axis_data_fifo_1/s_axis_aresetn] [get_bd_pins axis_data_fifo_2/s_axis_aresetn] [get_bd_pins axis_data_fifo_3/s_axis_aresetn] [get_bd_pins axis_data_fifo_4/s_axis_aresetn] [get_bd_pins axis_data_fifo_5/s_axis_aresetn] [get_bd_pins bram_hashtable_0/ap_rst_n]
+
+  # Restore current instance
+  current_bd_instance $oldCurInst
+}
+  
+# Hierarchical cell: Buffer_ToBeRemoved
+proc create_hier_cell_Buffer_ToBeRemoved { parentCell nameHier } {
+
+  variable script_folder
+
+  if { $parentCell eq "" || $nameHier eq "" } {
+     catch {common::send_msg_id "BD_TCL-102" "ERROR" "create_hier_cell_Buffer_ToBeRemoved() - Empty argument(s)!"}
+     return
+  }
+
+  # Get object for parentCell
+  set parentObj [get_bd_cells $parentCell]
+  if { $parentObj == "" } {
+     catch {common::send_msg_id "BD_TCL-100" "ERROR" "Unable to find parent cell <$parentCell>!"}
+     return
+  }
+
+  # Make sure parentObj is hier blk
+  set parentType [get_property TYPE $parentObj]
+  if { $parentType ne "hier" } {
+     catch {common::send_msg_id "BD_TCL-101" "ERROR" "Parent <$parentObj> has TYPE = <$parentType>. Expected to be <hier>."}
+     return
+  }
+
+  # Save current instance; Restore later
+  set oldCurInst [current_bd_instance .]
+
+  # Set parent object as current
+  current_bd_instance $parentObj
+
+  # Create cell and set as current instance
+  set hier_obj [create_bd_cell -type hier $nameHier]
+  current_bd_instance $hier_obj
+
+  # Create interface pins
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 in_read_0
+  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 in_read_m
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 in_write_0
+  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 in_write_m
+
+  # Create pins
+  create_bd_pin -dir I -type rst mc_ddr4_ui_clk_rst_n
+  create_bd_pin -dir I -type clk s_axis_aclk
+
+  # Create instance: axis_data_fifo_0, and set properties
+  set axis_data_fifo_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_data_fifo:1.1 axis_data_fifo_0 ]
+  set_property -dict [ list \
+   CONFIG.FIFO_DEPTH {16} \
+ ] $axis_data_fifo_0
+
+  # Create instance: axis_data_fifo_1, and set properties
+  set axis_data_fifo_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_data_fifo:1.1 axis_data_fifo_1 ]
+  set_property -dict [ list \
+   CONFIG.FIFO_DEPTH {16} \
+ ] $axis_data_fifo_1
+
+  # Create interface connections
+  connect_bd_intf_net -intf_net axis_data_fifo_0_M_AXIS [get_bd_intf_pins in_read_m] [get_bd_intf_pins axis_data_fifo_0/M_AXIS]
+  connect_bd_intf_net -intf_net axis_data_fifo_1_M_AXIS [get_bd_intf_pins in_write_m] [get_bd_intf_pins axis_data_fifo_1/M_AXIS]
+  connect_bd_intf_net -intf_net in_read_0_1 [get_bd_intf_pins in_read_0] [get_bd_intf_pins axis_data_fifo_0/S_AXIS]
+  connect_bd_intf_net -intf_net in_write_0_1 [get_bd_intf_pins in_write_0] [get_bd_intf_pins axis_data_fifo_1/S_AXIS]
+
+  # Create port connections
+  connect_bd_net -net ddr4_0_c0_ddr4_ui_clk [get_bd_pins s_axis_aclk] [get_bd_pins axis_data_fifo_0/s_axis_aclk] [get_bd_pins axis_data_fifo_1/s_axis_aclk]
+  connect_bd_net -net util_vector_logic_0_Res [get_bd_pins mc_ddr4_ui_clk_rst_n] [get_bd_pins axis_data_fifo_0/s_axis_aresetn] [get_bd_pins axis_data_fifo_1/s_axis_aresetn]
+
+  # Restore current instance
+  current_bd_instance $oldCurInst
+}
+  variable script_folder
+
+  if { $parentCell eq "" } {
+     set parentCell [get_bd_cells /]
+  }
+
+  # Get object for parentCell
+  set parentObj [get_bd_cells $parentCell]
+  if { $parentObj == "" } {
+     catch {common::send_msg_id "BD_TCL-100" "ERROR" "Unable to find parent cell <$parentCell>!"}
+     return
+  }
+
+  # Make sure parentObj is hier blk
+  set parentType [get_property TYPE $parentObj]
+  if { $parentType ne "hier" } {
+     catch {common::send_msg_id "BD_TCL-101" "ERROR" "Parent <$parentObj> has TYPE = <$parentType>. Expected to be <hier>."}
+     return
+  }
+
+  # Save current instance; Restore later
+  set oldCurInst [current_bd_instance .]
+
+  # Set parent object as current
+  current_bd_instance $parentObj
+
+
+  # Create interface ports
+  set M00_AXI_0 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 M00_AXI_0 ]
+  set_property -dict [ list \
+   CONFIG.ADDR_WIDTH {32} \
+   CONFIG.DATA_WIDTH {512} \
+   CONFIG.FREQ_HZ {300000000} \
+   CONFIG.HAS_CACHE {0} \
+   CONFIG.HAS_LOCK {0} \
+   CONFIG.HAS_QOS {0} \
+   CONFIG.HAS_REGION {0} \
+   CONFIG.NUM_READ_OUTSTANDING {2} \
+   CONFIG.NUM_WRITE_OUTSTANDING {2} \
+   CONFIG.PROTOCOL {AXI4} \
+   ] $M00_AXI_0
+  set in_read_0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 in_read_0 ]
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {300000000} \
+   CONFIG.HAS_TKEEP {0} \
+   CONFIG.HAS_TLAST {0} \
+   CONFIG.HAS_TREADY {1} \
+   CONFIG.HAS_TSTRB {0} \
+   CONFIG.LAYERED_METADATA {xilinx.com:interface:datatypes:1.0 {TDATA {datatype {name {attribs {resolve_type immediate dependency {} format string minimum {} maximum {}} value {}} bitwidth {attribs {resolve_type automatic dependency {} format long minimum {} maximum {}} value 0} bitoffset {attribs {resolve_type immediate dependency {} format long minimum {} maximum {}} value 0} struct {field_opcode {name {attribs {resolve_type immediate dependency {} format string minimum {} maximum {}} value opcode} enabled {attribs {resolve_type immediate dependency {} format bool minimum {} maximum {}} value true} datatype {name {attribs {resolve_type immediate dependency {} format string minimum {} maximum {}} value {}} bitwidth {attribs {resolve_type immediate dependency {} format long minimum {} maximum {}} value 1} bitoffset {attribs {resolve_type immediate dependency {} format long minimum {} maximum {}} value 0} integer {signed {attribs {resolve_type immediate dependency {} format bool minimum {} maximum {}} value false}}}} field_address {name {attribs {resolve_type immediate dependency {} format string minimum {} maximum {}} value address} enabled {attribs {resolve_type immediate dependency {} format bool minimum {} maximum {}} value true} datatype {name {attribs {resolve_type immediate dependency {} format string minimum {} maximum {}} value {}} bitwidth {attribs {resolve_type immediate dependency {} format long minimum {} maximum {}} value 32} bitoffset {attribs {resolve_type immediate dependency {} format long minimum {} maximum {}} value 1} integer {signed {attribs {resolve_type immediate dependency {} format bool minimum {} maximum {}} value false}}}} field_length {name {attribs {resolve_type immediate dependency {} format string minimum {} maximum {}} value length} enabled {attribs {resolve_type immediate dependency {} format bool minimum {} maximum {}} value true} datatype {name {attribs {resolve_type immediate dependency {} format string minimum {} maximum {}} value {}} bitwidth {attribs {resolve_type immediate dependency {} format long minimum {} maximum {}} value 32} bitoffset {attribs {resolve_type immediate dependency {} format long minimum {} maximum {}} value 33} integer {signed {attribs {resolve_type immediate dependency {} format bool minimum {} maximum {}} value false}}}}}}}}} \
+   CONFIG.TDATA_NUM_BYTES {9} \
+   CONFIG.TDEST_WIDTH {0} \
+   CONFIG.TID_WIDTH {0} \
+   CONFIG.TUSER_WIDTH {0} \
+   ] $in_read_0
+  set in_write_0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 in_write_0 ]
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {300000000} \
+   CONFIG.HAS_TKEEP {0} \
+   CONFIG.HAS_TLAST {0} \
+   CONFIG.HAS_TREADY {1} \
+   CONFIG.HAS_TSTRB {0} \
+   CONFIG.LAYERED_METADATA {xilinx.com:interface:datatypes:1.0 {TDATA {datatype {name {attribs {resolve_type immediate dependency {} format string minimum {} maximum {}} value {}} bitwidth {attribs {resolve_type automatic dependency {} format long minimum {} maximum {}} value 0} bitoffset {attribs {resolve_type immediate dependency {} format long minimum {} maximum {}} value 0} struct {field_opcode {name {attribs {resolve_type immediate dependency {} format string minimum {} maximum {}} value opcode} enabled {attribs {resolve_type immediate dependency {} format bool minimum {} maximum {}} value true} datatype {name {attribs {resolve_type immediate dependency {} format string minimum {} maximum {}} value {}} bitwidth {attribs {resolve_type immediate dependency {} format long minimum {} maximum {}} value 1} bitoffset {attribs {resolve_type immediate dependency {} format long minimum {} maximum {}} value 0} integer {signed {attribs {resolve_type immediate dependency {} format bool minimum {} maximum {}} value false}}}} field_address {name {attribs {resolve_type immediate dependency {} format string minimum {} maximum {}} value address} enabled {attribs {resolve_type immediate dependency {} format bool minimum {} maximum {}} value true} datatype {name {attribs {resolve_type immediate dependency {} format string minimum {} maximum {}} value {}} bitwidth {attribs {resolve_type immediate dependency {} format long minimum {} maximum {}} value 32} bitoffset {attribs {resolve_type immediate dependency {} format long minimum {} maximum {}} value 1} integer {signed {attribs {resolve_type immediate dependency {} format bool minimum {} maximum {}} value false}}}} field_length {name {attribs {resolve_type immediate dependency {} format string minimum {} maximum {}} value length} enabled {attribs {resolve_type immediate dependency {} format bool minimum {} maximum {}} value true} datatype {name {attribs {resolve_type immediate dependency {} format string minimum {} maximum {}} value {}} bitwidth {attribs {resolve_type immediate dependency {} format long minimum {} maximum {}} value 32} bitoffset {attribs {resolve_type immediate dependency {} format long minimum {} maximum {}} value 33} integer {signed {attribs {resolve_type immediate dependency {} format bool minimum {} maximum {}} value false}}}}}}}}} \
+   CONFIG.TDATA_NUM_BYTES {9} \
+   CONFIG.TDEST_WIDTH {0} \
+   CONFIG.TID_WIDTH {0} \
+   CONFIG.TUSER_WIDTH {0} \
+   ] $in_write_0
+  set out_read_0 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 out_read_0 ]
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {300000000} \
+   ] $out_read_0
+  set out_write_0 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 out_write_0 ]
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {300000000} \
+   ] $out_write_0
+
+  # Create ports
+  set ap_clk [ create_bd_port -dir I -type clk ap_clk ]
+  set_property -dict [ list \
+   CONFIG.ASSOCIATED_RESET {ap_rstn} \
+   CONFIG.FREQ_HZ {300000000} \
+ ] $ap_clk
+  set ap_rstn [ create_bd_port -dir I -type rst ap_rstn ]
+
+  # Create instance: Buffer_ToBeRemoved
+  create_hier_cell_Buffer_ToBeRemoved [current_bd_instance .] Buffer_ToBeRemoved
+
+  # Create instance: axi_crossbar_0, and set properties
+  set axi_crossbar_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_crossbar:2.1 axi_crossbar_0 ]
+  set_property -dict [ list \
+   CONFIG.NUM_MI {1} \
+   CONFIG.NUM_SI {2} \
+ ] $axi_crossbar_0
+
+  # Create instance: axi_datamover, and set properties
+  set axi_datamover [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_datamover:5.1 axi_datamover ]
+  set_property -dict [ list \
+   CONFIG.c_dummy {0} \
+   CONFIG.c_m_axi_mm2s_data_width {512} \
+   CONFIG.c_m_axi_mm2s_id_width {8} \
+   CONFIG.c_m_axi_s2mm_data_width {512} \
+   CONFIG.c_m_axi_s2mm_id_width {8} \
+   CONFIG.c_m_axis_mm2s_tdata_width {512} \
+   CONFIG.c_mm2s_btt_used {23} \
+   CONFIG.c_mm2s_burst_size {64} \
+   CONFIG.c_mm2s_include_sf {false} \
+   CONFIG.c_s2mm_btt_used {23} \
+   CONFIG.c_s2mm_burst_size {64} \
+   CONFIG.c_s_axis_s2mm_tdata_width {512} \
+ ] $axi_datamover
+
+  # Create instance: ht_bram
+  create_hier_cell_ht_bram [current_bd_instance .] ht_bram
+
+  # Create instance: mapping_hls_top, and set properties
+  set mapping_hls_top [ create_bd_cell -type ip -vlnv purdue.wuklab:hls:paging_top:1.0 mapping_hls_top ]
+
+  # Create interface connections
+  connect_bd_intf_net -intf_net axi_crossbar_0_M00_AXI [get_bd_intf_ports M00_AXI_0] [get_bd_intf_pins axi_crossbar_0/M00_AXI]
+  connect_bd_intf_net -intf_net axi_datamover_M_AXIS_MM2S [get_bd_intf_pins axi_datamover/M_AXIS_MM2S] [get_bd_intf_pins mapping_hls_top/DRAM_rd_data]
+  connect_bd_intf_net -intf_net axi_datamover_M_AXIS_MM2S_STS [get_bd_intf_pins axi_datamover/M_AXIS_MM2S_STS] [get_bd_intf_pins mapping_hls_top/DRAM_rd_status_V_V]
+  connect_bd_intf_net -intf_net axi_datamover_M_AXIS_S2MM_STS [get_bd_intf_pins axi_datamover/M_AXIS_S2MM_STS] [get_bd_intf_pins mapping_hls_top/DRAM_wr_status_V_V]
+  connect_bd_intf_net -intf_net axi_datamover_M_AXI_MM2S [get_bd_intf_pins axi_crossbar_0/S00_AXI] [get_bd_intf_pins axi_datamover/M_AXI_MM2S]
+  connect_bd_intf_net -intf_net axi_datamover_M_AXI_S2MM [get_bd_intf_pins axi_crossbar_0/S01_AXI] [get_bd_intf_pins axi_datamover/M_AXI_S2MM]
+  connect_bd_intf_net -intf_net axis_data_fifo_0_M_AXIS [get_bd_intf_pins Buffer_ToBeRemoved/in_read_m] [get_bd_intf_pins mapping_hls_top/in_read_V]
+  connect_bd_intf_net -intf_net axis_data_fifo_1_M_AXIS [get_bd_intf_pins Buffer_ToBeRemoved/in_write_m] [get_bd_intf_pins mapping_hls_top/in_write_V]
+  connect_bd_intf_net -intf_net axis_data_fifo_1_M_AXIS1 [get_bd_intf_pins ht_bram/M_AXIS] [get_bd_intf_pins mapping_hls_top/BRAM_rd_data]
+  connect_bd_intf_net -intf_net axis_data_fifo_4_M_AXIS [get_bd_intf_pins ht_bram/M_AXIS1] [get_bd_intf_pins mapping_hls_top/BRAM_rd_status_V_V]
+  connect_bd_intf_net -intf_net axis_data_fifo_5_M_AXIS [get_bd_intf_pins ht_bram/M_AXIS2] [get_bd_intf_pins mapping_hls_top/BRAM_wr_status_V_V]
+  connect_bd_intf_net -intf_net in_read_0_1 [get_bd_intf_ports in_read_0] [get_bd_intf_pins Buffer_ToBeRemoved/in_read_0]
+  connect_bd_intf_net -intf_net in_write_0_1 [get_bd_intf_ports in_write_0] [get_bd_intf_pins Buffer_ToBeRemoved/in_write_0]
+  connect_bd_intf_net -intf_net mapping_hls_top_BRAM_rd_cmd_V [get_bd_intf_pins ht_bram/S_AXIS] [get_bd_intf_pins mapping_hls_top/BRAM_rd_cmd_V]
+  connect_bd_intf_net -intf_net mapping_hls_top_BRAM_wr_cmd_V [get_bd_intf_pins ht_bram/S_AXIS1] [get_bd_intf_pins mapping_hls_top/BRAM_wr_cmd_V]
+  connect_bd_intf_net -intf_net mapping_hls_top_BRAM_wr_data [get_bd_intf_pins ht_bram/S_AXIS2] [get_bd_intf_pins mapping_hls_top/BRAM_wr_data]
+  connect_bd_intf_net -intf_net mapping_hls_top_DRAM_rd_cmd_V [get_bd_intf_pins axi_datamover/S_AXIS_MM2S_CMD] [get_bd_intf_pins mapping_hls_top/DRAM_rd_cmd_V]
+  connect_bd_intf_net -intf_net mapping_hls_top_DRAM_wr_cmd_V [get_bd_intf_pins axi_datamover/S_AXIS_S2MM_CMD] [get_bd_intf_pins mapping_hls_top/DRAM_wr_cmd_V]
+  connect_bd_intf_net -intf_net mapping_hls_top_DRAM_wr_data [get_bd_intf_pins axi_datamover/S_AXIS_S2MM] [get_bd_intf_pins mapping_hls_top/DRAM_wr_data]
+  connect_bd_intf_net -intf_net mapping_hls_top_out_read_V [get_bd_intf_ports out_read_0] [get_bd_intf_pins mapping_hls_top/out_read_V]
+  connect_bd_intf_net -intf_net mapping_hls_top_out_write_V [get_bd_intf_ports out_write_0] [get_bd_intf_pins mapping_hls_top/out_write_V]
+
+  # Create port connections
+  connect_bd_net -net ddr4_0_c0_ddr4_ui_clk [get_bd_ports ap_clk] [get_bd_pins Buffer_ToBeRemoved/s_axis_aclk] [get_bd_pins axi_crossbar_0/aclk] [get_bd_pins axi_datamover/m_axi_mm2s_aclk] [get_bd_pins axi_datamover/m_axi_s2mm_aclk] [get_bd_pins axi_datamover/m_axis_mm2s_cmdsts_aclk] [get_bd_pins axi_datamover/m_axis_s2mm_cmdsts_awclk] [get_bd_pins ht_bram/ap_clk] [get_bd_pins mapping_hls_top/ap_clk]
+  connect_bd_net -net util_vector_logic_0_Res [get_bd_ports ap_rstn] [get_bd_pins Buffer_ToBeRemoved/mc_ddr4_ui_clk_rst_n] [get_bd_pins axi_crossbar_0/aresetn] [get_bd_pins axi_datamover/m_axi_mm2s_aresetn] [get_bd_pins axi_datamover/m_axi_s2mm_aresetn] [get_bd_pins axi_datamover/m_axis_mm2s_cmdsts_aresetn] [get_bd_pins axi_datamover/m_axis_s2mm_cmdsts_aresetn] [get_bd_pins ht_bram/mc_ddr4_ui_clk_rst_n] [get_bd_pins mapping_hls_top/ap_rst_n]
+
+  # Create address segments
+  create_bd_addr_seg -range 0x000100000000 -offset 0x00000000 [get_bd_addr_spaces axi_datamover/Data_MM2S] [get_bd_addr_segs M00_AXI_0/Reg] SEG_M00_AXI_0_Reg
+  create_bd_addr_seg -range 0x000100000000 -offset 0x00000000 [get_bd_addr_spaces axi_datamover/Data_S2MM] [get_bd_addr_segs M00_AXI_0/Reg] SEG_M00_AXI_0_Reg
+
+
+  # Restore current instance
+  current_bd_instance $oldCurInst
+
+  save_bd_design
+common::send_msg_id "BD_TCL-1000" "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
+
+  close_bd_design $design_name 
+}
 # End of cr_bd_mapping_ip_top()
 cr_bd_mapping_ip_top ""
 set_property IS_MANAGED "0" [get_files mapping_ip_top.bd ] 
 set_property REGISTERED_WITH_MANAGER "1" [get_files mapping_ip_top.bd ] 
 set_property SYNTH_CHECKPOINT_MODE "Hierarchical" [get_files mapping_ip_top.bd ] 
 
-#
-# Export this IP before creating the BD TB
-#
 #ipx::package_project -root_dir ../../generated_ip/mm_ip_mapping -vendor wuklab -library user -taxonomy UserIP -module mapping_ip_top -import_files
 ipx::package_project -root_dir ${origin_dir}/../../generated_ip/mm_ip_mapping -vendor wuklab -library user -taxonomy UserIP -module mapping_ip_top -import_files
 update_ip_catalog -rebuild
-
 
 # Create 'synth_1' run (if not found)
 if {[string equal [get_runs -quiet synth_1] ""]} {

@@ -34,7 +34,7 @@ csim_design
 csynth_design
 
 # Export IP block
-export_design -format ip_catalog -display_name "app_rdm_virtual" -description "App Virtual RDM" -vendor "wuklab" -version "1.0"
+export_design -format ip_catalog -display_name "app_rdm_mapping" -description "App RDM with Mapping version" -vendor "wuklab" -version "1.0"
 
 # Do not perform any other steps
 # - The basic project will be opened in the GUI 
