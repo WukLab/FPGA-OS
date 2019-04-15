@@ -6,6 +6,9 @@
 *.log
 *.jou
 *.str
+*.mcs
+*.prm
+*.bit
 
 # Generated HLS project folder
 # Listed in template file as well

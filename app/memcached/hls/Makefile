@@ -15,7 +15,7 @@ endif
 .DEFAULT_GOAL := mcd_buddy_top
 
 mcd_top: mcd_comp ip mcd_prj
-mcd_buddy_top: mcd_buddy_comp buddy_ip ip mcd_buddy_prj
+mcd_buddy_top: mcd_buddy_comp ip mcd_buddy_prj
 .PHONY: mcd_buddy_top
 
 mcd_prj:
@@ -31,9 +31,6 @@ mcd_comp:
 	$(VIVADO_HLS) -f run_hls_mcd_$(TARGET_BOARD).tcl
 	$(VIVADO_HLS) -f run_hls_writeConverter_$(TARGET_BOARD).tcl
 	$(VIVADO_HLS) -f run_hls_readConverter_$(TARGET_BOARD).tcl
-
-buddy_ip:
-	make -C "../../../alloc"
 
 temp:
 	$(VIVADO_HLS) -f run_hls.memcachedBuddy_$(TARGET_BOARD).tcl

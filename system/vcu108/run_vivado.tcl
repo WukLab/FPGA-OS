@@ -143,6 +143,8 @@ set files [list \
  [file normalize "${origin_dir}/rtl/qsfp_mac/axi4_lite.v"]\
  [file normalize "${origin_dir}/rtl/top_axi_mac.v" ]\
  [file normalize "${origin_dir}/rtl/top_qsfp_mac.v" ]\
+ [file normalize "${origin_dir}/rtl/pcie/sync_reset.v"] \
+ [file normalize "${origin_dir}/rtl/top_pcie_rdm.v"] \
 ]
 add_files -norecurse -fileset $obj $files
 
@@ -160,49 +162,55 @@ if { ![get_property "is_locked" $file_obj] } {
 }
 set_property -name "registered_with_manager" -value "1" -objects $file_obj
 
-
 # Set 'sources_1' fileset properties
 set obj [get_filesets sources_1]
 set_property -name "top" -value "legofpga_mac_qsfp" -objects $obj
 set_property -name "top_auto_set" -value "0" -objects $obj
 
+
+
 #
 # Create Constraints Fileset
-# - constrs_1: for mac_qsfp
-# - constrs_2: for mac_axi
+# - constrs_MAC_QSFP: for mac_qsfp
+# - constrs_MAC_AXI: for mac_axi
+# - constrs_PCIe: for pcie
 #
 
-# Create 'constrs_1' fileset (if not found)
-if {[string equal [get_filesets -quiet constrs_1] ""]} {
-  create_fileset -constrset constrs_1
+##
+# Create 'constrs_MAC_QSFP' fileset (if not found)
+#
+if {[string equal [get_filesets -quiet constrs_MAC_QSFP] ""]} {
+  create_fileset -constrset constrs_MAC_QSFP
 }
 
-# Set 'constrs_1' fileset object
-set obj [get_filesets constrs_1]
+# Set 'constrs_MAC_QSFP' fileset object
+set obj [get_filesets constrs_MAC_QSFP]
 
 # Add/Import constrs file and set constrs file properties
 set file "[file normalize "$origin_dir/rtl/top_qsfp_mac.xdc"]"
 set file_added [add_files -norecurse -fileset $obj [list $file]]
 set file "rtl/top_qsfp_mac.xdc"
-set file_obj [get_files -of_objects [get_filesets constrs_1] [list "*$file"]]
+set file_obj [get_files -of_objects [get_filesets constrs_MAC_QSFP] [list "*$file"]]
 set_property -name "file_type" -value "XDC" -objects $file_obj
 
-# Set 'constrs_1' fileset properties
-set obj [get_filesets constrs_1]
+# Set 'constrs_MAC_QSFP' fileset properties
+set obj [get_filesets constrs_MAC_QSFP]
 
-# Create 'constrs_2' fileset (if not found)
-if {[string equal [get_filesets -quiet constrs_2] ""]} {
-  create_fileset -constrset constrs_2
+##
+# Create 'constrs_MAC_AXI' fileset (if not found)
+#
+if {[string equal [get_filesets -quiet constrs_MAC_AXI] ""]} {
+  create_fileset -constrset constrs_MAC_AXI
 }
 
-# Set 'constrs_2' fileset object
-set obj [get_filesets constrs_2]
+# Set 'constrs_MAC_AXI' fileset object
+set obj [get_filesets constrs_MAC_AXI]
 
 # Add/Import constrs file and set constrs file properties
 set file "[file normalize "$origin_dir/rtl/axi_mac/axi_ethernet_0_example_design.xdc"]"
 set file_added [add_files -norecurse -fileset $obj [list $file]]
 set file "rtl/axi_mac/axi_ethernet_0_example_design.xdc"
-set file_obj [get_files -of_objects [get_filesets constrs_2] [list "*$file"]]
+set file_obj [get_files -of_objects [get_filesets constrs_MAC_AXI] [list "*$file"]]
 set_property -name "file_type" -value "XDC" -objects $file_obj
 set_property -name "processing_order" -value "EARLY" -objects $file_obj
 
@@ -210,26 +218,52 @@ set_property -name "processing_order" -value "EARLY" -objects $file_obj
 set file "[file normalize "$origin_dir/rtl/axi_mac/axi_ethernet_0_ex_des_loc.xdc"]"
 set file_added [add_files -norecurse -fileset $obj [list $file]]
 set file "rtl/axi_mac/axi_ethernet_0_ex_des_loc.xdc"
-set file_obj [get_files -of_objects [get_filesets constrs_2] [list "*$file"]]
+set file_obj [get_files -of_objects [get_filesets constrs_MAC_AXI] [list "*$file"]]
 set_property -name "file_type" -value "XDC" -objects $file_obj
 set_property -name "processing_order" -value "LATE" -objects $file_obj
 
-# Set 'constrs_2' fileset properties
-set obj [get_filesets constrs_2]
+# Set 'constrs_MAC_AXI' fileset properties
+set obj [get_filesets constrs_MAC_AXI]
+
+##
+# Create 'constrs_PCIe' fileset (if not found)
+#
+if {[string equal [get_filesets -quiet constrs_PCIe] ""]} {
+  create_fileset -constrset constrs_PCIe
+}
+
+# Set 'constrs_PCIe' fileset object
+set obj [get_filesets constrs_PCIe]
+
+# Add/Import constrs file and set constrs file properties
+set file "[file normalize "$origin_dir/rtl/top_pcie.xdc"]"
+set file_added [add_files -norecurse -fileset $obj [list $file]]
+set file "$origin_dir/rtl/top_pcie.xdc"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets constrs_PCIe] [list "$file"]]
+set_property -name "file_type" -value "XDC" -objects $file_obj
+
+# Set 'constrs_PCIe' fileset properties
+set obj [get_filesets constrs_PCIe]
+
+
 
 #
 # Create Simulation Filesets
-# - sim_1: for mac_qsfp
-# - sim_2: for mac_axi
+# - sim_MAC_QSFP: for mac_qsfp
+# - sim_MAC_AXI: for mac_axi
+# - sim_PCIe: for pcie
 #
 
-# Create 'sim_1' fileset (if not found)
-if {[string equal [get_filesets -quiet sim_1] ""]} {
-  create_fileset -simset sim_1
+##
+# Create 'sim_MAC_QSFP' fileset (if not found)
+#
+if {[string equal [get_filesets -quiet sim_MAC_QSFP] ""]} {
+  create_fileset -simset sim_MAC_QSFP
 }
 
-# Set 'sim_1' fileset object
-set obj [get_filesets sim_1]
+# Set 'sim_MAC_QSFP' fileset object
+set obj [get_filesets sim_MAC_QSFP]
 # Import local files from the original project
 set files [list \
  [file normalize "${origin_dir}/tb/top_qsfp_mac_tb.v"] \
@@ -255,82 +289,82 @@ set files [list \
 ]
 add_files -norecurse -fileset $obj $files
 
-# Set 'sim_1' fileset file properties for remote files
+# Set 'sim_MAC_QSFP' fileset file properties for remote files
 set file "$origin_dir/tb/ddr4_model/MemoryArray.sv"
 set file [file normalize $file]
-set file_obj [get_files -of_objects [get_filesets sim_1] [list "*$file"]]
+set file_obj [get_files -of_objects [get_filesets sim_MAC_QSFP] [list "*$file"]]
 set_property -name "file_type" -value "Verilog Header" -objects $file_obj
 
 set file "$origin_dir/tb/ddr4_model/StateTableCore.sv"
 set file [file normalize $file]
-set file_obj [get_files -of_objects [get_filesets sim_1] [list "*$file"]]
+set file_obj [get_files -of_objects [get_filesets sim_MAC_QSFP] [list "*$file"]]
 set_property -name "file_type" -value "Verilog Header" -objects $file_obj
 
 set file "$origin_dir/tb/ddr4_model/StateTable.sv"
 set file [file normalize $file]
-set file_obj [get_files -of_objects [get_filesets sim_1] [list "*$file"]]
+set file_obj [get_files -of_objects [get_filesets sim_MAC_QSFP] [list "*$file"]]
 set_property -name "file_type" -value "Verilog Header" -objects $file_obj
 
 set file "$origin_dir/tb/ddr4_model/arch_defines.v"
 set file [file normalize $file]
-set file_obj [get_files -of_objects [get_filesets sim_1] [list "*$file"]]
+set file_obj [get_files -of_objects [get_filesets sim_MAC_QSFP] [list "*$file"]]
 set_property -name "file_type" -value "Verilog Header" -objects $file_obj
 
 set file "$origin_dir/tb/ddr4_model/arch_package.sv"
 set file [file normalize $file]
-set file_obj [get_files -of_objects [get_filesets sim_1] [list "*$file"]]
+set file_obj [get_files -of_objects [get_filesets sim_MAC_QSFP] [list "*$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
 
 set file "$origin_dir/tb/ddr4_model/ddr4_sdram_model_wrapper.sv"
 set file [file normalize $file]
-set file_obj [get_files -of_objects [get_filesets sim_1] [list "*$file"]]
+set file_obj [get_files -of_objects [get_filesets sim_MAC_QSFP] [list "*$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
 
 set file "$origin_dir/tb/ddr4_model/proj_package.sv"
 set file [file normalize $file]
-set file_obj [get_files -of_objects [get_filesets sim_1] [list "*$file"]]
+set file_obj [get_files -of_objects [get_filesets sim_MAC_QSFP] [list "*$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
 
 set file "$origin_dir/tb/ddr4_model/timing_tasks.sv"
 set file [file normalize $file]
-set file_obj [get_files -of_objects [get_filesets sim_1] [list "*$file"]]
+set file_obj [get_files -of_objects [get_filesets sim_MAC_QSFP] [list "*$file"]]
 set_property -name "file_type" -value "Verilog Header" -objects $file_obj
 
 set file "$origin_dir/tb/ddr4_model/ddr4_model.sv"
 set file [file normalize $file]
-set file_obj [get_files -of_objects [get_filesets sim_1] [list "*$file"]]
+set file_obj [get_files -of_objects [get_filesets sim_MAC_QSFP] [list "*$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
 
 set file "$origin_dir/tb/ddr4_model/ddr4_tb_top.sv"
 set file [file normalize $file]
-set file_obj [get_files -of_objects [get_filesets sim_1] [list "*$file"]]
+set file_obj [get_files -of_objects [get_filesets sim_MAC_QSFP] [list "*$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
 
 set file "$origin_dir/tb/ddr4_model/interface.sv"
 set file [file normalize $file]
-set file_obj [get_files -of_objects [get_filesets sim_1] [list "*$file"]]
+set file_obj [get_files -of_objects [get_filesets sim_MAC_QSFP] [list "*$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
 
 set file "$origin_dir/tb/ddr4_model/microblaze_mcs_0.sv"
 set file [file normalize $file]
-set file_obj [get_files -of_objects [get_filesets sim_1] [list "*$file"]]
+set file_obj [get_files -of_objects [get_filesets sim_MAC_QSFP] [list "*$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
 
-
-# Set 'sim_1' fileset properties
-set obj [get_filesets sim_1]
+# Set 'sim_MAC_QSFP' fileset properties
+set obj [get_filesets sim_MAC_QSFP]
 set_property -name "top" -value "legofpga_mac_qsfp_tb" -objects $obj
 set_property -name "top_auto_set" -value "0" -objects $obj
 set_property -name "top_lib" -value "xil_defaultlib" -objects $obj
 
-
-# Create 'sim_2' fileset (if not found)
-if {[string equal [get_filesets -quiet sim_2] ""]} {
-  create_fileset -simset sim_2
+##
+# Create 'sim_MAC_AXI' fileset (if not found)
+#
+if {[string equal [get_filesets -quiet sim_MAC_AXI] ""]} {
+  create_fileset -simset sim_MAC_AXI
 }
 
-# Set 'sim_2' fileset object
-set obj [get_filesets sim_2]
+# Set 'sim_MAC_AXI' fileset object
+set obj [get_filesets sim_MAC_AXI]
 # Import local files from the original project
 set files [list \
  [file normalize "${origin_dir}/tb/axi_ethernet_0_frame_typ.v" ]\
@@ -338,21 +372,149 @@ set files [list \
 ]
 add_files -norecurse -fileset $obj $files
 
-# Set 'sim_2' fileset file properties for local files
+# Set 'sim_MAC_AXI' fileset file properties for local files
 set file "$origin_dir/tb/axi_ethernet_0_frame_typ.v"
 set file [file normalize $file]
-set file_obj [get_files -of_objects [get_filesets sim_2] [list "*$file"]]
+set file_obj [get_files -of_objects [get_filesets sim_MAC_AXI] [list "*$file"]]
 set_property -name "used_in" -value "implementation simulation" -objects $file_obj
 set_property -name "used_in_synthesis" -value "0" -objects $file_obj
 
 set file "$origin_dir/tb/top_axi_mac_tb.v"
 set file [file normalize $file]
-set file_obj [get_files -of_objects [get_filesets sim_2] [list "*$file"]]
+set file_obj [get_files -of_objects [get_filesets sim_MAC_AXI] [list "*$file"]]
 set_property -name "used_in" -value "implementation simulation" -objects $file_obj
 set_property -name "used_in_synthesis" -value "0" -objects $file_obj
 
-# Set 'sim_2' fileset properties
-set obj [get_filesets sim_2]
+# Set 'sim_MAC_AXI' fileset properties
+set obj [get_filesets sim_MAC_AXI]
+
+##
+# Create 'sim_PCIe' fileset (if not found)
+#
+if {[string equal [get_filesets -quiet sim_PCIe] ""]} {
+  create_fileset -simset sim_PCIe
+}
+
+# Set 'sim_PCIe' fileset object
+set obj [get_filesets sim_PCIe]
+set files [list \
+ [file normalize "${origin_dir}/tb/top_pcie_rdm_tb.v"] \
+ [file normalize "${origin_dir}/tb/kvs/output.txt"] \
+ [file normalize "${origin_dir}/tb/kvs/input.txt"] \
+ [file normalize "${origin_dir}/tb/ddr4_model/MemoryArray.sv"] \
+ [file normalize "${origin_dir}/tb/ddr4_model/StateTableCore.sv"] \
+ [file normalize "${origin_dir}/tb/ddr4_model/StateTable.sv"] \
+ [file normalize "${origin_dir}/tb/ddr4_model/arch_defines.v"] \
+ [file normalize "${origin_dir}/tb/ddr4_model/arch_package.sv"] \
+ [file normalize "${origin_dir}/tb/ddr4_model/ddr4_sdram_model_wrapper.sv"] \
+ [file normalize "${origin_dir}/tb/ddr4_model/proj_package.sv"] \
+ [file normalize "${origin_dir}/tb/ddr4_model/timing_tasks.sv"] \
+ [file normalize "${origin_dir}/tb/ddr4_model/ddr4_model.sv"] \
+ [file normalize "${origin_dir}/tb/ddr4_model/ddr4_tb_top.sv"] \
+ [file normalize "${origin_dir}/tb/ddr4_model/interface.sv"] \
+ [file normalize "${origin_dir}/tb/ddr4_model/temp_mem.txt"] \
+ [file normalize "${origin_dir}/tb/ddr4_model/temp_second_mem.txt"] \
+ [file normalize "${origin_dir}/tb/pcie_rp/pci_exp_usrapp_com.v"] \
+ [file normalize "${origin_dir}/tb/pcie_rp/pcie3_uscale_rp_top.v"] \
+ [file normalize "${origin_dir}/tb/pcie_rp/pci_exp_usrapp_pl.v"] \
+ [file normalize "${origin_dir}/tb/pcie_rp/pci_exp_usrapp_cfg.v"] \
+ [file normalize "${origin_dir}/tb/pcie_rp/pci_exp_usrapp_tx.v"] \
+ [file normalize "${origin_dir}/tb/pcie_rp/xilinx_pcie_uscale_rp.v"] \
+ [file normalize "${origin_dir}/tb/pcie_rp/pcie3_uscale_rp_core_top.v"] \
+ [file normalize "${origin_dir}/tb/pcie_rp/pci_exp_usrapp_rx.v"] \
+ [file normalize "${origin_dir}/tb/pcie_rp/pci_exp_expect_tasks.vh"] \
+ [file normalize "${origin_dir}/tb/pcie_rp/tests.vh"] \
+ [file normalize "${origin_dir}/tb/pcie_rp/board_common.vh"] \
+ [file normalize "${origin_dir}/tb/pcie_rp/sample_tests.vh"] \
+]
+add_files -norecurse -fileset $obj $files
+
+# Set 'sim_PCIe' fileset file properties for remote files
+set file "$origin_dir/tb/ddr4_model/MemoryArray.sv"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sim_PCIe] [list "*$file"]]
+set_property -name "file_type" -value "Verilog Header" -objects $file_obj
+
+set file "$origin_dir/tb/ddr4_model/StateTableCore.sv"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sim_PCIe] [list "*$file"]]
+set_property -name "file_type" -value "Verilog Header" -objects $file_obj
+
+set file "$origin_dir/tb/ddr4_model/StateTable.sv"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sim_PCIe] [list "*$file"]]
+set_property -name "file_type" -value "Verilog Header" -objects $file_obj
+
+set file "$origin_dir/tb/ddr4_model/arch_defines.v"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sim_PCIe] [list "*$file"]]
+set_property -name "file_type" -value "Verilog Header" -objects $file_obj
+
+set file "$origin_dir/tb/ddr4_model/arch_package.sv"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sim_PCIe] [list "*$file"]]
+set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
+
+set file "$origin_dir/tb/ddr4_model/ddr4_sdram_model_wrapper.sv"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sim_PCIe] [list "*$file"]]
+set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
+
+set file "$origin_dir/tb/ddr4_model/proj_package.sv"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sim_PCIe] [list "*$file"]]
+set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
+
+set file "$origin_dir/tb/ddr4_model/timing_tasks.sv"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sim_PCIe] [list "*$file"]]
+set_property -name "file_type" -value "Verilog Header" -objects $file_obj
+
+set file "$origin_dir/tb/ddr4_model/ddr4_model.sv"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sim_PCIe] [list "*$file"]]
+set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
+
+set file "$origin_dir/tb/ddr4_model/ddr4_tb_top.sv"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sim_PCIe] [list "*$file"]]
+set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
+
+set file "$origin_dir/tb/ddr4_model/interface.sv"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sim_PCIe] [list "*$file"]]
+set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
+
+set file "$origin_dir/tb/pcie_rp/pci_exp_expect_tasks.vh"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sim_PCIe] [list "*$file"]]
+set_property -name "file_type" -value "Verilog Header" -objects $file_obj
+
+set file "$origin_dir/tb/pcie_rp/tests.vh"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sim_PCIe] [list "*$file"]]
+set_property -name "file_type" -value "Verilog Header" -objects $file_obj
+
+set file "$origin_dir/tb/pcie_rp/board_common.vh"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sim_PCIe] [list "*$file"]]
+set_property -name "file_type" -value "Verilog Header" -objects $file_obj
+
+set file "$origin_dir/tb/pcie_rp/sample_tests.vh"
+set file [file normalize $file]
+set file_obj [get_files -of_objects [get_filesets sim_PCIe] [list "*$file"]]
+set_property -name "file_type" -value "Verilog Header" -objects $file_obj
+
+
+# Set 'sim_PCIe' fileset properties
+set obj [get_filesets sim_PCIe]
+set_property -name "top" -value "board" -objects $obj
+set_property -name "top_auto_set" -value "0" -objects $obj
+set_property -name "top_lib" -value "xil_defaultlib" -objects $obj
+
+
+
+
 
 #
 # Create Block Diagrams
@@ -2883,9 +3045,178 @@ set_property IS_MANAGED "0" [get_files mac_qsfp.bd ]
 set_property REGISTERED_WITH_MANAGER "1" [get_files mac_qsfp.bd ] 
 set_property SYNTH_CHECKPOINT_MODE "Hierarchical" [get_files mac_qsfp.bd ] 
 
+
+# Proc to create BD pcie
+proc cr_bd_pcie { parentCell } {
+
+  # CHANGE DESIGN NAME HERE
+  set design_name pcie
+
+  common::send_msg_id "BD_TCL-003" "INFO" "Currently there is no design <$design_name> in project, so creating one..."
+
+  create_bd_design $design_name
+
+  set bCheckIPsPassed 1
+  ##################################################################
+  # CHECK IPs
+  ##################################################################
+  set bCheckIPs 1
+  if { $bCheckIPs == 1 } {
+     set list_check_ips "\
+  xilinx.com:ip:xdma:4.1\
+  "
+
+   set list_ips_missing ""
+   common::send_msg_id "BD_TCL-006" "INFO" "Checking if the following IPs exist in the project's IP catalog: $list_check_ips ."
+
+   foreach ip_vlnv $list_check_ips {
+      set ip_obj [get_ipdefs -all $ip_vlnv]
+      if { $ip_obj eq "" } {
+         lappend list_ips_missing $ip_vlnv
+      }
+   }
+
+   if { $list_ips_missing ne "" } {
+      catch {common::send_msg_id "BD_TCL-115" "ERROR" "The following IPs are not found in the IP Catalog:\n  $list_ips_missing\n\nResolution: Please add the repository containing the IP(s) to the project." }
+      set bCheckIPsPassed 0
+   }
+
+  }
+
+  if { $bCheckIPsPassed != 1 } {
+    common::send_msg_id "BD_TCL-1003" "WARNING" "Will not continue with creation of design due to the error(s) above."
+    return 3
+  }
+
+  variable script_folder
+
+  if { $parentCell eq "" } {
+     set parentCell [get_bd_cells /]
+  }
+
+  # Get object for parentCell
+  set parentObj [get_bd_cells $parentCell]
+  if { $parentObj == "" } {
+     catch {common::send_msg_id "BD_TCL-100" "ERROR" "Unable to find parent cell <$parentCell>!"}
+     return
+  }
+
+  # Make sure parentObj is hier blk
+  set parentType [get_property TYPE $parentObj]
+  if { $parentType ne "hier" } {
+     catch {common::send_msg_id "BD_TCL-101" "ERROR" "Parent <$parentObj> has TYPE = <$parentType>. Expected to be <hier>."}
+     return
+  }
+
+  # Save current instance; Restore later
+  set oldCurInst [current_bd_instance .]
+
+  # Set parent object as current
+  current_bd_instance $parentObj
+
+
+  # Create interface ports
+  set M_AXIS_H2C [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 M_AXIS_H2C ]
+  set S_AXIS_C2H [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 S_AXIS_C2H ]
+  set_property -dict [ list \
+   CONFIG.HAS_TKEEP {1} \
+   CONFIG.HAS_TLAST {1} \
+   CONFIG.HAS_TREADY {1} \
+   CONFIG.HAS_TSTRB {0} \
+   CONFIG.LAYERED_METADATA {undef} \
+   CONFIG.TDATA_NUM_BYTES {32} \
+   CONFIG.TDEST_WIDTH {0} \
+   CONFIG.TID_WIDTH {0} \
+   CONFIG.TUSER_WIDTH {0} \
+   ] $S_AXIS_C2H
+  set pcie3_us_int_shared_logic [ create_bd_intf_port -mode Master -vlnv xilinx.com:display_xdma:int_shared_logic_rtl:1.0 pcie3_us_int_shared_logic ]
+  set pcie_mgt [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:pcie_7x_mgt_rtl:1.0 pcie_mgt ]
+
+  # Create ports
+  set axi_aclk [ create_bd_port -dir O -type clk axi_aclk ]
+  set_property -dict [ list \
+   CONFIG.ASSOCIATED_BUSIF {M_AXIS_H2C:S_AXIS_C2H} \
+ ] $axi_aclk
+  set axi_aresetn [ create_bd_port -dir O -type rst axi_aresetn ]
+  set sys_clk [ create_bd_port -dir I -type clk sys_clk ]
+  set_property -dict [ list \
+   CONFIG.CLK_DOMAIN {pcie_sys_clk} \
+   CONFIG.FREQ_HZ {100000000} \
+ ] $sys_clk
+  set sys_clk_gt [ create_bd_port -dir I -type clk sys_clk_gt ]
+  set sys_rst_n [ create_bd_port -dir I -type rst sys_rst_n ]
+  set user_lnk_up [ create_bd_port -dir O user_lnk_up ]
+  set usr_irq_ack [ create_bd_port -dir O -from 0 -to 0 usr_irq_ack ]
+  set usr_irq_req [ create_bd_port -dir I -from 0 -to 0 usr_irq_req ]
+
+  # Create instance: xdma_0, and set properties
+  set xdma_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xdma:4.1 xdma_0 ]
+  set_property -dict [ list \
+   CONFIG.PCIE_BOARD_INTERFACE {pci_express_x8} \
+   CONFIG.PF0_DEVICE_ID_mqdma {9038} \
+   CONFIG.PF2_DEVICE_ID_mqdma {9038} \
+   CONFIG.PF3_DEVICE_ID_mqdma {9038} \
+   CONFIG.SYS_RST_N_BOARD_INTERFACE {pcie_perstn} \
+   CONFIG.axi_data_width {256_bit} \
+   CONFIG.axisten_freq {250} \
+   CONFIG.cfg_mgmt_if {false} \
+   CONFIG.coreclk_freq {500} \
+   CONFIG.pcie_extended_tag {false} \
+   CONFIG.pf0_device_id {8038} \
+   CONFIG.pf0_interrupt_pin {INTA} \
+   CONFIG.pf0_link_status_slot_clock_config {true} \
+   CONFIG.pf0_msi_enabled {false} \
+   CONFIG.pl_link_cap_max_link_speed {8.0_GT/s} \
+   CONFIG.pl_link_cap_max_link_width {X8} \
+   CONFIG.plltype {QPLL1} \
+   CONFIG.ref_clk_freq {100_MHz} \
+   CONFIG.xdma_axi_intf_mm {AXI_Stream} \
+ ] $xdma_0
+
+  # Create interface connections
+  connect_bd_intf_net -intf_net S_AXIS_C2H_0_0_1 [get_bd_intf_ports S_AXIS_C2H] [get_bd_intf_pins xdma_0/S_AXIS_C2H_0]
+  connect_bd_intf_net -intf_net xdma_0_M_AXIS_H2C_0 [get_bd_intf_ports M_AXIS_H2C] [get_bd_intf_pins xdma_0/M_AXIS_H2C_0]
+  connect_bd_intf_net -intf_net xdma_0_pcie3_us_int_shared_logic [get_bd_intf_ports pcie3_us_int_shared_logic] [get_bd_intf_pins xdma_0/pcie3_us_int_shared_logic]
+  connect_bd_intf_net -intf_net xdma_0_pcie_mgt [get_bd_intf_ports pcie_mgt] [get_bd_intf_pins xdma_0/pcie_mgt]
+
+  # Create port connections
+  connect_bd_net -net sys_clk_0_1 [get_bd_ports sys_clk] [get_bd_pins xdma_0/sys_clk]
+  connect_bd_net -net sys_clk_gt_0_1 [get_bd_ports sys_clk_gt] [get_bd_pins xdma_0/sys_clk_gt]
+  connect_bd_net -net sys_rst_n_0_1 [get_bd_ports sys_rst_n] [get_bd_pins xdma_0/sys_rst_n]
+  connect_bd_net -net usr_irq_req_0_1 [get_bd_ports usr_irq_req] [get_bd_pins xdma_0/usr_irq_req]
+  connect_bd_net -net xdma_0_axi_aclk [get_bd_ports axi_aclk] [get_bd_pins xdma_0/axi_aclk]
+  connect_bd_net -net xdma_0_axi_aresetn [get_bd_ports axi_aresetn] [get_bd_pins xdma_0/axi_aresetn]
+  connect_bd_net -net xdma_0_user_lnk_up [get_bd_ports user_lnk_up] [get_bd_pins xdma_0/user_lnk_up]
+  connect_bd_net -net xdma_0_usr_irq_ack [get_bd_ports usr_irq_ack] [get_bd_pins xdma_0/usr_irq_ack]
+
+  # Create address segments
+
+
+  # Restore current instance
+  current_bd_instance $oldCurInst
+
+  save_bd_design
+  close_bd_design $design_name
+}
+# End of cr_bd_pcie()
+cr_bd_pcie ""
+set_property IS_MANAGED "0" [get_files pcie.bd ]
+set_property REGISTERED_WITH_MANAGER "1" [get_files pcie.bd ]
+set_property SYNTH_CHECKPOINT_MODE "Hierarchical" [get_files pcie.bd ]
+
+
+
+
+
+
+
+
+
+
+
 # Create 'synth_1' run (if not found)
 if {[string equal [get_runs -quiet synth_1] ""]} {
-    create_run -name synth_1 -part xcvu095-ffva2104-2-e -flow {Vivado Synthesis 2018} -strategy "Vivado Synthesis Defaults" -report_strategy {No Reports} -constrset constrs_1
+    create_run -name synth_1 -part xcvu095-ffva2104-2-e -flow {Vivado Synthesis 2018} -strategy "Vivado Synthesis Defaults" -report_strategy {No Reports} -constrset constrs_MAC_QSFP
 } else {
   set_property strategy "Vivado Synthesis Defaults" [get_runs synth_1]
   set_property flow "Vivado Synthesis 2018" [get_runs synth_1]
@@ -2910,7 +3241,7 @@ current_run -synthesis [get_runs synth_1]
 
 # Create 'impl_1' run (if not found)
 if {[string equal [get_runs -quiet impl_1] ""]} {
-    create_run -name impl_1 -part xcvu095-ffva2104-2-e -flow {Vivado Implementation 2018} -strategy "Vivado Implementation Defaults" -report_strategy {No Reports} -constrset constrs_1 -parent_run synth_1
+    create_run -name impl_1 -part xcvu095-ffva2104-2-e -flow {Vivado Implementation 2018} -strategy "Vivado Implementation Defaults" -report_strategy {No Reports} -constrset constrs_MAC_QSFP -parent_run synth_1
 } else {
   set_property strategy "Vivado Implementation Defaults" [get_runs impl_1]
   set_property flow "Vivado Implementation 2018" [get_runs impl_1]

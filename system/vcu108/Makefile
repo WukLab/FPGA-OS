@@ -14,3 +14,4 @@ clean:
 
 g:
 	$(VIVADO) $(VIVADO_PRJ)
+
