@@ -1,24 +1,21 @@
-/*
- * This testbench is used to verify the whole RDM BD
- */
-
 `timescale 1fs/1fs
 
-module RDM_BD_tb;
+module KVS_BD_for_pcie_tb;
 
 // Change this to absolute path
-parameter IN_FILEPATH="/root/ys/FPGA/system/vcu108/tb/rdm/input.txt";
-parameter OUT_FILEPATH="/root/ys/FPGA/system/vcu108/tb/rdm/output.txt";
+parameter IN_FILEPATH="/root/ys/FPGA/system/vcu108/tb/kvs/input_pcie.txt";
+parameter OUT_FILEPATH="/root/ys/FPGA/system/vcu108/tb/kvs/output_pcie.txt";
 
-// 390MHZ for network
-parameter CLK_PERIOD = 2560000;
+// 250MHZ for PCIe AXI-Stream
+parameter CLK_PERIOD = 4000000;
 parameter TIMEOUT_THRESH = 100000000;
 
 	wire		default_sysclk_300_clk_p;
 	wire		default_sysclk_300_clk_n;
     
+	reg         	sysclk_150_clk_ref;
 	reg         	sysclk_300_clk_ref;
-	reg         	sysclk_390_clk_ref;
+	reg         	sysclk_250_clk_ref;
 
 	wire        ddr4_act_n;
 	wire [16:0] ddr4_adr;
@@ -35,18 +32,19 @@ parameter TIMEOUT_THRESH = 100000000;
 	wire        ddr4_odt;
 	wire        ddr4_reset_n;
 
-	reg             sys_reset;
-	reg		sysclk_390_rst_n;
+	reg	sys_reset;
+	reg	sysclk_150_rst_n;
+	reg	sysclk_250_rst_n;
 
-	reg [63:0] tx_tdata;
-	reg [7:0] tx_tkeep;
+	reg [255:0] tx_tdata;
+	reg [31:0] tx_tkeep;
 	reg [63:0] tx_tuser;
 	reg tx_tvalid;
 	reg tx_tlast;
 	wire tx_tready;
 
-	wire [63:0] rx_tdata;
-	wire [7:0] rx_tkeep;
+	wire [255:0] rx_tdata;
+	wire [31:0] rx_tkeep;
 	wire [63:0] rx_tuser;
 	wire rx_tvalid;
 	wire rx_tlast;
@@ -58,7 +56,7 @@ parameter TIMEOUT_THRESH = 100000000;
 
 	reg enable_send;
 
-	LegoFPGA_axis_RDM_mapping	DUT (
+	LegoFPGA_KVS_for_pcie	DUT (
 		// DDR4 MC
 		.C0_SYS_CLK_0_clk_n		(default_sysclk_300_clk_n),
 		.C0_SYS_CLK_0_clk_p		(default_sysclk_300_clk_p),
@@ -66,28 +64,32 @@ parameter TIMEOUT_THRESH = 100000000;
 		.mc_ddr4_ui_clk_rst_n		(mc_ddr4_ui_clk_rst_n),
 		.mc_init_calib_complete		(mc_init_calib_complete),
 
-		.sys_rst			(sys_reset),
-		.mac_ready			(1'b1),
+		// General logic
+		.clk_150		(sysclk_150_clk_ref),
+		.clk_150_rst_n		(sysclk_150_rst_n),
 
-		.from_net_clk_390		(sysclk_390_clk_ref),
-		.from_net_clk_390_rst_n		(sysclk_390_rst_n),
+		.sys_rst		(sys_reset),
+		.driver_ready		(1'b1),
 
-		.to_net_clk_390			(sysclk_390_clk_ref),
-		.to_net_clk_390_rst_n		(sysclk_390_rst_n),
+		.RX_clk			(sysclk_250_clk_ref),
+		.RX_rst_n		(sysclk_250_rst_n),
 
-		.from_net_tdata			(tx_tdata),
-		.from_net_tkeep			(tx_tkeep),
-		.from_net_tlast			(tx_tlast),
-		.from_net_tready		(tx_tready),
-		.from_net_tuser			(tx_tuser),
-		.from_net_tvalid		(tx_tvalid),
+		.TX_clk			(sysclk_250_clk_ref),
+		.TX_rst_n		(sysclk_250_rst_n),
 
-		.to_net_tdata			(rx_tdata),
-		.to_net_tkeep			(rx_tkeep),
-		.to_net_tlast			(rx_tlast),
-		.to_net_tready			(rx_tready),
-		.to_net_tuser			(rx_tuser),
-		.to_net_tvalid			(rx_tvalid),
+		.RX_tdata		(tx_tdata),
+		.RX_tkeep		(tx_tkeep),
+		.RX_tlast		(tx_tlast),
+		.RX_tready		(tx_tready),
+		.RX_tuser		(tx_tuser),
+		.RX_tvalid		(tx_tvalid),
+
+		.TX_tdata		(rx_tdata),
+		.TX_tkeep		(rx_tkeep),
+		.TX_tlast		(rx_tlast),
+		.TX_tready		(rx_tready),
+		.TX_tuser		(rx_tuser),
+		.TX_tvalid		(rx_tvalid),
 
 		/* DRAM interface */
 		.ddr4_sdram_c1_act_n          (ddr4_act_n),
@@ -128,10 +130,12 @@ parameter TIMEOUT_THRESH = 100000000;
 	initial begin
 		mc_enable_model = 1'b0;
 		enable_send = 1'b0;
-		sysclk_390_rst_n = 1'b1;
+		sysclk_150_rst_n = 1'b1;
+		sysclk_250_rst_n = 1'b1;
 
+		sysclk_150_clk_ref = 1;
 		sysclk_300_clk_ref = 1;
-		sysclk_390_clk_ref = 1;
+		sysclk_250_clk_ref = 1;
 
 		// Reset MC
 		sys_reset = 1'b0;
@@ -149,21 +153,32 @@ parameter TIMEOUT_THRESH = 100000000;
 		wait(mc_init_calib_complete == 1'b1);
 		wait(mc_ddr4_ui_clk_rst_n == 1'b1);
 
-	        @(posedge sysclk_390_clk_ref);
-                sysclk_390_rst_n = 0;
+		// Reset others
+		@(posedge sysclk_150_clk_ref);
+		sysclk_150_rst_n = 0;
+		#50000000
+		@(posedge sysclk_150_clk_ref);
+                sysclk_150_rst_n = 1;
+
+	        @(posedge sysclk_250_clk_ref);
+                sysclk_250_rst_n = 0;
                 #50000000
-                @(posedge sysclk_390_clk_ref);
-                sysclk_390_rst_n = 1;
+                @(posedge sysclk_250_clk_ref);
+                sysclk_250_rst_n = 1;
 
 		#50000000
 		enable_send = 1'b1;
 	end
 
+	// Clock generation
+	always
+		#3333333.333 sysclk_150_clk_ref = ~sysclk_150_clk_ref;
+
 	always
 		#1666666.667 sysclk_300_clk_ref = ~sysclk_300_clk_ref;
 	    
 	always
-		#1280000.000 sysclk_390_clk_ref = ~sysclk_390_clk_ref;
+		#2000000.000 sysclk_250_clk_ref = ~sysclk_250_clk_ref;
 
 	assign default_sysclk_300_clk_p = sysclk_300_clk_ref;
 	assign default_sysclk_300_clk_n = ~sysclk_300_clk_ref;
@@ -185,7 +200,7 @@ parameter TIMEOUT_THRESH = 100000000;
 	      nr_requests_received = 0;
 
 	      tx_tdata = 0;
-	      tx_tkeep = 8'hFF;
+	      tx_tkeep = 32'hFFFFFFFF;
 	      tx_tuser = 8'h00;
 	      tx_tvalid = 0;
 	      tx_tlast = 0;
@@ -200,7 +215,7 @@ parameter TIMEOUT_THRESH = 100000000;
 	      wait(enable_send == 1'b1);
 
 	      // Synchronize to network clk
-	      @(posedge sysclk_390_clk_ref);
+	      @(posedge sysclk_250_clk_ref);
 
 	      send_start = $time;
 	      $display("INFO: %t: Start sending packets.", send_start);
@@ -219,7 +234,7 @@ parameter TIMEOUT_THRESH = 100000000;
  
 		  while (pktlen != 0) begin
 		      if (tx_tready) begin
-			  $fscanf(infd,"%h %h\n",tx_tdata, tx_tkeep);
+			  $fscanf(infd,"%h %h\n", tx_tdata, tx_tkeep);
 			  pktlen = pktlen - 1;
 			  
 			  if (pktlen == 0) begin
@@ -270,7 +285,7 @@ parameter TIMEOUT_THRESH = 100000000;
 	    wait(enable_send == 1'b1);
 
 	    // Synchronize to network clk
-	    @(posedge sysclk_390_clk_ref);
+	    @(posedge sysclk_250_clk_ref);
 
 	    while (1) begin
 		if (rx_tvalid) begin
@@ -290,7 +305,7 @@ parameter TIMEOUT_THRESH = 100000000;
 		    end
 
 		    //$display("%t: %h %h %d", $time, rx_tdata, rx_tkeep, rx_tlast);
-		    $fdisplay(outfd, "%h %h %d", rx_tdata, rx_tkeep, rx_tlast);
+		    //$fdisplay(outfd, "%h %h %d", rx_tdata, rx_tkeep, rx_tlast);
 		    # CLK_PERIOD;
 		end
 		else begin

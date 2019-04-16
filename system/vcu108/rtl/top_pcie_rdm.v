@@ -1,29 +1,11 @@
 /*
  * Copyright (c) 2019, Wuklab, Purdue University. All rights reserved.
- *
  * Target board: Xilinx VCU108.
- *
- * Top-level module for the whole system.
- * This file is just connecting three submodules together:
- *	- 10G/25G MAC IP block diagram
- *	- State machine for MAC IP
- *	- LegoFPGA block diagram
- *
- * IO Signals:
- * 	- Clock
- * 	- Reset
- * 	- Misc
- * 	- GT
- * 	- DDR4
- *
- * Reference:
- * 	- PG210: 10G/25G High Speed Ethernet Subsystem.
  */
 
 `timescale 1fs/1fs
 
-(* DowngradeIPIdentifiedWarnings="yes" *)
-module legofpga_pcie_rdm #
+module top_pcie_RDM #
 (
 	parameter PL_LINK_CAP_MAX_LINK_WIDTH          = 8,            // 1- X1; 2 - X2; 4 - X4; 8 - X8
 	parameter PL_SIM_FAST_LINK_TRAINING           = "FALSE",      // Simulation Speedup
@@ -71,18 +53,17 @@ module legofpga_pcie_rdm #
 	output ddr4_sdram_c1_odt,
 	output ddr4_sdram_c1_reset_n
 );
-
-   /* keep all the parameter compliant with Xilinx PCIE testbench */
-   // Local Parameters derived from user selection
-   localparam integer   USER_CLK_FREQ       = ((PL_LINK_CAP_MAX_LINK_SPEED == 3'h4) ? 5 : 4);
-   localparam           TCQ                 = 1;
-   localparam           C_S_AXI_ID_WIDTH    = 4;
-   localparam           C_M_AXI_ID_WIDTH    = 4;
-   localparam           C_S_AXI_DATA_WIDTH  = C_DATA_WIDTH;
-   localparam           C_M_AXI_DATA_WIDTH  = C_DATA_WIDTH;
-   localparam           C_S_AXI_ADDR_WIDTH  = 64;
-   localparam           C_M_AXI_ADDR_WIDTH  = 64;
-   localparam           C_NUM_USR_IRQ       = 1;
+	/* keep all the parameter compliant with Xilinx PCIE testbench */
+	// Local Parameters derived from user selection
+	localparam integer   USER_CLK_FREQ       = ((PL_LINK_CAP_MAX_LINK_SPEED == 3'h4) ? 5 : 4);
+	localparam           TCQ                 = 1;
+	localparam           C_S_AXI_ID_WIDTH    = 4;
+	localparam           C_M_AXI_ID_WIDTH    = 4;
+	localparam           C_S_AXI_DATA_WIDTH  = C_DATA_WIDTH;
+	localparam           C_M_AXI_DATA_WIDTH  = C_DATA_WIDTH;
+	localparam           C_S_AXI_ADDR_WIDTH  = 64;
+	localparam           C_M_AXI_ADDR_WIDTH  = 64;
+	localparam           C_NUM_USR_IRQ       = 1;
 
 	// AXI streaming ports
 	wire                      m_axis_h2c_tvalid_0;
@@ -104,7 +85,7 @@ module legofpga_pcie_rdm #
 	// reset Signals
 	wire user_resetn_250;
 	wire _sys_reset, sys_reset;
-	wire clk_125_rst_n;
+	wire clk_150_rst_n;
 	wire sys_rst_n_c;
 
 	// clocks
@@ -126,10 +107,10 @@ module legofpga_pcie_rdm #
 		.signal_out          (sys_reset)
 	);
 
-	user_cdc_sync u_sync_clk_125_rst_N (
-		.clk                 (clk_125),
+	user_cdc_sync u_sync_clk_150_rst_N (
+		.clk                 (clk_150),
 		.signal_in           (user_resetn_250),
-		.signal_out          (clk_125_rst_n)
+		.signal_out          (clk_150_rst_n)
 	);
 
 	clock_mac_qsfp u_clock_gen (
@@ -141,7 +122,7 @@ module legofpga_pcie_rdm #
 		.clk_100        (clk_100),
 		.clk_125        (clk_125),
 		.clk_150        (clk_150),
-		.clk_locked        (clk_locked)
+		.clk_locked     (clk_locked)
 	);
 
 	// PCIE Ref clock buffer
@@ -161,15 +142,15 @@ module legofpga_pcie_rdm #
 	);
 
 	pcie u_pcie (
-		.sys_rst_n          (sys_rst_n_c),
-		.sys_clk            (pcie_clk),
-		.sys_clk_gt         (pcie_clk_gt),
+		.sys_rst_n	(sys_rst_n_c),
+		.sys_clk	(pcie_clk),
+		.sys_clk_gt	(pcie_clk_gt),
 
-		// PCIE interface
-		.pcie_mgt_txn       (pci_exp_txn),
-		.pcie_mgt_txp       (pci_exp_txp),
-		.pcie_mgt_rxn		(pci_exp_rxn),
-		.pcie_mgt_rxp		(pci_exp_rxp),
+		// PCIe interface
+		.pcie_mgt_txn	(pci_exp_txn),
+		.pcie_mgt_txp	(pci_exp_txp),
+		.pcie_mgt_rxn	(pci_exp_rxn),
+		.pcie_mgt_rxp	(pci_exp_rxp),
 
 		// AXI streaming ports
 		.S_AXIS_C2H_tdata(s_axis_c2h_tdata_0),
@@ -200,43 +181,35 @@ module legofpga_pcie_rdm #
 		.user_lnk_up     (user_lnk_up)
 	);
 
-	/*
-	 * Applications
-	 * originally design is for MAC, later changed to PCIE
-	 * so user reset and clock interface may look weird
-	 */
-	LegoFPGA_axis64 u_LegoFPGA (
-		.sys_rst                (sys_reset),
-
-		.clk_125                (clk_125),
-		.clk_125_rst_n          (clk_125_rst_n),
-
-		// For MC
+	LegoFPGA_RDM_for_pcie u_LegoFPGA (
+		// MC clock
 		.C0_SYS_CLK_0_clk_n     (default_sysclk_300_clk_n),
 		.C0_SYS_CLK_0_clk_p     (default_sysclk_300_clk_p),
 
-		// AXI reset & clock from PCIE
-		.from_net_clk_390       (user_clk_250),
-		.from_net_clk_390_rst_n (user_resetn_250),
-		.to_net_clk_390         (user_clk_250),
-		.to_net_clk_390_rst_n   (user_resetn_250),
+		// MC reset
+		.sys_rst	(sys_reset),
 
-		// PCIE ready
-		.mac_ready(user_lnk_up),
+		.driver_ready	(user_lnk_up),
 
-		// Data from PCIE
-		.from_net_tvalid        (m_axis_h2c_tvalid_0),
-		.from_net_tready        (m_axis_h2c_tready_0),
-		.from_net_tdata         (m_axis_h2c_tdata_0),
-		.from_net_tkeep         (m_axis_h2c_tkeep_0),
-		.from_net_tlast         (m_axis_h2c_tlast_0),
+		// AXIS reset & clock from PCIe
+		.RX_clk		(user_clk_250),
+		.TX_clk		(user_clk_250),
+		.RX_rst_n	(user_resetn_250),
+		.TX_rst_n	(user_resetn_250),
 
-		// Data to PCIE
-		.to_net_tvalid          (s_axis_c2h_tvalid_0),
-		.to_net_tready          (s_axis_c2h_tready_0),
-		.to_net_tdata           (s_axis_c2h_tdata_0),
-		.to_net_tkeep           (s_axis_c2h_tkeep_0),
-		.to_net_tlast           (s_axis_c2h_tlast_0),
+		// From PCIe to KVS
+		.RX_tvalid	(m_axis_h2c_tvalid_0),
+		.RX_tready	(m_axis_h2c_tready_0),
+		.RX_tdata	(m_axis_h2c_tdata_0),
+		.RX_tkeep	(m_axis_h2c_tkeep_0),
+		.RX_tlast	(m_axis_h2c_tlast_0),
+
+		// From KVS to PCIe
+		.TX_tvalid	(s_axis_c2h_tvalid_0),
+		.TX_tready	(s_axis_c2h_tready_0),
+		.TX_tdata	(s_axis_c2h_tdata_0),
+		.TX_tkeep	(s_axis_c2h_tkeep_0),
+		.TX_tlast	(s_axis_c2h_tlast_0),
 
 		// DDR4 interface
 		.ddr4_sdram_c1_act_n    (ddr4_sdram_c1_act_n),

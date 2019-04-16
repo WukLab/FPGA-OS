@@ -5,7 +5,7 @@
 
 `timescale 1fs/1fs
 
-module KVS_BD_tb;
+module KVS_BD_for_mac_tb;
 
 // Change this to absolute path
 parameter IN_FILEPATH="./input.txt";

@@ -23,7 +23,7 @@
 `timescale 1fs/1fs
 
 (* DowngradeIPIdentifiedWarnings="yes" *)
-module legofpga_mac_qsfp
+module top_qsfp_mac
 (
 	/* Board Clock */
 	input			default_sysclk_125_clk_n,
@@ -354,9 +354,13 @@ module legofpga_mac_qsfp
 		.signal_out          (clk_150_rst_n)
 	);
 
-	LegoFPGA_axis64_KVS u_LegoFPGA (
+//`define ENABLE_KVS
+
+`ifdef ENABLE_KVS
+	LegoFPGA_KVS_for_mac u_KVS_for_mac (
 		.sys_rst		(sys_reset),
 
+		// For KVS
 		.clk_150		(clk_150),
 		.clk_150_rst_n		(clk_150_rst_n),
 
@@ -401,6 +405,52 @@ module legofpga_mac_qsfp
 		.ddr4_sdram_c1_odt	(ddr4_sdram_c1_odt),
 		.ddr4_sdram_c1_reset_n	(ddr4_sdram_c1_reset_n)
 	);
+`else
+	LegoFPGA_RDM_for_mac u_KVS_for_RDM (
+		.sys_rst		(sys_reset),
+
+		// For MC
+		.C0_SYS_CLK_0_clk_n		(default_sysclk_300_clk_n),
+		.C0_SYS_CLK_0_clk_p		(default_sysclk_300_clk_p),
+
+		.mac_ready		(mac_ready),
+
+		.from_net_clk_390	(rx_clk_out_0),
+		.from_net_clk_390_rst_n	(from_net_clk_390_rst_n),
+
+		.from_net_tvalid	(rx_axis_tvalid_0),
+		.from_net_tready	(from_net_tready),
+		.from_net_tdata		(rx_axis_tdata_0),
+		.from_net_tkeep		(rx_axis_tkeep_0),
+		.from_net_tuser		(rx_axis_tuser_0),
+		.from_net_tlast		(rx_axis_tlast_0),
+
+		.to_net_clk_390		(tx_clk_out_0),
+		.to_net_clk_390_rst_n	(to_net_clk_390_rst_n),
+
+		.to_net_tvalid		(tx_axis_tvalid_0),
+		.to_net_tready		(tx_axis_tready_0),
+		.to_net_tdata		(tx_axis_tdata_0),
+		.to_net_tuser		(tx_axis_tuser_0),
+		.to_net_tlast		(tx_axis_tlast_0),
+		.to_net_tkeep		(tx_axis_tkeep_0),
+
+		.ddr4_sdram_c1_act_n	(ddr4_sdram_c1_act_n),
+		.ddr4_sdram_c1_adr	(ddr4_sdram_c1_adr),
+		.ddr4_sdram_c1_ba	(ddr4_sdram_c1_ba),
+		.ddr4_sdram_c1_bg	(ddr4_sdram_c1_bg),
+		.ddr4_sdram_c1_ck_c	(ddr4_sdram_c1_ck_c),
+		.ddr4_sdram_c1_ck_t	(ddr4_sdram_c1_ck_t),
+		.ddr4_sdram_c1_cke	(ddr4_sdram_c1_cke),
+		.ddr4_sdram_c1_cs_n	(ddr4_sdram_c1_cs_n),
+		.ddr4_sdram_c1_dm_n	(ddr4_sdram_c1_dm_n),
+		.ddr4_sdram_c1_dq	(ddr4_sdram_c1_dq),
+		.ddr4_sdram_c1_dqs_c	(ddr4_sdram_c1_dqs_c),
+		.ddr4_sdram_c1_dqs_t	(ddr4_sdram_c1_dqs_t),
+		.ddr4_sdram_c1_odt	(ddr4_sdram_c1_odt),
+		.ddr4_sdram_c1_reset_n	(ddr4_sdram_c1_reset_n)
+	);
+`endif
 
 /*
 	//
