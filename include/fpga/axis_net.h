@@ -15,6 +15,7 @@
 #include <uapi/net_header.h>
 
 #define NR_BYTES_AXIS_64	(8)
+#define NR_BYTES_AXIS_256	(32)
 #define NR_BYTES_AXIS_512	(64)
 
 struct net_axis_64 {
@@ -22,6 +23,19 @@ struct net_axis_64 {
 	ap_uint<1>			last;
 	ap_uint<NR_BYTES_AXIS_64>	keep;
 	ap_uint<NR_BYTES_AXIS_64>	user;
+};
+
+/*
+ * For 256b version, we will have this header format:
+ * | Eth Header | App Header |
+ * 0            112
+ * There will not be other headers.
+ */
+struct net_axis_256 {
+	ap_uint<256>			data;
+	ap_uint<1>			last;
+	ap_uint<NR_BYTES_AXIS_256>	keep;
+	ap_uint<NR_BYTES_AXIS_256>	user;
 };
 
 struct net_axis_512 {
