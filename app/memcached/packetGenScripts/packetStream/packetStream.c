@@ -45,6 +45,15 @@ static void printHelp(char *name) {
     printf("\n");
 }
 
+double diff_ns(struct timespec *start, struct timespec *end) {
+    double time;
+
+    time = (end->tv_sec - start->tv_sec) * 1000 * 1000 * 1000;
+    time += (end->tv_nsec - start->tv_nsec);
+
+    return time;
+}
+
 void myDump(char *desc, uint8_t *addr, int len) {
     int i;
     uint8_t *pc = (uint8_t *)addr;
@@ -195,6 +204,64 @@ int getWorkload(size_t **size_array_ptr, uint8_t ***packet_array_ptr,
     return num_of_reqs;
 }
 
+int deliverRequestPCIe(int request_num, size_t *size_array,
+                       uint8_t **packet_array, void *pcie_send_addr,
+                       void *pcie_recv_addr) {
+    int each_packet;
+
+    char reply[DEFAULT_REPLY_SIZE];
+    void *base = pcie_send_addr;
+    struct timespec start, end;
+    double time_diff;
+    int *check_counter_addr = (int *)pcie_recv_addr;
+
+    memset(reply, 0, DEFAULT_REPLY_SIZE);
+
+    /* Construct the Ethernet header */
+    for (each_packet = 0; each_packet < request_num; each_packet++) {
+
+        // set LEGOFPGA header here
+
+        /* dump network frame */
+        if (debug_mode) {
+            printf("===== %d =====\n", each_packet);
+            myDump(NULL, packet_array[each_packet], size_array[each_packet]);
+        }
+    }
+
+    clock_gettime(CLOCK_MONOTONIC, &start);
+    /* Send packet */
+    for (each_packet = 0; each_packet < request_num; each_packet++) {
+        memcpy(base, packet_array[each_packet], size_array[each_packet]);
+        base = base + size_array[each_packet];
+    }
+    /* this part is for debugging */
+
+    if (debug_mode) {
+        base = pcie_send_addr;
+        for (each_packet = 0; each_packet < request_num; each_packet++) {
+            myDump(NULL, base, size_array[each_packet]);
+            base = base + size_array[each_packet];
+        }
+    }
+
+    if (debug_mode) {
+        int count = 0;
+        while (*check_counter_addr != request_num && count <= 10) {
+            printf("%d\n", *check_counter_addr);
+            count++;
+        }
+    } else {
+        while (*check_counter_addr != request_num)
+            ;
+    }
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    time_diff = diff_ns(&start, &end);
+
+    printf("finish %d request in %f ns \n", each_packet, time_diff);
+    return 0;
+}
+
 int deliverRequestEthernet(int request_num, size_t *size_array,
                            uint8_t **packet_array) {
     int each_packet;
@@ -280,12 +347,62 @@ int deliverRequestEthernet(int request_num, size_t *size_array,
     return 0;
 }
 
+void *getPCIeRecvAddr(void) {
+    // Once Yutong completes the setup of PCIe,
+    // this function should return a virtual address points to a counter.
+
+    // FPGA side will keep updating this counter
+    // and host-side will terminate the whole program
+    // once the counter is identical to the number of sent request.
+
+    // Currently, I used a regular malloc to get this address
+    // Shin-Yeh Tsai 041619
+    void *ret_addr = malloc(sizeof(unsigned long long int));
+    memset(ret_addr, 0, sizeof(unsigned long long int));
+    if (ret_addr == NULL) {
+        printf("generate recv addr error\n");
+        exit(1);
+    }
+    return ret_addr;
+}
+
+void *getPCIeSendAddr(size_t required_size) {
+    // Once Yutong completes the setup of PCIe,
+    // this function should return a virtual address points to DMA address.
+
+    // FPGA side will keep reading this address to get operations
+    // and host-side will write data into this address
+
+    // Currently, I used a regular malloc to get this address
+    // Shin-Yeh Tsai 041619
+    void *ret_addr = malloc(required_size);
+    memset(ret_addr, 0, required_size);
+    if (ret_addr == NULL) {
+        printf("generate send addr error\n");
+        exit(1);
+    }
+    return ret_addr;
+}
+
 int deliverRequest(int request_num, size_t *size_array, uint8_t **packet_array,
                    int interface) {
     int ret = -1;
+    void *pcie_recv_addr, *pcie_send_addr;
+    uint64_t total_size;
+    int per_request;
     switch (interface) {
         case INTERFACE_ETHERNET:
             ret = deliverRequestEthernet(request_num, size_array, packet_array);
+            break;
+        case INTERFACE_PCIE:
+            total_size = 0;
+            for (per_request = 0; per_request < request_num; per_request++) {
+                total_size += size_array[per_request];
+            }
+            pcie_recv_addr = getPCIeRecvAddr();
+            pcie_send_addr = getPCIeSendAddr(total_size);
+            ret = deliverRequestPCIe(request_num, size_array, packet_array,
+                                     pcie_send_addr, pcie_recv_addr);
             break;
         default:
             printf("interface %d is not implemented yet\n", interface);
