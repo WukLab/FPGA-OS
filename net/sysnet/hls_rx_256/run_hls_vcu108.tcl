@@ -27,13 +27,13 @@ create_clock -period 3.33 -name default
 set_clock_uncertainty 0.25
 
 # Simulate the C code 
-csim_design
+#csim_design
 
 # Synthesis the C code
-#csynth_design
+csynth_design
 
 # Export IP block
-#export_design -format ip_catalog -display_name "sysnet_rx_256" -description "SysNet RX Path 256b" -vendor "wuklab" -version "1.0"
+export_design -format ip_catalog -display_name "sysnet_rx_256" -description "SysNet RX Path 256b" -vendor "wuklab" -version "1.0"
 
 # Do not perform any other steps
 # - The basic project will be opened in the GUI 
