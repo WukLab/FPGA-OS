@@ -22,3 +22,15 @@ exported a Block Diagram IP, which is annoying.
 
 One possible way to do it is extract the SM/clock as a standlone RTL IP, and
 then merge it with a MAC IP in a BD design. Doable. Later.
+
+
+## Cheatsheet
+
+Convert generated bitstream into flash-format bitstream:
+```
+vivado -mode tcl -source convert_bit_mcs.tcl -tclargs ./generated_vivado_project/generated_vivado_project.runs/impl_1/XXX.bit ./XXX.mcs
+```
+
+```
+vivado -mode tcl -source program_bpi.tcl -tclargs ./top_pcie_RDM.mcs
+```

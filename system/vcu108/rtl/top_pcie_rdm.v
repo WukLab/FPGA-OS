@@ -27,6 +27,8 @@ module top_pcie_RDM #
 	input	default_sysclk_125_clk_p,
 	input	default_sysclk_300_clk_n,
 	input	default_sysclk_300_clk_p,
+	input	default_sysclk2_300_clk_n,
+        input   default_sysclk2_300_clk_p,
 
 	/* reset */
 	input	sys_rst_n,
@@ -86,32 +88,13 @@ module top_pcie_RDM #
 	wire user_resetn_250;
 	wire _sys_reset, sys_reset;
 	wire clk_150_rst_n;
+	wire clk_300_rst_n;
 	wire sys_rst_n_c;
 
 	// clocks
 	wire user_clk_250;
-	wire dclk, clk_100, clk_125, clk_150, clk_locked;
+	wire clk_100, clk_125, clk_150, clk_300, clk_locked, clk_300_locked;
 	wire pcie_clk, pcie_clk_gt;
-
-	/* 100MHZ is used in the reference design */
-	assign dclk = clk_100;
-	assign _sys_reset = ~clk_locked;
-
-	/*
-	 * sys_reset is issued when clock is ready.
-	 * sys_reset is sent to MAC layer only.
-	 */
-	user_cdc_sync u_sync_reset (
-		.clk                 (dclk),
-		.signal_in           (_sys_reset),
-		.signal_out          (sys_reset)
-	);
-
-	user_cdc_sync u_sync_clk_150_rst_N (
-		.clk                 (clk_150),
-		.signal_in           (user_resetn_250),
-		.signal_out          (clk_150_rst_n)
-	);
 
 	clock_mac_qsfp u_clock_gen (
 		/* Input: Board Clock */
@@ -123,6 +106,42 @@ module top_pcie_RDM #
 		.clk_125        (clk_125),
 		.clk_150        (clk_150),
 		.clk_locked     (clk_locked)
+	);
+
+        sys_clock_300 u_clock_300 (
+                .default_sysclk2_300_clk_n      (default_sysclk2_300_clk_n),
+                .default_sysclk2_300_clk_p      (default_sysclk2_300_clk_p),
+                .clk_300                        (clk_300),
+                .clk_300_locked                 (clk_300_locked)
+        );
+
+	assign _sys_reset = ~clk_locked;
+
+	/*
+	 * sys_reset (ACTIVE_HIGH) is issued when clock is ready.
+	 * This is issued to MC only.
+	 */
+	user_cdc_sync u_sync_reset (
+		.clk                 (clk_100),
+		.signal_in           (_sys_reset),
+		.signal_out          (sys_reset)
+	);
+
+	/*
+	 * user_resetn_250 comes from PCIe.
+	 * Use it as the driving reset for others
+	 * All of them are ACTIVE_LOW.
+	 */
+	user_cdc_sync u_sync_clk_300_rst_N (
+                .clk                 (clk_300),
+                .signal_in           (user_resetn_250),
+                .signal_out          (clk_300_rst_n)
+        );	
+
+	user_cdc_sync u_sync_clk_150_rst_N (
+		.clk                 (clk_150),
+		.signal_in           (user_resetn_250),
+		.signal_out          (clk_150_rst_n)
 	);
 
 	// PCIE Ref clock buffer
@@ -190,6 +209,9 @@ module top_pcie_RDM #
 		.sys_rst	(sys_reset),
 
 		.driver_ready	(user_lnk_up),
+
+		.clk_300	(clk_300),
+		.clk_300_rst_n	(clk_300_rst_n),
 
 		// AXIS reset & clock from PCIe
 		.RX_clk		(user_clk_250),

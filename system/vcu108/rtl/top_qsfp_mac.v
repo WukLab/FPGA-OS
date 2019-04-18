@@ -295,7 +295,7 @@ module top_qsfp_mac
 
 	/*
 	 * sys_reset is issued when clock is ready.
-	 * sys_reset is sent to MAC layer only.
+	 * sys_reset is sent to MAC/MC.
 	 */
 	user_cdc_sync u_sync_reset (
 		.clk                 (dclk),
