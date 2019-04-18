@@ -20,13 +20,13 @@
 /*
  * Number of BRAM hashtable buckets.
  */
-#define NR_HT_BUCKET_BRAM_SHIFT		8
+#define NR_HT_BUCKET_BRAM_SHIFT		6
 #define NR_HT_BUCKET_BRAM		(1 << NR_HT_BUCKET_BRAM_SHIFT)
 
 /*
  * Number of DRAM hashtable buckets.
  */
-#define NR_HT_BUCKET_DRAM_SHIFT		20
+#define NR_HT_BUCKET_DRAM_SHIFT		10
 #define NR_HT_BUCKET_DRAM		(1 << NR_HT_BUCKET_DRAM_SHIFT)
 
 /*
