@@ -122,6 +122,15 @@ begin
         if (desc_count != 1) begin
             $display ("---***ERROR*** C2H Descriptor count mismatch,Loop Timeout occured ---\n");
         end
+
+    /*
+     * If we wish to test c2h or h2c bypass
+     * we should add this wait(0) there
+     * to skip the following diable path
+     */
+    $display("@@@ Now just wait.");
+    wait(0);
+  
     // Read status of both H2C and C2H engines.
     board.RP.tx_usrapp.TSK_XDMA_REG_READ(16'h1040);
     c2h_status = P_READ_DATA;

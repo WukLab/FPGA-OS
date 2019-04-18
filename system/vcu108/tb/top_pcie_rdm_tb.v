@@ -44,7 +44,8 @@ reg        sysclk_300_clk_ref;
         /*
          * don't change instance name, keep it compliant with Xilinx testbench
          */
-	legofpga_pcie_rdm EP (
+	//top_pcie_RDM EP (
+	top_pcie_c2h_RDM EP (
 		.pcie_dedicated_100_clk_n	(pcie_dedicated_100_clk_n),
 		.pcie_dedicated_100_clk_p	(pcie_dedicated_100_clk_p),
 		.default_sysclk_125_clk_n	(sysclk_125_clk_n),
