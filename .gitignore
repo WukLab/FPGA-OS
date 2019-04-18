@@ -18,4 +18,10 @@ generated_vivado_project/
 # Generated IP repositories
 generated_ip/
 
+# Linux Kernel Related
+*.symvers
+*.ko
+*.order
+*.mod.c
+
 !.gitignore
