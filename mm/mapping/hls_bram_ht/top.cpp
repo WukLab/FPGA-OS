@@ -15,9 +15,7 @@
 void bram_hashtable(hls::stream<struct dm_cmd>		*BRAM_rd_cmd,
 		    hls::stream<struct dm_cmd>		*BRAM_wr_cmd,
 		    hls::stream<struct axis_mem>	*BRAM_rd_data,
-		    hls::stream<struct axis_mem>	*BRAM_wr_data,
-		    hls::stream<ap_uint<8> >		*BRAM_rd_status,
-		    hls::stream<ap_uint<8> >		*BRAM_wr_status)
+		    hls::stream<struct axis_mem>	*BRAM_wr_data)
 {
 #pragma HLS INTERFACE ap_ctrl_none port=return
 #pragma HLS PIPELINE
@@ -26,8 +24,6 @@ void bram_hashtable(hls::stream<struct dm_cmd>		*BRAM_rd_cmd,
 #pragma HLS INTERFACE axis both port=BRAM_wr_cmd
 #pragma HLS INTERFACE axis both port=BRAM_rd_data
 #pragma HLS INTERFACE axis both port=BRAM_wr_data
-#pragma HLS INTERFACE axis both port=BRAM_rd_status
-#pragma HLS INTERFACE axis both port=BRAM_wr_status
 
 #pragma HLS DATA_PACK variable=BRAM_rd_cmd
 #pragma HLS DATA_PACK variable=BRAM_wr_cmd
@@ -39,7 +35,6 @@ void bram_hashtable(hls::stream<struct dm_cmd>		*BRAM_rd_cmd,
 		struct axis_mem data_r = { 0 };
 		struct dm_cmd cmd_r = { 0 };
 		ap_uint<32> index_r;
-		ap_uint<8> status_r;
 
 		cmd_r = BRAM_rd_cmd->read();
 		index_r = cmd_r.start_address;
@@ -49,14 +44,12 @@ void bram_hashtable(hls::stream<struct dm_cmd>		*BRAM_rd_cmd,
 		data_r.keep = 0xFFFFFFFFFFFFFFFF;
 		data_r.last = 1;
 		BRAM_rd_data->write(data_r);
-		BRAM_rd_status->write(status_r);
 	}
 
 	if (!BRAM_wr_cmd->empty() && !BRAM_wr_data->empty()) {
 		struct axis_mem data = { 0 };
 		struct dm_cmd cmd = { 0 };
 		ap_uint<32> index;
-		ap_uint<8> status;
 
 		cmd = BRAM_wr_cmd->read();
 		data = BRAM_wr_data->read();
@@ -64,7 +57,5 @@ void bram_hashtable(hls::stream<struct dm_cmd>		*BRAM_rd_cmd,
 
 		PR("BRAM wr index=%d data=%x\n", index.to_uint(), data.data.to_uint());
 		ht_bram[index] = data.data;
-
-		BRAM_wr_status->write(status);
 	}
 }

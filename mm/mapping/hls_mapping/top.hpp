@@ -78,9 +78,7 @@ void paging_top(hls::stream<struct mapping_request>	*in_read,
 		hls::stream<struct dm_cmd>		*BRAM_rd_cmd,
 		hls::stream<struct dm_cmd>		*BRAM_wr_cmd,
 		hls::stream<struct axis_mem>		*BRAM_rd_data,
-		hls::stream<struct axis_mem>		*BRAM_wr_data,
-		hls::stream<ap_uint<8> >		*BRAM_rd_status,
-		hls::stream<ap_uint<8> >		*BRAM_wr_tatus);
+		hls::stream<struct axis_mem>		*BRAM_wr_data);
 
 void data_path(stream<struct mapping_request> *rd_request,
 	       stream<struct mapping_request> *wr_request,
@@ -113,11 +111,9 @@ void DRAM_wr_pipe(stream<struct mem_cmd> *mem_write_cmd,
 void BRAM_rd_pipe(stream<struct mem_cmd> *mem_read_cmd,
 		  stream<ap_uint<MEM_BUS_WIDTH> > *mem_read_data,
 		  stream<struct dm_cmd> *dm_read_cmd,
-		  stream<struct axis_mem> *dm_read_data,
-		  stream<ap_uint<8> > *dm_read_status);
+		  stream<struct axis_mem> *dm_read_data);
 void BRAM_wr_pipe(stream<struct mem_cmd> *mem_write_cmd,
 		   stream<ap_uint<MEM_BUS_WIDTH> > *mem_write_data,
 		   stream<struct dm_cmd> *dm_write_cmd,
-		   stream<struct axis_mem> *dm_write_data,
-		   stream<ap_uint<8> > *dm_write_status);
+		   stream<struct axis_mem> *dm_write_data);
 #endif /* _MM_HLS_MAPPING_TOP_H_ */

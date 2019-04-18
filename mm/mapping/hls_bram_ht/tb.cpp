@@ -22,9 +22,7 @@ using namespace hls;
 void bram_hashtable(hls::stream<struct dm_cmd>		*BRAM_rd_cmd,
 		    hls::stream<struct dm_cmd>		*BRAM_wr_cmd,
 		    hls::stream<struct axis_mem>	*BRAM_rd_data,
-		    hls::stream<struct axis_mem>	*BRAM_wr_data,
-		    hls::stream<ap_uint<8> >		*BRAM_rd_status,
-		    hls::stream<ap_uint<8> >		*BRAM_wr_status);
+		    hls::stream<struct axis_mem>	*BRAM_wr_data);
 
 int main(void)
 {
@@ -32,12 +30,11 @@ int main(void)
 	stream<struct axis_mem> rd_data, wr_data;
 	struct dm_cmd cmd = {0};
 	struct axis_mem data = {0};
-	stream<ap_uint<8> > rd_status, wr_status;
 
 	cmd.start_address = 1;
 
 	rd_cmd.write(cmd);
-	bram_hashtable(&rd_cmd, &wr_cmd, &rd_data, &wr_data, &rd_status, &wr_status);
+	bram_hashtable(&rd_cmd, &wr_cmd, &rd_data, &wr_data);
 	if (!rd_data.empty()) {
 		struct axis_mem d = rd_data.read();
 		printf("RD data: %#x\n", d.data.to_uint());
@@ -48,12 +45,12 @@ int main(void)
 	data.data(511,510) = 0x3;
 	wr_cmd.write(cmd);
 	wr_data.write(data);
-	bram_hashtable(&rd_cmd, &wr_cmd, &rd_data, &wr_data, &rd_status, &wr_status);
-	bram_hashtable(&rd_cmd, &wr_cmd, &rd_data, &wr_data, &rd_status, &wr_status);
-	bram_hashtable(&rd_cmd, &wr_cmd, &rd_data, &wr_data, &rd_status, &wr_status);
+	bram_hashtable(&rd_cmd, &wr_cmd, &rd_data, &wr_data);
+	bram_hashtable(&rd_cmd, &wr_cmd, &rd_data, &wr_data);
+	bram_hashtable(&rd_cmd, &wr_cmd, &rd_data, &wr_data);
 
 	rd_cmd.write(cmd);
-	bram_hashtable(&rd_cmd, &wr_cmd, &rd_data, &wr_data, &rd_status, &wr_status);
+	bram_hashtable(&rd_cmd, &wr_cmd, &rd_data, &wr_data);
 	if (!rd_data.empty()) {
 		struct axis_mem d = rd_data.read();
 		printf("RD data: %#x\n", d.data.to_uint());

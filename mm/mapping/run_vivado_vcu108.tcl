@@ -244,6 +244,7 @@ set_property -name "top_lib" -value "xil_defaultlib" -objects $obj
 
 
 # Proc to create BD mapping_ip_top_TB
+# End of cr_bd_mapping_ip_top_TB()
 proc cr_bd_mapping_ip_top_TB { parentCell } {
 
   # CHANGE DESIGN NAME HERE
@@ -262,9 +263,9 @@ proc cr_bd_mapping_ip_top_TB { parentCell } {
      set list_check_ips "\ 
   xilinx.com:ip:axi_crossbar:2.1\
   xilinx.com:ip:axi_datamover:5.1\
+  purdue.wuklab:hls:bram_hashtable:1.0\
   purdue.wuklab:hls:paging_top:1.0\
   xilinx.com:ip:axis_data_fifo:1.1\
-  purdue.wuklab:hls:bram_hashtable:1.0\
   xilinx.com:ip:ddr4:2.2\
   xilinx.com:ip:util_vector_logic:2.0\
   "
@@ -367,13 +368,13 @@ proc create_hier_cell_mc { parentCell nameHier } {
   current_bd_instance $oldCurInst
 }
   
-# Hierarchical cell: ht_bram
-proc create_hier_cell_ht_bram { parentCell nameHier } {
+# Hierarchical cell: fifos
+proc create_hier_cell_fifos { parentCell nameHier } {
 
   variable script_folder
 
   if { $parentCell eq "" || $nameHier eq "" } {
-     catch {common::send_msg_id "BD_TCL-102" "ERROR" "create_hier_cell_ht_bram() - Empty argument(s)!"}
+     catch {common::send_msg_id "BD_TCL-102" "ERROR" "create_hier_cell_fifos() - Empty argument(s)!"}
      return
   }
 
@@ -405,13 +406,15 @@ proc create_hier_cell_ht_bram { parentCell nameHier } {
   create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 M_AXIS
   create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 M_AXIS1
   create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 M_AXIS2
+  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 M_AXIS3
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 S_AXIS
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 S_AXIS1
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 S_AXIS2
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 S_AXIS3
 
   # Create pins
-  create_bd_pin -dir I -type clk ap_clk
   create_bd_pin -dir I -type rst mc_ddr4_ui_clk_rst_n
+  create_bd_pin -dir I -type clk s_axis_aclk
 
   # Create instance: axis_data_fifo_0, and set properties
   set axis_data_fifo_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_data_fifo:1.1 axis_data_fifo_0 ]
@@ -437,38 +440,19 @@ proc create_hier_cell_ht_bram { parentCell nameHier } {
    CONFIG.FIFO_DEPTH {16} \
  ] $axis_data_fifo_3
 
-  # Create instance: axis_data_fifo_4, and set properties
-  set axis_data_fifo_4 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_data_fifo:1.1 axis_data_fifo_4 ]
-  set_property -dict [ list \
-   CONFIG.FIFO_DEPTH {16} \
- ] $axis_data_fifo_4
-
-  # Create instance: axis_data_fifo_5, and set properties
-  set axis_data_fifo_5 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_data_fifo:1.1 axis_data_fifo_5 ]
-  set_property -dict [ list \
-   CONFIG.FIFO_DEPTH {16} \
- ] $axis_data_fifo_5
-
-  # Create instance: bram_hashtable_0, and set properties
-  set bram_hashtable_0 [ create_bd_cell -type ip -vlnv purdue.wuklab:hls:bram_hashtable:1.0 bram_hashtable_0 ]
-
   # Create interface connections
-  connect_bd_intf_net -intf_net axis_data_fifo_0_M_AXIS1 [get_bd_intf_pins axis_data_fifo_0/M_AXIS] [get_bd_intf_pins bram_hashtable_0/BRAM_rd_cmd_V]
-  connect_bd_intf_net -intf_net axis_data_fifo_1_M_AXIS1 [get_bd_intf_pins M_AXIS] [get_bd_intf_pins axis_data_fifo_1/M_AXIS]
-  connect_bd_intf_net -intf_net axis_data_fifo_2_M_AXIS [get_bd_intf_pins axis_data_fifo_2/M_AXIS] [get_bd_intf_pins bram_hashtable_0/BRAM_wr_cmd_V]
-  connect_bd_intf_net -intf_net axis_data_fifo_3_M_AXIS [get_bd_intf_pins axis_data_fifo_3/M_AXIS] [get_bd_intf_pins bram_hashtable_0/BRAM_wr_data]
-  connect_bd_intf_net -intf_net axis_data_fifo_4_M_AXIS [get_bd_intf_pins M_AXIS1] [get_bd_intf_pins axis_data_fifo_4/M_AXIS]
-  connect_bd_intf_net -intf_net axis_data_fifo_5_M_AXIS [get_bd_intf_pins M_AXIS2] [get_bd_intf_pins axis_data_fifo_5/M_AXIS]
-  connect_bd_intf_net -intf_net bram_hashtable_0_BRAM_rd_data [get_bd_intf_pins axis_data_fifo_1/S_AXIS] [get_bd_intf_pins bram_hashtable_0/BRAM_rd_data]
-  connect_bd_intf_net -intf_net bram_hashtable_0_BRAM_rd_status_V_V [get_bd_intf_pins axis_data_fifo_4/S_AXIS] [get_bd_intf_pins bram_hashtable_0/BRAM_rd_status_V_V]
-  connect_bd_intf_net -intf_net bram_hashtable_0_BRAM_wr_status_V_V [get_bd_intf_pins axis_data_fifo_5/S_AXIS] [get_bd_intf_pins bram_hashtable_0/BRAM_wr_status_V_V]
+  connect_bd_intf_net -intf_net axis_data_fifo_0_M_AXIS1 [get_bd_intf_pins M_AXIS] [get_bd_intf_pins axis_data_fifo_0/M_AXIS]
+  connect_bd_intf_net -intf_net axis_data_fifo_1_M_AXIS1 [get_bd_intf_pins M_AXIS3] [get_bd_intf_pins axis_data_fifo_1/M_AXIS]
+  connect_bd_intf_net -intf_net axis_data_fifo_2_M_AXIS [get_bd_intf_pins M_AXIS1] [get_bd_intf_pins axis_data_fifo_2/M_AXIS]
+  connect_bd_intf_net -intf_net axis_data_fifo_3_M_AXIS [get_bd_intf_pins M_AXIS2] [get_bd_intf_pins axis_data_fifo_3/M_AXIS]
+  connect_bd_intf_net -intf_net bram_hashtable_0_BRAM_rd_data [get_bd_intf_pins S_AXIS3] [get_bd_intf_pins axis_data_fifo_1/S_AXIS]
   connect_bd_intf_net -intf_net mapping_hls_top_BRAM_rd_cmd_V [get_bd_intf_pins S_AXIS] [get_bd_intf_pins axis_data_fifo_0/S_AXIS]
   connect_bd_intf_net -intf_net mapping_hls_top_BRAM_wr_cmd_V [get_bd_intf_pins S_AXIS1] [get_bd_intf_pins axis_data_fifo_2/S_AXIS]
   connect_bd_intf_net -intf_net mapping_hls_top_BRAM_wr_data [get_bd_intf_pins S_AXIS2] [get_bd_intf_pins axis_data_fifo_3/S_AXIS]
 
   # Create port connections
-  connect_bd_net -net ddr4_0_c0_ddr4_ui_clk [get_bd_pins ap_clk] [get_bd_pins axis_data_fifo_0/s_axis_aclk] [get_bd_pins axis_data_fifo_1/s_axis_aclk] [get_bd_pins axis_data_fifo_2/s_axis_aclk] [get_bd_pins axis_data_fifo_3/s_axis_aclk] [get_bd_pins axis_data_fifo_4/s_axis_aclk] [get_bd_pins axis_data_fifo_5/s_axis_aclk] [get_bd_pins bram_hashtable_0/ap_clk]
-  connect_bd_net -net util_vector_logic_0_Res [get_bd_pins mc_ddr4_ui_clk_rst_n] [get_bd_pins axis_data_fifo_0/s_axis_aresetn] [get_bd_pins axis_data_fifo_1/s_axis_aresetn] [get_bd_pins axis_data_fifo_2/s_axis_aresetn] [get_bd_pins axis_data_fifo_3/s_axis_aresetn] [get_bd_pins axis_data_fifo_4/s_axis_aresetn] [get_bd_pins axis_data_fifo_5/s_axis_aresetn] [get_bd_pins bram_hashtable_0/ap_rst_n]
+  connect_bd_net -net ddr4_0_c0_ddr4_ui_clk [get_bd_pins s_axis_aclk] [get_bd_pins axis_data_fifo_0/s_axis_aclk] [get_bd_pins axis_data_fifo_1/s_axis_aclk] [get_bd_pins axis_data_fifo_2/s_axis_aclk] [get_bd_pins axis_data_fifo_3/s_axis_aclk]
+  connect_bd_net -net util_vector_logic_0_Res [get_bd_pins mc_ddr4_ui_clk_rst_n] [get_bd_pins axis_data_fifo_0/s_axis_aresetn] [get_bd_pins axis_data_fifo_1/s_axis_aresetn] [get_bd_pins axis_data_fifo_2/s_axis_aresetn] [get_bd_pins axis_data_fifo_3/s_axis_aresetn]
 
   # Restore current instance
   current_bd_instance $oldCurInst
@@ -631,12 +615,15 @@ proc create_hier_cell_Buffer_ToBeRemoved { parentCell nameHier } {
   set_property -dict [ list \
    CONFIG.NUM_MI {1} \
    CONFIG.NUM_SI {2} \
+   CONFIG.S00_READ_ACCEPTANCE {32} \
+   CONFIG.S01_WRITE_ACCEPTANCE {32} \
+   CONFIG.STRATEGY {2} \
  ] $axi_crossbar_0
 
   # Create instance: axi_datamover, and set properties
   set axi_datamover [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_datamover:5.1 axi_datamover ]
   set_property -dict [ list \
-   CONFIG.c_dummy {0} \
+   CONFIG.c_dummy {1} \
    CONFIG.c_m_axi_mm2s_data_width {512} \
    CONFIG.c_m_axi_mm2s_id_width {8} \
    CONFIG.c_m_axi_s2mm_data_width {512} \
@@ -650,8 +637,11 @@ proc create_hier_cell_Buffer_ToBeRemoved { parentCell nameHier } {
    CONFIG.c_s_axis_s2mm_tdata_width {512} \
  ] $axi_datamover
 
-  # Create instance: ht_bram
-  create_hier_cell_ht_bram [current_bd_instance .] ht_bram
+  # Create instance: bram_hashtable_0, and set properties
+  set bram_hashtable_0 [ create_bd_cell -type ip -vlnv purdue.wuklab:hls:bram_hashtable:1.0 bram_hashtable_0 ]
+
+  # Create instance: fifos
+  create_hier_cell_fifos [current_bd_instance .] fifos
 
   # Create instance: mapping_hls_top, and set properties
   set mapping_hls_top [ create_bd_cell -type ip -vlnv purdue.wuklab:hls:paging_top:1.0 mapping_hls_top ]
@@ -667,16 +657,18 @@ proc create_hier_cell_Buffer_ToBeRemoved { parentCell nameHier } {
   connect_bd_intf_net -intf_net axi_datamover_M_AXI_MM2S [get_bd_intf_pins axi_crossbar_0/S00_AXI] [get_bd_intf_pins axi_datamover/M_AXI_MM2S]
   connect_bd_intf_net -intf_net axi_datamover_M_AXI_S2MM [get_bd_intf_pins axi_crossbar_0/S01_AXI] [get_bd_intf_pins axi_datamover/M_AXI_S2MM]
   connect_bd_intf_net -intf_net axis_data_fifo_0_M_AXIS [get_bd_intf_pins Buffer_ToBeRemoved/in_read_m] [get_bd_intf_pins mapping_hls_top/in_read_V]
+  connect_bd_intf_net -intf_net axis_data_fifo_0_M_AXIS1 [get_bd_intf_pins bram_hashtable_0/BRAM_rd_cmd_V] [get_bd_intf_pins fifos/M_AXIS]
   connect_bd_intf_net -intf_net axis_data_fifo_1_M_AXIS [get_bd_intf_pins Buffer_ToBeRemoved/in_write_m] [get_bd_intf_pins mapping_hls_top/in_write_V]
-  connect_bd_intf_net -intf_net axis_data_fifo_1_M_AXIS1 [get_bd_intf_pins ht_bram/M_AXIS] [get_bd_intf_pins mapping_hls_top/BRAM_rd_data]
-  connect_bd_intf_net -intf_net axis_data_fifo_4_M_AXIS [get_bd_intf_pins ht_bram/M_AXIS1] [get_bd_intf_pins mapping_hls_top/BRAM_rd_status_V_V]
-  connect_bd_intf_net -intf_net axis_data_fifo_5_M_AXIS [get_bd_intf_pins ht_bram/M_AXIS2] [get_bd_intf_pins mapping_hls_top/BRAM_wr_status_V_V]
+  connect_bd_intf_net -intf_net axis_data_fifo_1_M_AXIS1 [get_bd_intf_pins fifos/M_AXIS3] [get_bd_intf_pins mapping_hls_top/BRAM_rd_data]
+  connect_bd_intf_net -intf_net axis_data_fifo_2_M_AXIS [get_bd_intf_pins bram_hashtable_0/BRAM_wr_cmd_V] [get_bd_intf_pins fifos/M_AXIS1]
+  connect_bd_intf_net -intf_net axis_data_fifo_3_M_AXIS [get_bd_intf_pins bram_hashtable_0/BRAM_wr_data] [get_bd_intf_pins fifos/M_AXIS2]
+  connect_bd_intf_net -intf_net bram_hashtable_0_BRAM_rd_data [get_bd_intf_pins bram_hashtable_0/BRAM_rd_data] [get_bd_intf_pins fifos/S_AXIS3]
   connect_bd_intf_net -intf_net ddr4_0_C0_DDR4 [get_bd_intf_ports ddr4_sdram_c1] [get_bd_intf_pins mc/ddr4_sdram_c1]
   connect_bd_intf_net -intf_net in_read_0_1 [get_bd_intf_ports in_read_0] [get_bd_intf_pins Buffer_ToBeRemoved/in_read_0]
   connect_bd_intf_net -intf_net in_write_0_1 [get_bd_intf_ports in_write_0] [get_bd_intf_pins Buffer_ToBeRemoved/in_write_0]
-  connect_bd_intf_net -intf_net mapping_hls_top_BRAM_rd_cmd_V [get_bd_intf_pins ht_bram/S_AXIS] [get_bd_intf_pins mapping_hls_top/BRAM_rd_cmd_V]
-  connect_bd_intf_net -intf_net mapping_hls_top_BRAM_wr_cmd_V [get_bd_intf_pins ht_bram/S_AXIS1] [get_bd_intf_pins mapping_hls_top/BRAM_wr_cmd_V]
-  connect_bd_intf_net -intf_net mapping_hls_top_BRAM_wr_data [get_bd_intf_pins ht_bram/S_AXIS2] [get_bd_intf_pins mapping_hls_top/BRAM_wr_data]
+  connect_bd_intf_net -intf_net mapping_hls_top_BRAM_rd_cmd_V [get_bd_intf_pins fifos/S_AXIS] [get_bd_intf_pins mapping_hls_top/BRAM_rd_cmd_V]
+  connect_bd_intf_net -intf_net mapping_hls_top_BRAM_wr_cmd_V [get_bd_intf_pins fifos/S_AXIS1] [get_bd_intf_pins mapping_hls_top/BRAM_wr_cmd_V]
+  connect_bd_intf_net -intf_net mapping_hls_top_BRAM_wr_data [get_bd_intf_pins fifos/S_AXIS2] [get_bd_intf_pins mapping_hls_top/BRAM_wr_data]
   connect_bd_intf_net -intf_net mapping_hls_top_DRAM_rd_cmd_V [get_bd_intf_pins axi_datamover/S_AXIS_MM2S_CMD] [get_bd_intf_pins mapping_hls_top/DRAM_rd_cmd_V]
   connect_bd_intf_net -intf_net mapping_hls_top_DRAM_wr_cmd_V [get_bd_intf_pins axi_datamover/S_AXIS_S2MM_CMD] [get_bd_intf_pins mapping_hls_top/DRAM_wr_cmd_V]
   connect_bd_intf_net -intf_net mapping_hls_top_DRAM_wr_data [get_bd_intf_pins axi_datamover/S_AXIS_S2MM] [get_bd_intf_pins mapping_hls_top/DRAM_wr_data]
@@ -685,10 +677,10 @@ proc create_hier_cell_Buffer_ToBeRemoved { parentCell nameHier } {
 
   # Create port connections
   connect_bd_net -net c0_sys_clk_i_0_1 [get_bd_ports c0_sys_clk_i_0] [get_bd_pins mc/c0_sys_clk_i_0]
-  connect_bd_net -net ddr4_0_c0_ddr4_ui_clk [get_bd_pins Buffer_ToBeRemoved/s_axis_aclk] [get_bd_pins axi_crossbar_0/aclk] [get_bd_pins axi_datamover/m_axi_mm2s_aclk] [get_bd_pins axi_datamover/m_axi_s2mm_aclk] [get_bd_pins axi_datamover/m_axis_mm2s_cmdsts_aclk] [get_bd_pins axi_datamover/m_axis_s2mm_cmdsts_awclk] [get_bd_pins ht_bram/ap_clk] [get_bd_pins mapping_hls_top/ap_clk] [get_bd_pins mc/c0_ddr4_ui_clk]
+  connect_bd_net -net ddr4_0_c0_ddr4_ui_clk [get_bd_pins Buffer_ToBeRemoved/s_axis_aclk] [get_bd_pins axi_crossbar_0/aclk] [get_bd_pins axi_datamover/m_axi_mm2s_aclk] [get_bd_pins axi_datamover/m_axi_s2mm_aclk] [get_bd_pins axi_datamover/m_axis_mm2s_cmdsts_aclk] [get_bd_pins axi_datamover/m_axis_s2mm_cmdsts_awclk] [get_bd_pins bram_hashtable_0/ap_clk] [get_bd_pins fifos/s_axis_aclk] [get_bd_pins mapping_hls_top/ap_clk] [get_bd_pins mc/c0_ddr4_ui_clk]
   connect_bd_net -net ddr4_0_c0_init_calib_complete [get_bd_ports mc_init_calib_complete] [get_bd_pins mc/mc_init_calib_complete]
   connect_bd_net -net sys_rst_0_1 [get_bd_ports sys_rst_0] [get_bd_pins mc/sys_rst_0]
-  connect_bd_net -net util_vector_logic_0_Res [get_bd_ports mc_ddr4_ui_clk_rst_n] [get_bd_pins Buffer_ToBeRemoved/mc_ddr4_ui_clk_rst_n] [get_bd_pins axi_crossbar_0/aresetn] [get_bd_pins axi_datamover/m_axi_mm2s_aresetn] [get_bd_pins axi_datamover/m_axi_s2mm_aresetn] [get_bd_pins axi_datamover/m_axis_mm2s_cmdsts_aresetn] [get_bd_pins axi_datamover/m_axis_s2mm_cmdsts_aresetn] [get_bd_pins ht_bram/mc_ddr4_ui_clk_rst_n] [get_bd_pins mapping_hls_top/ap_rst_n] [get_bd_pins mc/mc_ddr4_ui_clk_rst_n]
+  connect_bd_net -net util_vector_logic_0_Res [get_bd_ports mc_ddr4_ui_clk_rst_n] [get_bd_pins Buffer_ToBeRemoved/mc_ddr4_ui_clk_rst_n] [get_bd_pins axi_crossbar_0/aresetn] [get_bd_pins axi_datamover/m_axi_mm2s_aresetn] [get_bd_pins axi_datamover/m_axi_s2mm_aresetn] [get_bd_pins axi_datamover/m_axis_mm2s_cmdsts_aresetn] [get_bd_pins axi_datamover/m_axis_s2mm_cmdsts_aresetn] [get_bd_pins bram_hashtable_0/ap_rst_n] [get_bd_pins fifos/mc_ddr4_ui_clk_rst_n] [get_bd_pins mapping_hls_top/ap_rst_n] [get_bd_pins mc/mc_ddr4_ui_clk_rst_n]
 
   # Create address segments
   create_bd_addr_seg -range 0x000100000000 -offset 0x00000000 [get_bd_addr_spaces axi_datamover/Data_MM2S] [get_bd_addr_segs mc/ddr4_0/C0_DDR4_MEMORY_MAP/C0_DDR4_ADDRESS_BLOCK] SEG_ddr4_0_C0_DDR4_ADDRESS_BLOCK
@@ -701,11 +693,11 @@ proc create_hier_cell_Buffer_ToBeRemoved { parentCell nameHier } {
   save_bd_design
   close_bd_design $design_name 
 }
-# End of cr_bd_mapping_ip_top_TB()
 cr_bd_mapping_ip_top_TB ""
 set_property IS_MANAGED "0" [get_files mapping_ip_top_TB.bd ] 
 set_property REGISTERED_WITH_MANAGER "1" [get_files mapping_ip_top_TB.bd ] 
 set_property SYNTH_CHECKPOINT_MODE "Hierarchical" [get_files mapping_ip_top_TB.bd ] 
+
 
 # Proc to create BD mapping_ip_top
 proc cr_bd_mapping_ip_top { parentCell } {
@@ -726,9 +718,9 @@ proc cr_bd_mapping_ip_top { parentCell } {
      set list_check_ips "\ 
   xilinx.com:ip:axi_crossbar:2.1\
   xilinx.com:ip:axi_datamover:5.1\
+  purdue.wuklab:hls:bram_hashtable:1.0\
   purdue.wuklab:hls:paging_top:1.0\
   xilinx.com:ip:axis_data_fifo:1.1\
-  purdue.wuklab:hls:bram_hashtable:1.0\
   "
 
    set list_ips_missing ""
@@ -754,13 +746,13 @@ proc cr_bd_mapping_ip_top { parentCell } {
   }
 
   
-# Hierarchical cell: ht_bram
-proc create_hier_cell_ht_bram { parentCell nameHier } {
+# Hierarchical cell: fifos
+proc create_hier_cell_fifos { parentCell nameHier } {
 
   variable script_folder
 
   if { $parentCell eq "" || $nameHier eq "" } {
-     catch {common::send_msg_id "BD_TCL-102" "ERROR" "create_hier_cell_ht_bram() - Empty argument(s)!"}
+     catch {common::send_msg_id "BD_TCL-102" "ERROR" "create_hier_cell_fifos() - Empty argument(s)!"}
      return
   }
 
@@ -792,13 +784,15 @@ proc create_hier_cell_ht_bram { parentCell nameHier } {
   create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 M_AXIS
   create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 M_AXIS1
   create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 M_AXIS2
+  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 M_AXIS3
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 S_AXIS
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 S_AXIS1
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 S_AXIS2
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 S_AXIS3
 
   # Create pins
   create_bd_pin -dir I -type clk ap_clk
-  create_bd_pin -dir I -type rst mc_ddr4_ui_clk_rst_n
+  create_bd_pin -dir I -type rst ap_rstn
 
   # Create instance: axis_data_fifo_0, and set properties
   set axis_data_fifo_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_data_fifo:1.1 axis_data_fifo_0 ]
@@ -824,38 +818,19 @@ proc create_hier_cell_ht_bram { parentCell nameHier } {
    CONFIG.FIFO_DEPTH {16} \
  ] $axis_data_fifo_3
 
-  # Create instance: axis_data_fifo_4, and set properties
-  set axis_data_fifo_4 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_data_fifo:1.1 axis_data_fifo_4 ]
-  set_property -dict [ list \
-   CONFIG.FIFO_DEPTH {16} \
- ] $axis_data_fifo_4
-
-  # Create instance: axis_data_fifo_5, and set properties
-  set axis_data_fifo_5 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_data_fifo:1.1 axis_data_fifo_5 ]
-  set_property -dict [ list \
-   CONFIG.FIFO_DEPTH {16} \
- ] $axis_data_fifo_5
-
-  # Create instance: bram_hashtable_0, and set properties
-  set bram_hashtable_0 [ create_bd_cell -type ip -vlnv purdue.wuklab:hls:bram_hashtable:1.0 bram_hashtable_0 ]
-
   # Create interface connections
-  connect_bd_intf_net -intf_net axis_data_fifo_0_M_AXIS1 [get_bd_intf_pins axis_data_fifo_0/M_AXIS] [get_bd_intf_pins bram_hashtable_0/BRAM_rd_cmd_V]
+  connect_bd_intf_net -intf_net axis_data_fifo_0_M_AXIS1 [get_bd_intf_pins M_AXIS3] [get_bd_intf_pins axis_data_fifo_0/M_AXIS]
   connect_bd_intf_net -intf_net axis_data_fifo_1_M_AXIS1 [get_bd_intf_pins M_AXIS] [get_bd_intf_pins axis_data_fifo_1/M_AXIS]
-  connect_bd_intf_net -intf_net axis_data_fifo_2_M_AXIS [get_bd_intf_pins axis_data_fifo_2/M_AXIS] [get_bd_intf_pins bram_hashtable_0/BRAM_wr_cmd_V]
-  connect_bd_intf_net -intf_net axis_data_fifo_3_M_AXIS [get_bd_intf_pins axis_data_fifo_3/M_AXIS] [get_bd_intf_pins bram_hashtable_0/BRAM_wr_data]
-  connect_bd_intf_net -intf_net axis_data_fifo_4_M_AXIS [get_bd_intf_pins M_AXIS1] [get_bd_intf_pins axis_data_fifo_4/M_AXIS]
-  connect_bd_intf_net -intf_net axis_data_fifo_5_M_AXIS [get_bd_intf_pins M_AXIS2] [get_bd_intf_pins axis_data_fifo_5/M_AXIS]
-  connect_bd_intf_net -intf_net bram_hashtable_0_BRAM_rd_data [get_bd_intf_pins axis_data_fifo_1/S_AXIS] [get_bd_intf_pins bram_hashtable_0/BRAM_rd_data]
-  connect_bd_intf_net -intf_net bram_hashtable_0_BRAM_rd_status_V_V [get_bd_intf_pins axis_data_fifo_4/S_AXIS] [get_bd_intf_pins bram_hashtable_0/BRAM_rd_status_V_V]
-  connect_bd_intf_net -intf_net bram_hashtable_0_BRAM_wr_status_V_V [get_bd_intf_pins axis_data_fifo_5/S_AXIS] [get_bd_intf_pins bram_hashtable_0/BRAM_wr_status_V_V]
-  connect_bd_intf_net -intf_net mapping_hls_top_BRAM_rd_cmd_V [get_bd_intf_pins S_AXIS] [get_bd_intf_pins axis_data_fifo_0/S_AXIS]
+  connect_bd_intf_net -intf_net axis_data_fifo_2_M_AXIS [get_bd_intf_pins M_AXIS1] [get_bd_intf_pins axis_data_fifo_2/M_AXIS]
+  connect_bd_intf_net -intf_net axis_data_fifo_3_M_AXIS [get_bd_intf_pins M_AXIS2] [get_bd_intf_pins axis_data_fifo_3/M_AXIS]
+  connect_bd_intf_net -intf_net bram_hashtable_0_BRAM_rd_data [get_bd_intf_pins S_AXIS] [get_bd_intf_pins axis_data_fifo_1/S_AXIS]
+  connect_bd_intf_net -intf_net mapping_hls_top_BRAM_rd_cmd_V [get_bd_intf_pins S_AXIS3] [get_bd_intf_pins axis_data_fifo_0/S_AXIS]
   connect_bd_intf_net -intf_net mapping_hls_top_BRAM_wr_cmd_V [get_bd_intf_pins S_AXIS1] [get_bd_intf_pins axis_data_fifo_2/S_AXIS]
   connect_bd_intf_net -intf_net mapping_hls_top_BRAM_wr_data [get_bd_intf_pins S_AXIS2] [get_bd_intf_pins axis_data_fifo_3/S_AXIS]
 
   # Create port connections
-  connect_bd_net -net ddr4_0_c0_ddr4_ui_clk [get_bd_pins ap_clk] [get_bd_pins axis_data_fifo_0/s_axis_aclk] [get_bd_pins axis_data_fifo_1/s_axis_aclk] [get_bd_pins axis_data_fifo_2/s_axis_aclk] [get_bd_pins axis_data_fifo_3/s_axis_aclk] [get_bd_pins axis_data_fifo_4/s_axis_aclk] [get_bd_pins axis_data_fifo_5/s_axis_aclk] [get_bd_pins bram_hashtable_0/ap_clk]
-  connect_bd_net -net util_vector_logic_0_Res [get_bd_pins mc_ddr4_ui_clk_rst_n] [get_bd_pins axis_data_fifo_0/s_axis_aresetn] [get_bd_pins axis_data_fifo_1/s_axis_aresetn] [get_bd_pins axis_data_fifo_2/s_axis_aresetn] [get_bd_pins axis_data_fifo_3/s_axis_aresetn] [get_bd_pins axis_data_fifo_4/s_axis_aresetn] [get_bd_pins axis_data_fifo_5/s_axis_aresetn] [get_bd_pins bram_hashtable_0/ap_rst_n]
+  connect_bd_net -net ddr4_0_c0_ddr4_ui_clk [get_bd_pins ap_clk] [get_bd_pins axis_data_fifo_0/s_axis_aclk] [get_bd_pins axis_data_fifo_1/s_axis_aclk] [get_bd_pins axis_data_fifo_2/s_axis_aclk] [get_bd_pins axis_data_fifo_3/s_axis_aclk]
+  connect_bd_net -net util_vector_logic_0_Res [get_bd_pins ap_rstn] [get_bd_pins axis_data_fifo_0/s_axis_aresetn] [get_bd_pins axis_data_fifo_1/s_axis_aresetn] [get_bd_pins axis_data_fifo_2/s_axis_aresetn] [get_bd_pins axis_data_fifo_3/s_axis_aresetn]
 
   # Restore current instance
   current_bd_instance $oldCurInst
@@ -1022,6 +997,8 @@ proc create_hier_cell_Buffer_ToBeRemoved { parentCell nameHier } {
   set_property -dict [ list \
    CONFIG.NUM_MI {1} \
    CONFIG.NUM_SI {2} \
+   CONFIG.S00_READ_ACCEPTANCE {32} \
+   CONFIG.S01_WRITE_ACCEPTANCE {32} \
  ] $axi_crossbar_0
 
   # Create instance: axi_datamover, and set properties
@@ -1041,8 +1018,11 @@ proc create_hier_cell_Buffer_ToBeRemoved { parentCell nameHier } {
    CONFIG.c_s_axis_s2mm_tdata_width {512} \
  ] $axi_datamover
 
-  # Create instance: ht_bram
-  create_hier_cell_ht_bram [current_bd_instance .] ht_bram
+  # Create instance: bram_hashtable_0, and set properties
+  set bram_hashtable_0 [ create_bd_cell -type ip -vlnv purdue.wuklab:hls:bram_hashtable:1.0 bram_hashtable_0 ]
+
+  # Create instance: fifos
+  create_hier_cell_fifos [current_bd_instance .] fifos
 
   # Create instance: mapping_hls_top, and set properties
   set mapping_hls_top [ create_bd_cell -type ip -vlnv purdue.wuklab:hls:paging_top:1.0 mapping_hls_top ]
@@ -1055,15 +1035,17 @@ proc create_hier_cell_Buffer_ToBeRemoved { parentCell nameHier } {
   connect_bd_intf_net -intf_net axi_datamover_M_AXI_MM2S [get_bd_intf_pins axi_crossbar_0/S00_AXI] [get_bd_intf_pins axi_datamover/M_AXI_MM2S]
   connect_bd_intf_net -intf_net axi_datamover_M_AXI_S2MM [get_bd_intf_pins axi_crossbar_0/S01_AXI] [get_bd_intf_pins axi_datamover/M_AXI_S2MM]
   connect_bd_intf_net -intf_net axis_data_fifo_0_M_AXIS [get_bd_intf_pins Buffer_ToBeRemoved/in_read_m] [get_bd_intf_pins mapping_hls_top/in_read_V]
+  connect_bd_intf_net -intf_net axis_data_fifo_0_M_AXIS1 [get_bd_intf_pins bram_hashtable_0/BRAM_rd_cmd_V] [get_bd_intf_pins fifos/M_AXIS3]
   connect_bd_intf_net -intf_net axis_data_fifo_1_M_AXIS [get_bd_intf_pins Buffer_ToBeRemoved/in_write_m] [get_bd_intf_pins mapping_hls_top/in_write_V]
-  connect_bd_intf_net -intf_net axis_data_fifo_1_M_AXIS1 [get_bd_intf_pins ht_bram/M_AXIS] [get_bd_intf_pins mapping_hls_top/BRAM_rd_data]
-  connect_bd_intf_net -intf_net axis_data_fifo_4_M_AXIS [get_bd_intf_pins ht_bram/M_AXIS1] [get_bd_intf_pins mapping_hls_top/BRAM_rd_status_V_V]
-  connect_bd_intf_net -intf_net axis_data_fifo_5_M_AXIS [get_bd_intf_pins ht_bram/M_AXIS2] [get_bd_intf_pins mapping_hls_top/BRAM_wr_status_V_V]
+  connect_bd_intf_net -intf_net axis_data_fifo_1_M_AXIS1 [get_bd_intf_pins fifos/M_AXIS] [get_bd_intf_pins mapping_hls_top/BRAM_rd_data]
+  connect_bd_intf_net -intf_net axis_data_fifo_2_M_AXIS [get_bd_intf_pins bram_hashtable_0/BRAM_wr_cmd_V] [get_bd_intf_pins fifos/M_AXIS1]
+  connect_bd_intf_net -intf_net axis_data_fifo_3_M_AXIS [get_bd_intf_pins bram_hashtable_0/BRAM_wr_data] [get_bd_intf_pins fifos/M_AXIS2]
+  connect_bd_intf_net -intf_net bram_hashtable_0_BRAM_rd_data [get_bd_intf_pins bram_hashtable_0/BRAM_rd_data] [get_bd_intf_pins fifos/S_AXIS]
   connect_bd_intf_net -intf_net in_read_0_1 [get_bd_intf_ports in_read_0] [get_bd_intf_pins Buffer_ToBeRemoved/in_read_0]
   connect_bd_intf_net -intf_net in_write_0_1 [get_bd_intf_ports in_write_0] [get_bd_intf_pins Buffer_ToBeRemoved/in_write_0]
-  connect_bd_intf_net -intf_net mapping_hls_top_BRAM_rd_cmd_V [get_bd_intf_pins ht_bram/S_AXIS] [get_bd_intf_pins mapping_hls_top/BRAM_rd_cmd_V]
-  connect_bd_intf_net -intf_net mapping_hls_top_BRAM_wr_cmd_V [get_bd_intf_pins ht_bram/S_AXIS1] [get_bd_intf_pins mapping_hls_top/BRAM_wr_cmd_V]
-  connect_bd_intf_net -intf_net mapping_hls_top_BRAM_wr_data [get_bd_intf_pins ht_bram/S_AXIS2] [get_bd_intf_pins mapping_hls_top/BRAM_wr_data]
+  connect_bd_intf_net -intf_net mapping_hls_top_BRAM_rd_cmd_V [get_bd_intf_pins fifos/S_AXIS3] [get_bd_intf_pins mapping_hls_top/BRAM_rd_cmd_V]
+  connect_bd_intf_net -intf_net mapping_hls_top_BRAM_wr_cmd_V [get_bd_intf_pins fifos/S_AXIS1] [get_bd_intf_pins mapping_hls_top/BRAM_wr_cmd_V]
+  connect_bd_intf_net -intf_net mapping_hls_top_BRAM_wr_data [get_bd_intf_pins fifos/S_AXIS2] [get_bd_intf_pins mapping_hls_top/BRAM_wr_data]
   connect_bd_intf_net -intf_net mapping_hls_top_DRAM_rd_cmd_V [get_bd_intf_pins axi_datamover/S_AXIS_MM2S_CMD] [get_bd_intf_pins mapping_hls_top/DRAM_rd_cmd_V]
   connect_bd_intf_net -intf_net mapping_hls_top_DRAM_wr_cmd_V [get_bd_intf_pins axi_datamover/S_AXIS_S2MM_CMD] [get_bd_intf_pins mapping_hls_top/DRAM_wr_cmd_V]
   connect_bd_intf_net -intf_net mapping_hls_top_DRAM_wr_data [get_bd_intf_pins axi_datamover/S_AXIS_S2MM] [get_bd_intf_pins mapping_hls_top/DRAM_wr_data]
@@ -1071,8 +1053,8 @@ proc create_hier_cell_Buffer_ToBeRemoved { parentCell nameHier } {
   connect_bd_intf_net -intf_net mapping_hls_top_out_write_V [get_bd_intf_ports out_write_0] [get_bd_intf_pins mapping_hls_top/out_write_V]
 
   # Create port connections
-  connect_bd_net -net ddr4_0_c0_ddr4_ui_clk [get_bd_ports ap_clk] [get_bd_pins Buffer_ToBeRemoved/s_axis_aclk] [get_bd_pins axi_crossbar_0/aclk] [get_bd_pins axi_datamover/m_axi_mm2s_aclk] [get_bd_pins axi_datamover/m_axi_s2mm_aclk] [get_bd_pins axi_datamover/m_axis_mm2s_cmdsts_aclk] [get_bd_pins axi_datamover/m_axis_s2mm_cmdsts_awclk] [get_bd_pins ht_bram/ap_clk] [get_bd_pins mapping_hls_top/ap_clk]
-  connect_bd_net -net util_vector_logic_0_Res [get_bd_ports ap_rstn] [get_bd_pins Buffer_ToBeRemoved/mc_ddr4_ui_clk_rst_n] [get_bd_pins axi_crossbar_0/aresetn] [get_bd_pins axi_datamover/m_axi_mm2s_aresetn] [get_bd_pins axi_datamover/m_axi_s2mm_aresetn] [get_bd_pins axi_datamover/m_axis_mm2s_cmdsts_aresetn] [get_bd_pins axi_datamover/m_axis_s2mm_cmdsts_aresetn] [get_bd_pins ht_bram/mc_ddr4_ui_clk_rst_n] [get_bd_pins mapping_hls_top/ap_rst_n]
+  connect_bd_net -net ddr4_0_c0_ddr4_ui_clk [get_bd_ports ap_clk] [get_bd_pins Buffer_ToBeRemoved/s_axis_aclk] [get_bd_pins axi_crossbar_0/aclk] [get_bd_pins axi_datamover/m_axi_mm2s_aclk] [get_bd_pins axi_datamover/m_axi_s2mm_aclk] [get_bd_pins axi_datamover/m_axis_mm2s_cmdsts_aclk] [get_bd_pins axi_datamover/m_axis_s2mm_cmdsts_awclk] [get_bd_pins bram_hashtable_0/ap_clk] [get_bd_pins fifos/ap_clk] [get_bd_pins mapping_hls_top/ap_clk]
+  connect_bd_net -net util_vector_logic_0_Res [get_bd_ports ap_rstn] [get_bd_pins Buffer_ToBeRemoved/mc_ddr4_ui_clk_rst_n] [get_bd_pins axi_crossbar_0/aresetn] [get_bd_pins axi_datamover/m_axi_mm2s_aresetn] [get_bd_pins axi_datamover/m_axi_s2mm_aresetn] [get_bd_pins axi_datamover/m_axis_mm2s_cmdsts_aresetn] [get_bd_pins axi_datamover/m_axis_s2mm_cmdsts_aresetn] [get_bd_pins bram_hashtable_0/ap_rst_n] [get_bd_pins fifos/ap_rstn] [get_bd_pins mapping_hls_top/ap_rst_n]
 
   # Create address segments
   create_bd_addr_seg -range 0x000100000000 -offset 0x00000000 [get_bd_addr_spaces axi_datamover/Data_MM2S] [get_bd_addr_segs M00_AXI_0/Reg] SEG_M00_AXI_0_Reg
@@ -1083,8 +1065,6 @@ proc create_hier_cell_Buffer_ToBeRemoved { parentCell nameHier } {
   current_bd_instance $oldCurInst
 
   save_bd_design
-common::send_msg_id "BD_TCL-1000" "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
-
   close_bd_design $design_name 
 }
 # End of cr_bd_mapping_ip_top()

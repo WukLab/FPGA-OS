@@ -127,13 +127,11 @@ void DRAM_wr_pipe(stream<struct mem_cmd> *mem_write_cmd,
  * O @mem_read_data: internal read data buffer
  * O @dm_read_cmd: cooked requests sent to datamover
  * I @dm_read_data: data from datamover
- * I @dm_read_status: status from datamover
  */
 void BRAM_rd_pipe(stream<struct mem_cmd> *mem_read_cmd,
 		  stream<ap_uint<MEM_BUS_WIDTH> > *mem_read_data,
 		  stream<struct dm_cmd> *dm_read_cmd,
-		  stream<struct axis_mem> *dm_read_data,
-		  stream<ap_uint<8> > *dm_read_status)
+		  stream<struct axis_mem> *dm_read_data)
 {
 #pragma HLS PIPELINE
 #pragma HLS INLINE
@@ -165,11 +163,6 @@ void BRAM_rd_pipe(stream<struct mem_cmd> *mem_read_cmd,
 		in = dm_read_data->read();
 		mem_read_data->write(in.data);
 	}
-
-	if (!dm_read_status->empty()) {
-		ap_uint<8> status;
-		status = dm_read_status->read();
-	}
 }
 
 /*
@@ -177,13 +170,11 @@ void BRAM_rd_pipe(stream<struct mem_cmd> *mem_read_cmd,
  * I @mem_write_data: internal write data buffer
  * O @dm_write_cmd: cooked requests sent to datamover
  * O @dm_write_data: data to datamover
- * I @dm_write_status: status from datamover
  */
 void BRAM_wr_pipe(stream<struct mem_cmd> *mem_write_cmd,
 		   stream<ap_uint<MEM_BUS_WIDTH> > *mem_write_data,
 		   stream<struct dm_cmd> *dm_write_cmd,
-		   stream<struct axis_mem> *dm_write_data,
-		   stream<ap_uint<8> > *dm_write_status)
+		   stream<struct axis_mem> *dm_write_data)
 {
 #pragma HLS PIPELINE
 #pragma HLS INLINE
@@ -213,10 +204,5 @@ void BRAM_wr_pipe(stream<struct mem_cmd> *mem_write_cmd,
 		};
 		mem_write_data->read(out.data);
 		dm_write_data->write(out);
-	}
-
-	if (!dm_write_status->empty()) {
-		ap_uint<8> status;
-		status = dm_write_status->read();
 	}
 }

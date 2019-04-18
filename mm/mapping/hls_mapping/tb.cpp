@@ -27,7 +27,6 @@ int main(void)
 	stream<struct axis_mem> DRAM_rd_data("DRAM_rd_data"), DRAM_wr_data("DRAM_wr_data");
 	stream<struct axis_mem> BRAM_rd_data("BRAM_rd_data"), BRAM_wr_data("BRAM_wr_data");
 	stream<ap_uint<8> > DRAM_rd_status("DRAM_rd_status"), DRAM_wr_status("DRAM_wr_status");
-	stream<ap_uint<8> > BRAM_rd_status("BRAM_rd_status"), BRAM_wr_status("BRAM_wr_status");
 	int _cycle, k, j;
 
 	struct mapping_request _in_read, _in_write;
@@ -77,8 +76,7 @@ int main(void)
 			   &DRAM_rd_data, &DRAM_wr_data,
 			   &DRAM_rd_status, &DRAM_wr_status,
 			   &BRAM_rd_cmd, &BRAM_wr_cmd,
-			   &BRAM_rd_data, &BRAM_wr_data,
-			   &BRAM_rd_status, &BRAM_wr_status);
+			   &BRAM_rd_data, &BRAM_wr_data);
 
 		if (!out_read.empty()) {
 			struct mapping_reply out = { 0 };

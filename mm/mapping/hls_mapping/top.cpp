@@ -54,9 +54,7 @@ void paging_top(hls::stream<struct mapping_request>	*in_read,
 		hls::stream<struct dm_cmd>		*BRAM_rd_cmd,
 		hls::stream<struct dm_cmd>		*BRAM_wr_cmd,
 		hls::stream<struct axis_mem>		*BRAM_rd_data,
-		hls::stream<struct axis_mem>		*BRAM_wr_data,
-		hls::stream<ap_uint<8> >		*BRAM_rd_status,
-		hls::stream<ap_uint<8> >		*BRAM_wr_status)
+		hls::stream<struct axis_mem>		*BRAM_wr_data)
 {
 #pragma HLS INTERFACE ap_ctrl_none port=return
 #pragma HLS DATAFLOW
@@ -77,8 +75,6 @@ void paging_top(hls::stream<struct mapping_request>	*in_read,
 #pragma HLS INTERFACE axis both port=BRAM_wr_cmd
 #pragma HLS INTERFACE axis both port=BRAM_rd_data
 #pragma HLS INTERFACE axis both port=BRAM_wr_data
-#pragma HLS INTERFACE axis both port=BRAM_rd_status
-#pragma HLS INTERFACE axis both port=BRAM_wr_status
 
 #pragma HLS DATA_PACK variable=in_read
 #pragma HLS DATA_PACK variable=in_write
@@ -146,14 +142,12 @@ void paging_top(hls::stream<struct mapping_request>	*in_read,
 	BRAM_rd_pipe(&fifo_BRAM_rd_cmd,
 			&fifo_BRAM_rd_data,
 			BRAM_rd_cmd,
-			BRAM_rd_data,
-			BRAM_rd_status);
+			BRAM_rd_data);
 
 	BRAM_wr_pipe(&fifo_BRAM_wr_cmd,
 			 &fifo_BRAM_wr_data,
 			 BRAM_wr_cmd,
-			 BRAM_wr_data,
-			 BRAM_wr_status);
+			 BRAM_wr_data);
 
 	DRAM_rd_pipe(&fifo_DRAM_rd_cmd,
 			&fifo_DRAM_rd_data,
