@@ -42,8 +42,11 @@ reg        sysclk_300_clk_ref;
 	wire        ddr4_reset_n;
 
         /*
-         * don't change instance name, keep it compliant with Xilinx testbench
+	 * BIT FAT NOTE:
+         * Don't change instance name,
+	 * keep it compliant with Xilinx testbench
          */
+
 	//top_pcie_RDM EP (
 	top_pcie_c2h_RDM EP (
 		.pcie_dedicated_100_clk_n	(pcie_dedicated_100_clk_n),
@@ -52,6 +55,8 @@ reg        sysclk_300_clk_ref;
 		.default_sysclk_125_clk_p	(sysclk_125_clk_p),
 		.default_sysclk_300_clk_n	(default_sysclk_300_clk_n),
 		.default_sysclk_300_clk_p	(default_sysclk_300_clk_p),
+		.default_sysclk2_300_clk_n	(default_sysclk_300_clk_n),
+		.default_sysclk2_300_clk_p	(default_sysclk_300_clk_p),
 
                 .sys_rst_n        (sys_rst_n),
 
@@ -62,7 +67,7 @@ reg        sysclk_300_clk_ref;
 		.pci_exp_txp			(c2h_pci_exp_txp),
 		.pci_exp_txn			(c2h_pci_exp_txn),
 
-		/* DRAM interface */
+		// DRAM interface
 		.ddr4_sdram_c1_act_n          (ddr4_act_n),
 		.ddr4_sdram_c1_adr	      (ddr4_adr),
 		.ddr4_sdram_c1_ba	      (ddr4_ba),
@@ -78,8 +83,6 @@ reg        sysclk_300_clk_ref;
 		.ddr4_sdram_c1_odt	      (ddr4_odt),
 		.ddr4_sdram_c1_reset_n        (ddr4_reset_n)
 	);
-
-
 
     ddr4_tb_top MEM_MODEL (
 	//

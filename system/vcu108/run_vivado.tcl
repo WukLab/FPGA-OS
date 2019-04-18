@@ -132,9 +132,10 @@ update_ip_catalog -rebuild
 set obj [get_filesets sources_1]
 # Import local files from the original project
 set files [list \
+ [file normalize "${origin_dir}/rtl/top_pcie_c2h_rdm.v"]\
+ [file normalize "${origin_dir}/rtl/top_pcie_c2h_kvs.v"]\
  [file normalize "${origin_dir}/rtl/top_pcie_rdm.v"]\
  [file normalize "${origin_dir}/rtl/top_pcie_kvs.v"]\
- [file normalize "${origin_dir}/rtl/top_pcie_c2h_rdm.v"]\
  [file normalize "${origin_dir}/rtl/top_axi_mac.v" ]\
  [file normalize "${origin_dir}/rtl/top_qsfp_mac.v" ]\
  [file normalize "${origin_dir}/ip/axi_ethernet_0.xci"]\
@@ -401,6 +402,7 @@ if {[string equal [get_filesets -quiet sim_PCIe] ""]} {
 set obj [get_filesets sim_PCIe]
 set files [list \
  [file normalize "${origin_dir}/tb/top_pcie_rdm_tb.v"] \
+ [file normalize "${origin_dir}/tb/top_pcie_kvs_tb.v"] \
  [file normalize "${origin_dir}/tb/rdm/bd_rdm_for_pcie_tb.v"] \
  [file normalize "${origin_dir}/tb/kvs/bd_kvs_for_pcie_tb.v"] \
  [file normalize "${origin_dir}/tb/kvs/output.txt"] \

@@ -42,9 +42,13 @@ reg        sysclk_300_clk_ref;
 	wire        ddr4_reset_n;
 
         /*
-         * don't change instance name, keep it compliant with Xilinx testbench
+	 * BIT FAT NOTE:
+         * Don't change instance name,
+	 * keep it compliant with Xilinx testbench
          */
-	legofpga_pcie EP (
+
+	//top_pcie_KVS EP (
+	top_pcie_c2h_KVS EP (
 		.pcie_dedicated_100_clk_n	(pcie_dedicated_100_clk_n),
 		.pcie_dedicated_100_clk_p	(pcie_dedicated_100_clk_p),
 		.default_sysclk_125_clk_n	(sysclk_125_clk_n),
