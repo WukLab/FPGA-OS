@@ -1,0 +1,1003 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="board_behav.wdb" id="1">
+         <top_modules>
+            <top_module name="\$unit_pcie_xdma_0_0_dma_bram_wrap_sv " />
+            <top_module name="arch_package" />
+            <top_module name="board" />
+            <top_module name="glbl" />
+            <top_module name="lib_pkg" />
+            <top_module name="proj_package" />
+            <top_module name="vcomponents" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="154795294019fs"></ZoomStartTime>
+      <ZoomEndTime time="155212294020fs"></ZoomEndTime>
+      <Cursor1Time time="155074794019fs"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="224"></NameColumnWidth>
+      <ValueColumnWidth column_width="508"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="57" />
+   <wvobject type="array" fp_name="/board/h2c_pci_exp_txp">
+      <obj_property name="ElementShortName">h2c_pci_exp_txp[7:0]</obj_property>
+      <obj_property name="ObjectShortName">h2c_pci_exp_txp[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/board/h2c_pci_exp_txn">
+      <obj_property name="ElementShortName">h2c_pci_exp_txn[7:0]</obj_property>
+      <obj_property name="ObjectShortName">h2c_pci_exp_txn[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/board/c2h_pci_exp_txp">
+      <obj_property name="ElementShortName">c2h_pci_exp_txp[7:0]</obj_property>
+      <obj_property name="ObjectShortName">c2h_pci_exp_txp[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/board/c2h_pci_exp_txn">
+      <obj_property name="ElementShortName">c2h_pci_exp_txn[7:0]</obj_property>
+      <obj_property name="ObjectShortName">c2h_pci_exp_txn[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/board/user_lnk_up">
+      <obj_property name="ElementShortName">user_lnk_up</obj_property>
+      <obj_property name="ObjectShortName">user_lnk_up</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/board/sys_rst_n">
+      <obj_property name="ElementShortName">sys_rst_n</obj_property>
+      <obj_property name="ObjectShortName">sys_rst_n</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/board/pcie_dedicated_100_clk_p">
+      <obj_property name="ElementShortName">pcie_dedicated_100_clk_p</obj_property>
+      <obj_property name="ObjectShortName">pcie_dedicated_100_clk_p</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/board/pcie_dedicated_100_clk_n">
+      <obj_property name="ElementShortName">pcie_dedicated_100_clk_n</obj_property>
+      <obj_property name="ObjectShortName">pcie_dedicated_100_clk_n</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/board/sysclk_125_clk_p">
+      <obj_property name="ElementShortName">sysclk_125_clk_p</obj_property>
+      <obj_property name="ObjectShortName">sysclk_125_clk_p</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/board/sysclk_125_clk_n">
+      <obj_property name="ElementShortName">sysclk_125_clk_n</obj_property>
+      <obj_property name="ObjectShortName">sysclk_125_clk_n</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/board/default_sysclk_300_clk_p">
+      <obj_property name="ElementShortName">default_sysclk_300_clk_p</obj_property>
+      <obj_property name="ObjectShortName">default_sysclk_300_clk_p</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/board/default_sysclk_300_clk_n">
+      <obj_property name="ElementShortName">default_sysclk_300_clk_n</obj_property>
+      <obj_property name="ObjectShortName">default_sysclk_300_clk_n</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/board/pcie_dedicated_100_clk_ref">
+      <obj_property name="ElementShortName">pcie_dedicated_100_clk_ref</obj_property>
+      <obj_property name="ObjectShortName">pcie_dedicated_100_clk_ref</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/board/sysclk_125_clk_ref">
+      <obj_property name="ElementShortName">sysclk_125_clk_ref</obj_property>
+      <obj_property name="ObjectShortName">sysclk_125_clk_ref</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/board/sysclk_300_clk_ref">
+      <obj_property name="ElementShortName">sysclk_300_clk_ref</obj_property>
+      <obj_property name="ObjectShortName">sysclk_300_clk_ref</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/board/ddr4_act_n">
+      <obj_property name="ElementShortName">ddr4_act_n</obj_property>
+      <obj_property name="ObjectShortName">ddr4_act_n</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/board/ddr4_adr">
+      <obj_property name="ElementShortName">ddr4_adr[16:0]</obj_property>
+      <obj_property name="ObjectShortName">ddr4_adr[16:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/board/ddr4_ba">
+      <obj_property name="ElementShortName">ddr4_ba[1:0]</obj_property>
+      <obj_property name="ObjectShortName">ddr4_ba[1:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/board/ddr4_bg">
+      <obj_property name="ElementShortName">ddr4_bg</obj_property>
+      <obj_property name="ObjectShortName">ddr4_bg</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/board/ddr4_ck_c">
+      <obj_property name="ElementShortName">ddr4_ck_c</obj_property>
+      <obj_property name="ObjectShortName">ddr4_ck_c</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/board/ddr4_ck_t">
+      <obj_property name="ElementShortName">ddr4_ck_t</obj_property>
+      <obj_property name="ObjectShortName">ddr4_ck_t</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/board/ddr4_cke">
+      <obj_property name="ElementShortName">ddr4_cke</obj_property>
+      <obj_property name="ObjectShortName">ddr4_cke</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/board/ddr4_cs_n">
+      <obj_property name="ElementShortName">ddr4_cs_n</obj_property>
+      <obj_property name="ObjectShortName">ddr4_cs_n</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/board/ddr4_dm_n">
+      <obj_property name="ElementShortName">ddr4_dm_n[7:0]</obj_property>
+      <obj_property name="ObjectShortName">ddr4_dm_n[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/board/ddr4_dq">
+      <obj_property name="ElementShortName">ddr4_dq[63:0]</obj_property>
+      <obj_property name="ObjectShortName">ddr4_dq[63:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/board/ddr4_dqs_c">
+      <obj_property name="ElementShortName">ddr4_dqs_c[7:0]</obj_property>
+      <obj_property name="ObjectShortName">ddr4_dqs_c[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/board/ddr4_dqs_t">
+      <obj_property name="ElementShortName">ddr4_dqs_t[7:0]</obj_property>
+      <obj_property name="ObjectShortName">ddr4_dqs_t[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/board/ddr4_odt">
+      <obj_property name="ElementShortName">ddr4_odt</obj_property>
+      <obj_property name="ObjectShortName">ddr4_odt</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/board/ddr4_reset_n">
+      <obj_property name="ElementShortName">ddr4_reset_n</obj_property>
+      <obj_property name="ObjectShortName">ddr4_reset_n</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/board/PF0_DEV_CAP_MAX_PAYLOAD_SIZE">
+      <obj_property name="ElementShortName">PF0_DEV_CAP_MAX_PAYLOAD_SIZE[2:0]</obj_property>
+      <obj_property name="ObjectShortName">PF0_DEV_CAP_MAX_PAYLOAD_SIZE[2:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/C0_SYS_CLK_0_clk_n">
+      <obj_property name="ElementShortName">C0_SYS_CLK_0_clk_n</obj_property>
+      <obj_property name="ObjectShortName">C0_SYS_CLK_0_clk_n</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/C0_SYS_CLK_0_clk_p">
+      <obj_property name="ElementShortName">C0_SYS_CLK_0_clk_p</obj_property>
+      <obj_property name="ObjectShortName">C0_SYS_CLK_0_clk_p</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/ddr4_sdram_c1_act_n">
+      <obj_property name="ElementShortName">ddr4_sdram_c1_act_n</obj_property>
+      <obj_property name="ObjectShortName">ddr4_sdram_c1_act_n</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/ddr4_sdram_c1_adr">
+      <obj_property name="ElementShortName">ddr4_sdram_c1_adr[16:0]</obj_property>
+      <obj_property name="ObjectShortName">ddr4_sdram_c1_adr[16:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/ddr4_sdram_c1_ba">
+      <obj_property name="ElementShortName">ddr4_sdram_c1_ba[1:0]</obj_property>
+      <obj_property name="ObjectShortName">ddr4_sdram_c1_ba[1:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/ddr4_sdram_c1_bg">
+      <obj_property name="ElementShortName">ddr4_sdram_c1_bg</obj_property>
+      <obj_property name="ObjectShortName">ddr4_sdram_c1_bg</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/ddr4_sdram_c1_ck_c">
+      <obj_property name="ElementShortName">ddr4_sdram_c1_ck_c</obj_property>
+      <obj_property name="ObjectShortName">ddr4_sdram_c1_ck_c</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/ddr4_sdram_c1_ck_t">
+      <obj_property name="ElementShortName">ddr4_sdram_c1_ck_t</obj_property>
+      <obj_property name="ObjectShortName">ddr4_sdram_c1_ck_t</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/ddr4_sdram_c1_cke">
+      <obj_property name="ElementShortName">ddr4_sdram_c1_cke</obj_property>
+      <obj_property name="ObjectShortName">ddr4_sdram_c1_cke</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/ddr4_sdram_c1_cs_n">
+      <obj_property name="ElementShortName">ddr4_sdram_c1_cs_n</obj_property>
+      <obj_property name="ObjectShortName">ddr4_sdram_c1_cs_n</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/ddr4_sdram_c1_dm_n">
+      <obj_property name="ElementShortName">ddr4_sdram_c1_dm_n[7:0]</obj_property>
+      <obj_property name="ObjectShortName">ddr4_sdram_c1_dm_n[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/ddr4_sdram_c1_dq">
+      <obj_property name="ElementShortName">ddr4_sdram_c1_dq[63:0]</obj_property>
+      <obj_property name="ObjectShortName">ddr4_sdram_c1_dq[63:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/ddr4_sdram_c1_dqs_c">
+      <obj_property name="ElementShortName">ddr4_sdram_c1_dqs_c[7:0]</obj_property>
+      <obj_property name="ObjectShortName">ddr4_sdram_c1_dqs_c[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/ddr4_sdram_c1_dqs_t">
+      <obj_property name="ElementShortName">ddr4_sdram_c1_dqs_t[7:0]</obj_property>
+      <obj_property name="ObjectShortName">ddr4_sdram_c1_dqs_t[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/ddr4_sdram_c1_odt">
+      <obj_property name="ElementShortName">ddr4_sdram_c1_odt</obj_property>
+      <obj_property name="ObjectShortName">ddr4_sdram_c1_odt</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/ddr4_sdram_c1_reset_n">
+      <obj_property name="ElementShortName">ddr4_sdram_c1_reset_n</obj_property>
+      <obj_property name="ObjectShortName">ddr4_sdram_c1_reset_n</obj_property>
+   </wvobject>
+   <wvobject type="group" fp_name="group348">
+      <obj_property name="label">lego</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/sys_rst">
+         <obj_property name="ElementShortName">sys_rst</obj_property>
+         <obj_property name="ObjectShortName">sys_rst</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/C0_SYS_CLK_0_1_CLK_N">
+         <obj_property name="ElementShortName">C0_SYS_CLK_0_1_CLK_N</obj_property>
+         <obj_property name="ObjectShortName">C0_SYS_CLK_0_1_CLK_N</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/C0_SYS_CLK_0_1_CLK_P">
+         <obj_property name="ElementShortName">C0_SYS_CLK_0_1_CLK_P</obj_property>
+         <obj_property name="ObjectShortName">C0_SYS_CLK_0_1_CLK_P</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/S00_AXIS_ACLK_0_1">
+         <obj_property name="ElementShortName">S00_AXIS_ACLK_0_1</obj_property>
+         <obj_property name="ObjectShortName">S00_AXIS_ACLK_0_1</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/S00_AXIS_ARESETN_0_1">
+         <obj_property name="ElementShortName">S00_AXIS_ARESETN_0_1</obj_property>
+         <obj_property name="ObjectShortName">S00_AXIS_ARESETN_0_1</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_ARADDR">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_ARADDR[31:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_ARADDR[31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_ARBURST">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_ARBURST[1:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_ARBURST[1:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_ARCACHE">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_ARCACHE[3:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_ARCACHE[3:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_ARID">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_ARID[10:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_ARID[10:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_ARLEN">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_ARLEN[7:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_ARLEN[7:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_ARLOCK">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_ARLOCK[0:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_ARLOCK[0:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_ARPROT">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_ARPROT[2:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_ARPROT[2:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_ARQOS">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_ARQOS[3:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_ARQOS[3:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_ARREADY">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_ARREADY[0:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_ARREADY[0:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_ARSIZE">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_ARSIZE[2:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_ARSIZE[2:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_ARVALID">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_ARVALID[0:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_ARVALID[0:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_AWADDR">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_AWADDR[31:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_AWADDR[31:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_AWBURST">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_AWBURST[1:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_AWBURST[1:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_AWCACHE">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_AWCACHE[3:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_AWCACHE[3:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_AWID">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_AWID[10:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_AWID[10:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_AWLEN">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_AWLEN[7:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_AWLEN[7:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_AWLOCK">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_AWLOCK[0:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_AWLOCK[0:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_AWPROT">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_AWPROT[2:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_AWPROT[2:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_AWQOS">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_AWQOS[3:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_AWQOS[3:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_AWREADY">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_AWREADY[0:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_AWREADY[0:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_AWSIZE">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_AWSIZE[2:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_AWSIZE[2:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_AWVALID">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_AWVALID[0:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_AWVALID[0:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_BID">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_BID[10:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_BID[10:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_BREADY">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_BREADY[0:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_BREADY[0:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_BRESP">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_BRESP[1:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_BRESP[1:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_BVALID">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_BVALID[0:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_BVALID[0:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_RDATA">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_RDATA[511:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_RDATA[511:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_RID">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_RID[10:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_RID[10:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_RLAST">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_RLAST[0:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_RLAST[0:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_RREADY">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_RREADY[0:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_RREADY[0:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_RRESP">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_RRESP[1:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_RRESP[1:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_RVALID">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_RVALID[0:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_RVALID[0:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_WDATA">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_WDATA[511:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_WDATA[511:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_WLAST">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_WLAST[0:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_WLAST[0:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_WREADY">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_WREADY[0:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_WREADY[0:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_WSTRB">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_WSTRB[63:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_WSTRB[63:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axi_interconnect_0_M00_AXI_WVALID">
+         <obj_property name="ElementShortName">axi_interconnect_0_M00_AXI_WVALID[0:0]</obj_property>
+         <obj_property name="ObjectShortName">axi_interconnect_0_M00_AXI_WVALID[0:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axis_data_fifo_0_M_AXIS_TDATA">
+         <obj_property name="ElementShortName">axis_data_fifo_0_M_AXIS_TDATA[255:0]</obj_property>
+         <obj_property name="ObjectShortName">axis_data_fifo_0_M_AXIS_TDATA[255:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axis_data_fifo_0_M_AXIS_TKEEP">
+         <obj_property name="ElementShortName">axis_data_fifo_0_M_AXIS_TKEEP[31:0]</obj_property>
+         <obj_property name="ObjectShortName">axis_data_fifo_0_M_AXIS_TKEEP[31:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/axis_data_fifo_0_M_AXIS_TLAST">
+         <obj_property name="ElementShortName">axis_data_fifo_0_M_AXIS_TLAST</obj_property>
+         <obj_property name="ObjectShortName">axis_data_fifo_0_M_AXIS_TLAST</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/axis_data_fifo_0_M_AXIS_TREADY">
+         <obj_property name="ElementShortName">axis_data_fifo_0_M_AXIS_TREADY</obj_property>
+         <obj_property name="ObjectShortName">axis_data_fifo_0_M_AXIS_TREADY</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axis_data_fifo_0_M_AXIS_TUSER">
+         <obj_property name="ElementShortName">axis_data_fifo_0_M_AXIS_TUSER[63:0]</obj_property>
+         <obj_property name="ObjectShortName">axis_data_fifo_0_M_AXIS_TUSER[63:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/axis_data_fifo_0_M_AXIS_TVALID">
+         <obj_property name="ElementShortName">axis_data_fifo_0_M_AXIS_TVALID</obj_property>
+         <obj_property name="ObjectShortName">axis_data_fifo_0_M_AXIS_TVALID</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axis_data_fifo_1_M_AXIS_TDATA">
+         <obj_property name="ElementShortName">axis_data_fifo_1_M_AXIS_TDATA[255:0]</obj_property>
+         <obj_property name="ObjectShortName">axis_data_fifo_1_M_AXIS_TDATA[255:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axis_data_fifo_1_M_AXIS_TKEEP">
+         <obj_property name="ElementShortName">axis_data_fifo_1_M_AXIS_TKEEP[31:0]</obj_property>
+         <obj_property name="ObjectShortName">axis_data_fifo_1_M_AXIS_TKEEP[31:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/axis_data_fifo_1_M_AXIS_TLAST">
+         <obj_property name="ElementShortName">axis_data_fifo_1_M_AXIS_TLAST</obj_property>
+         <obj_property name="ObjectShortName">axis_data_fifo_1_M_AXIS_TLAST</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/axis_data_fifo_1_M_AXIS_TREADY">
+         <obj_property name="ElementShortName">axis_data_fifo_1_M_AXIS_TREADY</obj_property>
+         <obj_property name="ObjectShortName">axis_data_fifo_1_M_AXIS_TREADY</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axis_data_fifo_1_M_AXIS_TUSER">
+         <obj_property name="ElementShortName">axis_data_fifo_1_M_AXIS_TUSER[447:0]</obj_property>
+         <obj_property name="ObjectShortName">axis_data_fifo_1_M_AXIS_TUSER[447:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/axis_data_fifo_1_M_AXIS_TVALID">
+         <obj_property name="ElementShortName">axis_data_fifo_1_M_AXIS_TVALID</obj_property>
+         <obj_property name="ObjectShortName">axis_data_fifo_1_M_AXIS_TVALID</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/ddr4_0_C0_DDR4_ACT_N">
+         <obj_property name="ElementShortName">ddr4_0_C0_DDR4_ACT_N</obj_property>
+         <obj_property name="ObjectShortName">ddr4_0_C0_DDR4_ACT_N</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/ddr4_0_C0_DDR4_ADR">
+         <obj_property name="ElementShortName">ddr4_0_C0_DDR4_ADR[16:0]</obj_property>
+         <obj_property name="ObjectShortName">ddr4_0_C0_DDR4_ADR[16:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/ddr4_0_C0_DDR4_BA">
+         <obj_property name="ElementShortName">ddr4_0_C0_DDR4_BA[1:0]</obj_property>
+         <obj_property name="ObjectShortName">ddr4_0_C0_DDR4_BA[1:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/ddr4_0_C0_DDR4_BG">
+         <obj_property name="ElementShortName">ddr4_0_C0_DDR4_BG</obj_property>
+         <obj_property name="ObjectShortName">ddr4_0_C0_DDR4_BG</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/ddr4_0_C0_DDR4_CKE">
+         <obj_property name="ElementShortName">ddr4_0_C0_DDR4_CKE</obj_property>
+         <obj_property name="ObjectShortName">ddr4_0_C0_DDR4_CKE</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/ddr4_0_C0_DDR4_CK_C">
+         <obj_property name="ElementShortName">ddr4_0_C0_DDR4_CK_C</obj_property>
+         <obj_property name="ObjectShortName">ddr4_0_C0_DDR4_CK_C</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/ddr4_0_C0_DDR4_CK_T">
+         <obj_property name="ElementShortName">ddr4_0_C0_DDR4_CK_T</obj_property>
+         <obj_property name="ObjectShortName">ddr4_0_C0_DDR4_CK_T</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/ddr4_0_C0_DDR4_CS_N">
+         <obj_property name="ElementShortName">ddr4_0_C0_DDR4_CS_N</obj_property>
+         <obj_property name="ObjectShortName">ddr4_0_C0_DDR4_CS_N</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/ddr4_0_C0_DDR4_DM_N">
+         <obj_property name="ElementShortName">ddr4_0_C0_DDR4_DM_N[7:0]</obj_property>
+         <obj_property name="ObjectShortName">ddr4_0_C0_DDR4_DM_N[7:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/ddr4_0_C0_DDR4_DQ">
+         <obj_property name="ElementShortName">ddr4_0_C0_DDR4_DQ[63:0]</obj_property>
+         <obj_property name="ObjectShortName">ddr4_0_C0_DDR4_DQ[63:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/ddr4_0_C0_DDR4_DQS_C">
+         <obj_property name="ElementShortName">ddr4_0_C0_DDR4_DQS_C[7:0]</obj_property>
+         <obj_property name="ObjectShortName">ddr4_0_C0_DDR4_DQS_C[7:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/ddr4_0_C0_DDR4_DQS_T">
+         <obj_property name="ElementShortName">ddr4_0_C0_DDR4_DQS_T[7:0]</obj_property>
+         <obj_property name="ObjectShortName">ddr4_0_C0_DDR4_DQS_T[7:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/ddr4_0_C0_DDR4_ODT">
+         <obj_property name="ElementShortName">ddr4_0_C0_DDR4_ODT</obj_property>
+         <obj_property name="ObjectShortName">ddr4_0_C0_DDR4_ODT</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/ddr4_0_C0_DDR4_RESET_N">
+         <obj_property name="ElementShortName">ddr4_0_C0_DDR4_RESET_N</obj_property>
+         <obj_property name="ObjectShortName">ddr4_0_C0_DDR4_RESET_N</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/sys_rst_0_1">
+         <obj_property name="ElementShortName">sys_rst_0_1</obj_property>
+         <obj_property name="ObjectShortName">sys_rst_0_1</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/to_net_clk_390_1">
+         <obj_property name="ElementShortName">to_net_clk_390_1</obj_property>
+         <obj_property name="ObjectShortName">to_net_clk_390_1</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/to_net_clk_390_rst_n_1">
+         <obj_property name="ElementShortName">to_net_clk_390_rst_n_1</obj_property>
+         <obj_property name="ObjectShortName">to_net_clk_390_rst_n_1</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group399">
+      <obj_property name="label">pcie</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+      <wvobject type="array" fp_name="/board/EP/u_pcie/M_AXIS_H2C_tdata">
+         <obj_property name="ElementShortName">M_AXIS_H2C_tdata[255:0]</obj_property>
+         <obj_property name="ObjectShortName">M_AXIS_H2C_tdata[255:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_pcie/M_AXIS_H2C_tkeep">
+         <obj_property name="ElementShortName">M_AXIS_H2C_tkeep[31:0]</obj_property>
+         <obj_property name="ObjectShortName">M_AXIS_H2C_tkeep[31:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_pcie/M_AXIS_H2C_tlast">
+         <obj_property name="ElementShortName">M_AXIS_H2C_tlast</obj_property>
+         <obj_property name="ObjectShortName">M_AXIS_H2C_tlast</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_pcie/M_AXIS_H2C_tready">
+         <obj_property name="ElementShortName">M_AXIS_H2C_tready</obj_property>
+         <obj_property name="ObjectShortName">M_AXIS_H2C_tready</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_pcie/M_AXIS_H2C_tvalid">
+         <obj_property name="ElementShortName">M_AXIS_H2C_tvalid</obj_property>
+         <obj_property name="ObjectShortName">M_AXIS_H2C_tvalid</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_pcie/S_AXIS_C2H_tdata">
+         <obj_property name="ElementShortName">S_AXIS_C2H_tdata[255:0]</obj_property>
+         <obj_property name="ObjectShortName">S_AXIS_C2H_tdata[255:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_pcie/S_AXIS_C2H_tkeep">
+         <obj_property name="ElementShortName">S_AXIS_C2H_tkeep[31:0]</obj_property>
+         <obj_property name="ObjectShortName">S_AXIS_C2H_tkeep[31:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_pcie/S_AXIS_C2H_tlast">
+         <obj_property name="ElementShortName">S_AXIS_C2H_tlast</obj_property>
+         <obj_property name="ObjectShortName">S_AXIS_C2H_tlast</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_pcie/S_AXIS_C2H_tready">
+         <obj_property name="ElementShortName">S_AXIS_C2H_tready</obj_property>
+         <obj_property name="ObjectShortName">S_AXIS_C2H_tready</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_pcie/S_AXIS_C2H_tvalid">
+         <obj_property name="ElementShortName">S_AXIS_C2H_tvalid</obj_property>
+         <obj_property name="ObjectShortName">S_AXIS_C2H_tvalid</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_pcie/axi_aclk">
+         <obj_property name="ElementShortName">axi_aclk</obj_property>
+         <obj_property name="ObjectShortName">axi_aclk</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_pcie/axi_aresetn">
+         <obj_property name="ElementShortName">axi_aresetn</obj_property>
+         <obj_property name="ObjectShortName">axi_aresetn</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_pcie/pcie3_us_int_shared_logic_ints_qpll1lock_out">
+         <obj_property name="ElementShortName">pcie3_us_int_shared_logic_ints_qpll1lock_out[1:0]</obj_property>
+         <obj_property name="ObjectShortName">pcie3_us_int_shared_logic_ints_qpll1lock_out[1:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_pcie/pcie3_us_int_shared_logic_ints_qpll1outclk_out">
+         <obj_property name="ElementShortName">pcie3_us_int_shared_logic_ints_qpll1outclk_out[1:0]</obj_property>
+         <obj_property name="ObjectShortName">pcie3_us_int_shared_logic_ints_qpll1outclk_out[1:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_pcie/pcie3_us_int_shared_logic_ints_qpll1outrefclk_out">
+         <obj_property name="ElementShortName">pcie3_us_int_shared_logic_ints_qpll1outrefclk_out[1:0]</obj_property>
+         <obj_property name="ObjectShortName">pcie3_us_int_shared_logic_ints_qpll1outrefclk_out[1:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_pcie/pcie_mgt_rxn">
+         <obj_property name="ElementShortName">pcie_mgt_rxn[7:0]</obj_property>
+         <obj_property name="ObjectShortName">pcie_mgt_rxn[7:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_pcie/pcie_mgt_rxp">
+         <obj_property name="ElementShortName">pcie_mgt_rxp[7:0]</obj_property>
+         <obj_property name="ObjectShortName">pcie_mgt_rxp[7:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_pcie/pcie_mgt_txn">
+         <obj_property name="ElementShortName">pcie_mgt_txn[7:0]</obj_property>
+         <obj_property name="ObjectShortName">pcie_mgt_txn[7:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_pcie/pcie_mgt_txp">
+         <obj_property name="ElementShortName">pcie_mgt_txp[7:0]</obj_property>
+         <obj_property name="ObjectShortName">pcie_mgt_txp[7:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_pcie/sys_clk">
+         <obj_property name="ElementShortName">sys_clk</obj_property>
+         <obj_property name="ObjectShortName">sys_clk</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_pcie/sys_clk_gt">
+         <obj_property name="ElementShortName">sys_clk_gt</obj_property>
+         <obj_property name="ObjectShortName">sys_clk_gt</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_pcie/sys_rst_n">
+         <obj_property name="ElementShortName">sys_rst_n</obj_property>
+         <obj_property name="ObjectShortName">sys_rst_n</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_pcie/user_lnk_up">
+         <obj_property name="ElementShortName">user_lnk_up</obj_property>
+         <obj_property name="ObjectShortName">user_lnk_up</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_pcie/usr_irq_ack">
+         <obj_property name="ElementShortName">usr_irq_ack[0:0]</obj_property>
+         <obj_property name="ObjectShortName">usr_irq_ack[0:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_pcie/usr_irq_req">
+         <obj_property name="ElementShortName">usr_irq_req[0:0]</obj_property>
+         <obj_property name="ObjectShortName">usr_irq_req[0:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_pcie/S_AXIS_C2H_0_0_1_TDATA">
+         <obj_property name="ElementShortName">S_AXIS_C2H_0_0_1_TDATA[255:0]</obj_property>
+         <obj_property name="ObjectShortName">S_AXIS_C2H_0_0_1_TDATA[255:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_pcie/S_AXIS_C2H_0_0_1_TKEEP">
+         <obj_property name="ElementShortName">S_AXIS_C2H_0_0_1_TKEEP[31:0]</obj_property>
+         <obj_property name="ObjectShortName">S_AXIS_C2H_0_0_1_TKEEP[31:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_pcie/S_AXIS_C2H_0_0_1_TLAST">
+         <obj_property name="ElementShortName">S_AXIS_C2H_0_0_1_TLAST</obj_property>
+         <obj_property name="ObjectShortName">S_AXIS_C2H_0_0_1_TLAST</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_pcie/S_AXIS_C2H_0_0_1_TREADY">
+         <obj_property name="ElementShortName">S_AXIS_C2H_0_0_1_TREADY</obj_property>
+         <obj_property name="ObjectShortName">S_AXIS_C2H_0_0_1_TREADY</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_pcie/S_AXIS_C2H_0_0_1_TVALID">
+         <obj_property name="ElementShortName">S_AXIS_C2H_0_0_1_TVALID</obj_property>
+         <obj_property name="ObjectShortName">S_AXIS_C2H_0_0_1_TVALID</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_pcie/sys_clk_0_1">
+         <obj_property name="ElementShortName">sys_clk_0_1</obj_property>
+         <obj_property name="ObjectShortName">sys_clk_0_1</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_pcie/sys_clk_gt_0_1">
+         <obj_property name="ElementShortName">sys_clk_gt_0_1</obj_property>
+         <obj_property name="ObjectShortName">sys_clk_gt_0_1</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_pcie/sys_rst_n_0_1">
+         <obj_property name="ElementShortName">sys_rst_n_0_1</obj_property>
+         <obj_property name="ObjectShortName">sys_rst_n_0_1</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_pcie/usr_irq_req_0_1">
+         <obj_property name="ElementShortName">usr_irq_req_0_1[0:0]</obj_property>
+         <obj_property name="ObjectShortName">usr_irq_req_0_1[0:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_pcie/xdma_0_M_AXIS_H2C_0_TDATA">
+         <obj_property name="ElementShortName">xdma_0_M_AXIS_H2C_0_TDATA[255:0]</obj_property>
+         <obj_property name="ObjectShortName">xdma_0_M_AXIS_H2C_0_TDATA[255:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_pcie/xdma_0_M_AXIS_H2C_0_TKEEP">
+         <obj_property name="ElementShortName">xdma_0_M_AXIS_H2C_0_TKEEP[31:0]</obj_property>
+         <obj_property name="ObjectShortName">xdma_0_M_AXIS_H2C_0_TKEEP[31:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_pcie/xdma_0_M_AXIS_H2C_0_TLAST">
+         <obj_property name="ElementShortName">xdma_0_M_AXIS_H2C_0_TLAST</obj_property>
+         <obj_property name="ObjectShortName">xdma_0_M_AXIS_H2C_0_TLAST</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_pcie/xdma_0_M_AXIS_H2C_0_TREADY">
+         <obj_property name="ElementShortName">xdma_0_M_AXIS_H2C_0_TREADY</obj_property>
+         <obj_property name="ObjectShortName">xdma_0_M_AXIS_H2C_0_TREADY</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_pcie/xdma_0_M_AXIS_H2C_0_TVALID">
+         <obj_property name="ElementShortName">xdma_0_M_AXIS_H2C_0_TVALID</obj_property>
+         <obj_property name="ObjectShortName">xdma_0_M_AXIS_H2C_0_TVALID</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_pcie/xdma_0_axi_aclk">
+         <obj_property name="ElementShortName">xdma_0_axi_aclk</obj_property>
+         <obj_property name="ObjectShortName">xdma_0_axi_aclk</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_pcie/xdma_0_axi_aresetn">
+         <obj_property name="ElementShortName">xdma_0_axi_aresetn</obj_property>
+         <obj_property name="ObjectShortName">xdma_0_axi_aresetn</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_pcie/xdma_0_pcie3_us_int_shared_logic_ints_qpll1lock_out">
+         <obj_property name="ElementShortName">xdma_0_pcie3_us_int_shared_logic_ints_qpll1lock_out[1:0]</obj_property>
+         <obj_property name="ObjectShortName">xdma_0_pcie3_us_int_shared_logic_ints_qpll1lock_out[1:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_pcie/xdma_0_pcie3_us_int_shared_logic_ints_qpll1outclk_out">
+         <obj_property name="ElementShortName">xdma_0_pcie3_us_int_shared_logic_ints_qpll1outclk_out[1:0]</obj_property>
+         <obj_property name="ObjectShortName">xdma_0_pcie3_us_int_shared_logic_ints_qpll1outclk_out[1:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_pcie/xdma_0_pcie3_us_int_shared_logic_ints_qpll1outrefclk_out">
+         <obj_property name="ElementShortName">xdma_0_pcie3_us_int_shared_logic_ints_qpll1outrefclk_out[1:0]</obj_property>
+         <obj_property name="ObjectShortName">xdma_0_pcie3_us_int_shared_logic_ints_qpll1outrefclk_out[1:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_pcie/xdma_0_pcie_mgt_rxn">
+         <obj_property name="ElementShortName">xdma_0_pcie_mgt_rxn[7:0]</obj_property>
+         <obj_property name="ObjectShortName">xdma_0_pcie_mgt_rxn[7:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_pcie/xdma_0_pcie_mgt_rxp">
+         <obj_property name="ElementShortName">xdma_0_pcie_mgt_rxp[7:0]</obj_property>
+         <obj_property name="ObjectShortName">xdma_0_pcie_mgt_rxp[7:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_pcie/xdma_0_pcie_mgt_txn">
+         <obj_property name="ElementShortName">xdma_0_pcie_mgt_txn[7:0]</obj_property>
+         <obj_property name="ObjectShortName">xdma_0_pcie_mgt_txn[7:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_pcie/xdma_0_pcie_mgt_txp">
+         <obj_property name="ElementShortName">xdma_0_pcie_mgt_txp[7:0]</obj_property>
+         <obj_property name="ObjectShortName">xdma_0_pcie_mgt_txp[7:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_pcie/xdma_0_user_lnk_up">
+         <obj_property name="ElementShortName">xdma_0_user_lnk_up</obj_property>
+         <obj_property name="ObjectShortName">xdma_0_user_lnk_up</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_pcie/xdma_0_usr_irq_ack">
+         <obj_property name="ElementShortName">xdma_0_usr_irq_ack[0:0]</obj_property>
+         <obj_property name="ObjectShortName">xdma_0_usr_irq_ack[0:0]</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group786">
+      <obj_property name="label">RDM</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/RX_tdata">
+         <obj_property name="ElementShortName">RX_tdata[255:0]</obj_property>
+         <obj_property name="ObjectShortName">RX_tdata[255:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/RX_tkeep">
+         <obj_property name="ElementShortName">RX_tkeep[31:0]</obj_property>
+         <obj_property name="ObjectShortName">RX_tkeep[31:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/RX_tlast">
+         <obj_property name="ElementShortName">RX_tlast</obj_property>
+         <obj_property name="ObjectShortName">RX_tlast</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/RX_tready">
+         <obj_property name="ElementShortName">RX_tready</obj_property>
+         <obj_property name="ObjectShortName">RX_tready</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/RX_tuser">
+         <obj_property name="ElementShortName">RX_tuser[63:0]</obj_property>
+         <obj_property name="ObjectShortName">RX_tuser[63:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/RX_tvalid">
+         <obj_property name="ElementShortName">RX_tvalid</obj_property>
+         <obj_property name="ObjectShortName">RX_tvalid</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/TX_clk">
+         <obj_property name="ElementShortName">TX_clk</obj_property>
+         <obj_property name="ObjectShortName">TX_clk</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/TX_rst_n">
+         <obj_property name="ElementShortName">TX_rst_n</obj_property>
+         <obj_property name="ObjectShortName">TX_rst_n</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/TX_tdata">
+         <obj_property name="ElementShortName">TX_tdata[255:0]</obj_property>
+         <obj_property name="ObjectShortName">TX_tdata[255:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/TX_tvalid">
+         <obj_property name="ElementShortName">TX_tvalid</obj_property>
+         <obj_property name="ObjectShortName">TX_tvalid</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/TX_tkeep">
+         <obj_property name="ElementShortName">TX_tkeep[31:0]</obj_property>
+         <obj_property name="ObjectShortName">TX_tkeep[31:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/TX_tlast">
+         <obj_property name="ElementShortName">TX_tlast</obj_property>
+         <obj_property name="ObjectShortName">TX_tlast</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/TX_tready">
+         <obj_property name="ElementShortName">TX_tready</obj_property>
+         <obj_property name="ObjectShortName">TX_tready</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/TX_tuser">
+         <obj_property name="ElementShortName">TX_tuser[447:0]</obj_property>
+         <obj_property name="ObjectShortName">TX_tuser[447:0]</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group787">
+      <obj_property name="label">DDR4</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject type="group" fp_name="group463">
+      <obj_property name="label">host receiver</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <wvobject type="array" fp_name="/board/RP/rx_usrapp/m_axis_cq_tdata">
+         <obj_property name="ElementShortName">m_axis_cq_tdata[255:0]</obj_property>
+         <obj_property name="ObjectShortName">m_axis_cq_tdata[255:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/RP/rx_usrapp/m_axis_cq_tlast">
+         <obj_property name="ElementShortName">m_axis_cq_tlast</obj_property>
+         <obj_property name="ObjectShortName">m_axis_cq_tlast</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/RP/rx_usrapp/m_axis_cq_tvalid">
+         <obj_property name="ElementShortName">m_axis_cq_tvalid</obj_property>
+         <obj_property name="ObjectShortName">m_axis_cq_tvalid</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/RP/rx_usrapp/m_axis_cq_tuser">
+         <obj_property name="ElementShortName">m_axis_cq_tuser[84:0]</obj_property>
+         <obj_property name="ObjectShortName">m_axis_cq_tuser[84:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/RP/rx_usrapp/m_axis_cq_tkeep">
+         <obj_property name="ElementShortName">m_axis_cq_tkeep[7:0]</obj_property>
+         <obj_property name="ObjectShortName">m_axis_cq_tkeep[7:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/RP/rx_usrapp/m_axis_cq_tready">
+         <obj_property name="ElementShortName">m_axis_cq_tready</obj_property>
+         <obj_property name="ObjectShortName">m_axis_cq_tready</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group470">
+      <obj_property name="label">data fifo before to_net</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/axis_data_fifo_1/m_axis_tvalid">
+         <obj_property name="ElementShortName">m_axis_tvalid</obj_property>
+         <obj_property name="ObjectShortName">m_axis_tvalid</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/axis_data_fifo_1/m_axis_tready">
+         <obj_property name="ElementShortName">m_axis_tready</obj_property>
+         <obj_property name="ObjectShortName">m_axis_tready</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axis_data_fifo_1/m_axis_tdata">
+         <obj_property name="ElementShortName">m_axis_tdata[255:0]</obj_property>
+         <obj_property name="ObjectShortName">m_axis_tdata[255:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axis_data_fifo_1/m_axis_tkeep">
+         <obj_property name="ElementShortName">m_axis_tkeep[31:0]</obj_property>
+         <obj_property name="ObjectShortName">m_axis_tkeep[31:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/axis_data_fifo_1/m_axis_tlast">
+         <obj_property name="ElementShortName">m_axis_tlast</obj_property>
+         <obj_property name="ObjectShortName">m_axis_tlast</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axis_data_fifo_1/m_axis_tuser">
+         <obj_property name="ElementShortName">m_axis_tuser[447:0]</obj_property>
+         <obj_property name="ObjectShortName">m_axis_tuser[447:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/axis_data_fifo_1/s_axis_tvalid">
+         <obj_property name="ElementShortName">s_axis_tvalid</obj_property>
+         <obj_property name="ObjectShortName">s_axis_tvalid</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/axis_data_fifo_1/s_axis_tready">
+         <obj_property name="ElementShortName">s_axis_tready</obj_property>
+         <obj_property name="ObjectShortName">s_axis_tready</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axis_data_fifo_1/s_axis_tdata">
+         <obj_property name="ElementShortName">s_axis_tdata[255:0]</obj_property>
+         <obj_property name="ObjectShortName">s_axis_tdata[255:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axis_data_fifo_1/s_axis_tkeep">
+         <obj_property name="ElementShortName">s_axis_tkeep[31:0]</obj_property>
+         <obj_property name="ObjectShortName">s_axis_tkeep[31:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/axis_data_fifo_1/s_axis_tlast">
+         <obj_property name="ElementShortName">s_axis_tlast</obj_property>
+         <obj_property name="ObjectShortName">s_axis_tlast</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axis_data_fifo_1/s_axis_tuser">
+         <obj_property name="ElementShortName">s_axis_tuser[447:0]</obj_property>
+         <obj_property name="ObjectShortName">s_axis_tuser[447:0]</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group500">
+      <obj_property name="label">interconnect before out fifo</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/axis_interconnect_1/S00_AXIS_ACLK">
+         <obj_property name="ElementShortName">S00_AXIS_ACLK</obj_property>
+         <obj_property name="ObjectShortName">S00_AXIS_ACLK</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/axis_interconnect_1/S00_AXIS_ARESETN">
+         <obj_property name="ElementShortName">S00_AXIS_ARESETN</obj_property>
+         <obj_property name="ObjectShortName">S00_AXIS_ARESETN</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axis_interconnect_1/S00_AXIS_tdata">
+         <obj_property name="ElementShortName">S00_AXIS_tdata[63:0]</obj_property>
+         <obj_property name="ObjectShortName">S00_AXIS_tdata[63:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axis_interconnect_1/S00_AXIS_tkeep">
+         <obj_property name="ElementShortName">S00_AXIS_tkeep[7:0]</obj_property>
+         <obj_property name="ObjectShortName">S00_AXIS_tkeep[7:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axis_interconnect_1/S00_AXIS_tlast">
+         <obj_property name="ElementShortName">S00_AXIS_tlast[0:0]</obj_property>
+         <obj_property name="ObjectShortName">S00_AXIS_tlast[0:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/axis_interconnect_1/S00_AXIS_tready">
+         <obj_property name="ElementShortName">S00_AXIS_tready</obj_property>
+         <obj_property name="ObjectShortName">S00_AXIS_tready</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axis_interconnect_1/S00_AXIS_tuser">
+         <obj_property name="ElementShortName">S00_AXIS_tuser[111:0]</obj_property>
+         <obj_property name="ObjectShortName">S00_AXIS_tuser[111:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/axis_interconnect_1/S00_AXIS_tvalid">
+         <obj_property name="ElementShortName">S00_AXIS_tvalid</obj_property>
+         <obj_property name="ObjectShortName">S00_AXIS_tvalid</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/axis_interconnect_1/S00_AXIS_ACLK_1">
+         <obj_property name="ElementShortName">S00_AXIS_ACLK_1</obj_property>
+         <obj_property name="ObjectShortName">S00_AXIS_ACLK_1</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/axis_interconnect_1/S00_AXIS_ARESETN_1">
+         <obj_property name="ElementShortName">S00_AXIS_ARESETN_1</obj_property>
+         <obj_property name="ObjectShortName">S00_AXIS_ARESETN_1</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/axis_interconnect_1/M00_AXIS_ACLK">
+         <obj_property name="ElementShortName">M00_AXIS_ACLK</obj_property>
+         <obj_property name="ObjectShortName">M00_AXIS_ACLK</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/axis_interconnect_1/M00_AXIS_ARESETN">
+         <obj_property name="ElementShortName">M00_AXIS_ARESETN</obj_property>
+         <obj_property name="ObjectShortName">M00_AXIS_ARESETN</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axis_interconnect_1/M00_AXIS_tdata">
+         <obj_property name="ElementShortName">M00_AXIS_tdata[255:0]</obj_property>
+         <obj_property name="ObjectShortName">M00_AXIS_tdata[255:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axis_interconnect_1/M00_AXIS_tkeep">
+         <obj_property name="ElementShortName">M00_AXIS_tkeep[31:0]</obj_property>
+         <obj_property name="ObjectShortName">M00_AXIS_tkeep[31:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/axis_interconnect_1/M00_AXIS_tlast">
+         <obj_property name="ElementShortName">M00_AXIS_tlast</obj_property>
+         <obj_property name="ObjectShortName">M00_AXIS_tlast</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/axis_interconnect_1/M00_AXIS_tready">
+         <obj_property name="ElementShortName">M00_AXIS_tready</obj_property>
+         <obj_property name="ObjectShortName">M00_AXIS_tready</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/axis_interconnect_1/M00_AXIS_tuser">
+         <obj_property name="ElementShortName">M00_AXIS_tuser[447:0]</obj_property>
+         <obj_property name="ObjectShortName">M00_AXIS_tuser[447:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/axis_interconnect_1/M00_AXIS_tvalid">
+         <obj_property name="ElementShortName">M00_AXIS_tvalid</obj_property>
+         <obj_property name="ObjectShortName">M00_AXIS_tvalid</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/axis_interconnect_1/M00_AXIS_ACLK_1">
+         <obj_property name="ElementShortName">M00_AXIS_ACLK_1</obj_property>
+         <obj_property name="ObjectShortName">M00_AXIS_ACLK_1</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/axis_interconnect_1/M00_AXIS_ARESETN_1">
+         <obj_property name="ElementShortName">M00_AXIS_ARESETN_1</obj_property>
+         <obj_property name="ObjectShortName">M00_AXIS_ARESETN_1</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="array" fp_name="/board/RP/tx_usrapp/test_count">
+      <obj_property name="ElementShortName">test_count[7:0]</obj_property>
+      <obj_property name="ObjectShortName">test_count[7:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/board/RP/tx_usrapp/testname">
+      <obj_property name="ElementShortName">testname[255:0]</obj_property>
+      <obj_property name="ObjectShortName">testname[255:0]</obj_property>
+      <obj_property name="Radix">ASCIIRADIX</obj_property>
+   </wvobject>
+   <wvobject type="group" fp_name="group1046">
+      <obj_property name="label">kvs to interconnect</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/memcached_top_for_bu_0/toNet_tdata">
+         <obj_property name="ElementShortName">toNet_tdata[63:0]</obj_property>
+         <obj_property name="ObjectShortName">toNet_tdata[63:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/memcached_top_for_bu_0/toNet_tkeep">
+         <obj_property name="ElementShortName">toNet_tkeep[7:0]</obj_property>
+         <obj_property name="ObjectShortName">toNet_tkeep[7:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/memcached_top_for_bu_0/toNet_tlast">
+         <obj_property name="ElementShortName">toNet_tlast[0:0]</obj_property>
+         <obj_property name="ObjectShortName">toNet_tlast[0:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/memcached_top_for_bu_0/toNet_tready">
+         <obj_property name="ElementShortName">toNet_tready</obj_property>
+         <obj_property name="ObjectShortName">toNet_tready</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/memcached_top_for_bu_0/toNet_tuser">
+         <obj_property name="ElementShortName">toNet_tuser[111:0]</obj_property>
+         <obj_property name="ObjectShortName">toNet_tuser[111:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/memcached_top_for_bu_0/toNet_tvalid">
+         <obj_property name="ElementShortName">toNet_tvalid</obj_property>
+         <obj_property name="ObjectShortName">toNet_tvalid</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject type="group" fp_name="group1053">
+      <obj_property name="label">kvs responser</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="isExpanded"></obj_property>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/memcached_top_for_bu_0/inst/memcachedBuddy_0/inst/response_r_U0/outData_TREADY">
+         <obj_property name="ElementShortName">outData_TREADY</obj_property>
+         <obj_property name="ObjectShortName">outData_TREADY</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/memcached_top_for_bu_0/inst/memcachedBuddy_0/inst/response_r_U0/outData_TDATA">
+         <obj_property name="ElementShortName">outData_TDATA[63:0]</obj_property>
+         <obj_property name="ObjectShortName">outData_TDATA[63:0]</obj_property>
+      </wvobject>
+      <wvobject type="logic" fp_name="/board/EP/u_LegoFPGA/memcached_top_for_bu_0/inst/memcachedBuddy_0/inst/response_r_U0/outData_TVALID">
+         <obj_property name="ElementShortName">outData_TVALID</obj_property>
+         <obj_property name="ObjectShortName">outData_TVALID</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/memcached_top_for_bu_0/inst/memcachedBuddy_0/inst/response_r_U0/outData_TUSER">
+         <obj_property name="ElementShortName">outData_TUSER[111:0]</obj_property>
+         <obj_property name="ObjectShortName">outData_TUSER[111:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/memcached_top_for_bu_0/inst/memcachedBuddy_0/inst/response_r_U0/outData_TKEEP">
+         <obj_property name="ElementShortName">outData_TKEEP[7:0]</obj_property>
+         <obj_property name="ObjectShortName">outData_TKEEP[7:0]</obj_property>
+      </wvobject>
+      <wvobject type="array" fp_name="/board/EP/u_LegoFPGA/memcached_top_for_bu_0/inst/memcachedBuddy_0/inst/response_r_U0/outData_TLAST">
+         <obj_property name="ElementShortName">outData_TLAST[0:0]</obj_property>
+         <obj_property name="ObjectShortName">outData_TLAST[0:0]</obj_property>
+      </wvobject>
+   </wvobject>
+</wave_config>

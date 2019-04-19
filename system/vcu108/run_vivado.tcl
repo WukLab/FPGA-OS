@@ -147,7 +147,6 @@ set files [list \
  [file normalize "${origin_dir}/rtl/axi_mac/axi_ethernet_0_support.v" ]\
  [file normalize "${origin_dir}/rtl/qsfp_mac/sm.v"]\
  [file normalize "${origin_dir}/rtl/qsfp_mac/axi4_lite.v"]\
- [file normalize "${origin_dir}/rtl/pcie/sync_reset.v"] \
 ]
 add_files -norecurse -fileset $obj $files
 
