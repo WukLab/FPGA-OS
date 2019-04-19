@@ -1,15 +1,19 @@
-OBJ_DIR=.
 
-CFLAGS += -O2 -Wall -m64 -g
-LIBCFLAGS += -O2 -Wall -m64
-#CFLAGS += -g -Wall -m64
-#LIBCFLAGS += -g -Wall -m64 -DDEBUG
-APP=workloadStream
+CFLAGS := -Wall -Wmissing-prototypes -Wstrict-prototypes\
+	  -fomit-frame-pointer -freg-struct-return -ggdb
+	  #mbed_lib/libmbedcrypto.so mbed_lib/libmbedtls.so mbed_lib/libmbedx509.so
+	  #-Lmbed_lib -llibmbedx509.so -libmbedtlx -libmbedcrypto\
 
-all: ${APP}
 
-${APP} : ${APP}.c
-	${CC} ${APP}.c -o $@ ${CFLAGS} -L${PWD} -I${PWD} -lpthread -lrt
+#CFLAGS := -fomit-frame-pointer -freg-struct-return -O2
+LIBS := -libverbs -lpthread -lrdmacm -libverbs -lmemcached -lm
+SRCS := $(wildcard workloadStream*.c)
+OBJS := $(SRCS:.c=.o)
+DEPS := rdma_setup.h
+all: $(OBJS)
 
 clean:
-	/bin/rm -f ${APP} *.a $(OBJ_DIR)/*.o
+	rm -f *.o
+
+%.o: %.c 
+	gcc rdma_setup.c -o $@ $(CFLAGS) $(LIBS) $<
