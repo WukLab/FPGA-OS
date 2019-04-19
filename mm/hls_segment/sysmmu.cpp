@@ -4,6 +4,9 @@
 
 #include "sysmmu.h"
 
+/* this define ignore permission check */
+#define IGNORE_PERM_CHECK
+
 static struct sysmmu_entry sysmmu_table[TABLE_SIZE];
 
 void
@@ -74,10 +77,14 @@ void check_read(hls::stream<sysmmu_indata>& rd_in, hls::stream<sysmmu_outdata>& 
 		if (i < start_idx || i > end_idx)
 			continue;
 
+
 		if (!sysmmu_table[i].valid || sysmmu_table[i].pid != in.pid) {
+#ifndef IGNORE_PERM_CHECK
 			out.drop = 1;
+#endif
 			break;
 		}
+
 	}
 	rd_out.write(out);
 }
@@ -103,7 +110,9 @@ void check_write(hls::stream<sysmmu_indata>& wr_in, hls::stream<sysmmu_outdata>&
 
 		if (!sysmmu_table[i].valid || sysmmu_table[i].pid != in.pid ||
 			sysmmu_table[i].rw != 1) {
+#ifndef IGNORE_PERM_CHECK
 			out.drop = 1;
+#endif
 			break;
 		}
 	}
