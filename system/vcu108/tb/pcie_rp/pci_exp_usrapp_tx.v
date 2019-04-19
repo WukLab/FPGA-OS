@@ -48,7 +48,7 @@
 //
 //-----------------------------------------------------------------------------
 //
-// Project    : The Xilinx PCI Express DMA 
+// Project    : The Xilinx PCI Express DMA
 // File       : pci_exp_usrapp_tx.v
 // Version    : 4.1
 //-----------------------------------------------------------------------------
@@ -106,7 +106,7 @@ localparam   [15:0] DMA_BYTE_CNT = 16'h0080;
 
 localparam   [3:0] LINK_CAP_MAX_LINK_WIDTH_EP = 4'h8;
 localparam   [2:0] LINK_CAP_MAX_LINK_SPEED_EP = 3'h4;
-                               
+
 localparam   [3:0] MAX_LINK_SPEED = (LINK_CAP_MAX_LINK_SPEED_EP==3'h4) ? 4'h3 : ((LINK_CAP_MAX_LINK_SPEED_EP==3'h2) ? 4'h2 : 4'h1);
 
 localparam  [11:0] LINK_CTRL_REG_ADDR = 12'h0D0;
@@ -220,6 +220,7 @@ assign user_lnk_up_n = ~user_lnk_up;
 
 integer desc_count = 0;
 integer loop_timeout = 0;
+reg [7:0] test_count = 0;
 reg [31:0] h2c_status = 32'h0;
 reg [31:0] c2h_status = 32'h0;
 reg [31:0] int_req_reg;
@@ -334,7 +335,7 @@ initial begin
   if ($value$plusargs("TESTNAME=%s", testname))
       $display("Running test {%0s}......", testname);
   else begin
-	
+
       // decide if AXI-MM or AXI-ST
       board.RP.tx_usrapp.TSK_XDMA_REG_READ(16'h00);
       if (P_READ_DATA[15] == 1'b1) begin
@@ -346,7 +347,7 @@ initial begin
          $display("*** Running XDMA AXI-MM test {%0s}......", testname);
       end
   end
-  //testname = "usr_irq_test0";
+  testname = "kvs";
   //Test starts here
   if (testname == "dummy_test") begin
       $display("[%t] %m: Invalid TESTNAME: %0s", $realtime, testname);
@@ -406,8 +407,8 @@ end
         // Event # 2: Wait for Transaction link to be asserted...
         //--------------------------------------------------------------------------
         board.RP.cfg_usrapp.TSK_WRITE_CFG_DW(32'h01, 32'h00000007, 4'h1);
-        board.RP.cfg_usrapp.TSK_READ_CFG_DW(DEV_CTRL_REG_ADDR_RP/4);	
-        board.RP.cfg_usrapp.TSK_WRITE_CFG_DW(DEV_CTRL_REG_ADDR_RP/4,( board.RP.cfg_usrapp.cfg_rd_data | (DEV_CAP_MAX_PAYLOAD_SUPPORTED * 32)) , 4'h1);	
+        board.RP.cfg_usrapp.TSK_READ_CFG_DW(DEV_CTRL_REG_ADDR_RP/4);
+        board.RP.cfg_usrapp.TSK_WRITE_CFG_DW(DEV_CTRL_REG_ADDR_RP/4,( board.RP.cfg_usrapp.cfg_rd_data | (DEV_CAP_MAX_PAYLOAD_SUPPORTED * 32)) , 4'h1);
         if (LINK_CAP_MAX_LINK_SPEED_EP>1) begin
             wait(board.RP.pcie3_uscale_rp_top_i.pcie3_uscale_core_top_inst.cfg_ltssm_state == 6'h0B);
             wait(board.RP.pcie3_uscale_rp_top_i.pcie3_uscale_core_top_inst.cfg_ltssm_state == 6'h10);
@@ -526,7 +527,7 @@ end
         reg        mem64_base_enabled;
         reg [31:0] io_base;
         reg        io_base_enabled;
-        
+
         begin
 
             for (board.RP.tx_usrapp.ii = 0; board.RP.tx_usrapp.ii <= 6; board.RP.tx_usrapp.ii =
@@ -595,7 +596,7 @@ end
                 TSK_TX_MESSAGE(DEFAULT_TAG,3'b0,11'b0,64'b0, 3'b011,8'h0);
             end
             endcase
-            
+
         end
     endtask
 
@@ -632,7 +633,7 @@ end
                                                 3'b000,          // Byte Lane number in case of Address Aligned mode
                                                 4'b0000,         // Last BE of the Read Data
                                                 first_dw_be_ };  // First BE of the Read Data
-                                                 
+
             s_axis_rq_tdata          <= #(Tcq) {128'b0,          // 4DW unused             //256
                                                 1'b0,            // Force ECRC             //128
                                                 3'b000,          // Attributes {ID Based Ordering, Relaxed Ordering, No Snoop}
@@ -651,7 +652,7 @@ end
                                                 2'b00};          // AT -> 00 : Untranslated Address
             //-----------------------------------------------------------------------\\
             pcie_tlp_data            <= #(Tcq) {
-                                                3'b000,          // Fmt for Type 0 Configuration Read Req 
+                                                3'b000,          // Fmt for Type 0 Configuration Read Req
                                                 5'b00100,        // Type for Type 0 Configuration Read Req
                                                 1'b0,            // *reserved*
                                                 3'b000,          // Traffic Class
@@ -725,7 +726,7 @@ end
                                                 3'b000,          // Byte Lane number in case of Address Aligned mode
                                                 4'b0000,         // Last BE of the Read Data
                                                 first_dw_be_ };  // First BE of the Read Data
-                                                
+
             s_axis_rq_tdata          <= #(Tcq) {128'b0,          // 4DW unused             //256
                                                 1'b0,            // Force ECRC             //128
                                                 3'b000,          // Attributes {ID Based Ordering, Relaxed Ordering, No Snoop}
@@ -768,7 +769,7 @@ end
                                                 32'b0,           // *unused*               //128
                                                 128'b0           // *unused*               //256
                                                };
-                                               
+
             pcie_tlp_rem             <= #(Tcq)  3'b101;
             set_malformed            <= #(Tcq)  1'b0;
             //-----------------------------------------------------------------------\\
@@ -819,7 +820,7 @@ end
                                                 3'b000,          // Byte Lane number in case of Address Aligned mode (always 0 for Config packets)
                                                 4'b0000,         // Last BE of the Write Data
                                                 first_dw_be_ };  // First BE of the Write Data
-                                                
+
             s_axis_rq_tdata          <= #(Tcq) {96'b0,           // 3 DW unused            //256
                                                 ((AXISTEN_IF_RQ_ALIGNMENT_MODE=="FALSE")? {reg_data_[31:24], reg_data_[23:16], reg_data_[15:8], reg_data_[7:0]} : 32'h0), // Data
                                                 1'b0,            // Force ECRC             //128
@@ -866,7 +867,7 @@ end
                                                 reg_data_[31:24], // Data                  //128
                                                 128'b0            // *unused*              //256
                                                };
-                                               
+
             pcie_tlp_rem             <= #(Tcq)  3'b100;
             set_malformed            <= #(Tcq)  1'b0;
 
@@ -937,7 +938,7 @@ end
                                                 3'b000,           // Byte Lane number in case of Address Aligned mode (always 0 for Config packets)
                                                 4'b0000,          // Last BE of the Write Data
                                                 first_dw_be_ };   // First BE of the Write Data
-                                                
+
             s_axis_rq_tdata          <= #(Tcq) {96'b0,            // 3 DW unused            //256
                                                 ((AXISTEN_IF_RQ_ALIGNMENT_MODE=="FALSE")? {reg_data_[31:24], reg_data_[23:16], reg_data_[15:8], reg_data_[7:0]} : 32'h0), // Data
                                                 1'b0,             // Force ECRC            //128
@@ -984,7 +985,7 @@ end
                                                 reg_data_[31:24], // Data                  //128
                                                 128'b0            // *unused*              //256
                                                };
-                                               
+
             pcie_tlp_rem             <= #(Tcq)  3'b100;
             set_malformed            <= #(Tcq)  1'b0;
 
@@ -1057,7 +1058,7 @@ end
                                                 3'b000,           // Byte Lane number in case of Address Aligned mode
                                                 last_dw_be_,      // Last BE of the Read Data
                                                 first_dw_be_ };   // First BE of the Read Data
-                                                
+
             s_axis_rq_tdata          <= #(Tcq) {128'b0,           // 4 DW unused                                    //256
                                                 1'b0,             // Force ECRC                                     //128
                                                 3'b000,           // Attributes {ID Based Ordering, Relaxed Ordering, No Snoop}
@@ -1148,7 +1149,7 @@ end
                                                 3'b000,           // Byte Lane number in case of Address Aligned mode
                                                 last_dw_be_,      // Last BE of the Read Data
                                                 first_dw_be_ };   // First BE of the Read Data
-                                                  
+
             s_axis_rq_tdata          <= #(Tcq) {128'b0,           // 4 DW unused                                    //256
                                                 1'b0,             // Force ECRC                                     //128
                                                 3'b000,           // Attributes {ID Based Ordering, Relaxed Ordering, No Snoop}
@@ -1185,7 +1186,7 @@ end
                                                 2'b00,            // *reserved*                                     //128
                                                 128'b0            // *unused*                                       //256
                                                };
-                                                
+
             pcie_tlp_rem             <= #(Tcq)  3'b100;
             //-----------------------------------------------------------------------\\
             TSK_TX_SYNCHRONIZE(1, 1, 1, `SYNC_RQ_RDY);
@@ -1226,7 +1227,7 @@ end
         integer         start_addr;   // Start Location for Payload DW0
 
         begin
-            //-----------------------------------------------------------------------\\            
+            //-----------------------------------------------------------------------\\
             if(AXISTEN_IF_RQ_ALIGNMENT_MODE=="TRUE")begin
                 start_addr  = 0;
                 aa_dw       = addr_[4:2];
@@ -1234,7 +1235,7 @@ end
                 start_addr  = 16;
                 aa_dw       = 3'b000;
             end
-            
+
             len_i           = len_ + aa_dw;
             _len            = len_;
             //-----------------------------------------------------------------------\\
@@ -1347,7 +1348,7 @@ end
                                          data_pcie_i    // Payload Data
                                           //256
                                         };
-                                          
+
             pcie_tlp_rem      <= #(Tcq) (_len > 4) ? 3'b000 : (5-_len);
             set_malformed     <= #(Tcq) 1'b0;
             _len               = (_len > 4) ? (_len - 11'h5) : 11'b0;
@@ -1391,7 +1392,7 @@ end
 
                 begin // Sequential group 1 - AXIS RQ
                     for (_j = start_addr; len_i != 0; _j = _j + 32) begin
-                        if(_j==start_addr) begin 
+                        if(_j==start_addr) begin
                             aa_data = {
                                        DATA_STORE[_j + 31],
                                        DATA_STORE[_j + 30],
@@ -1426,7 +1427,7 @@ end
                                        DATA_STORE[_j +  1],
                                        DATA_STORE[_j +  0]
                                       } << (aa_dw*4*8);
-                        end else begin 
+                        end else begin
                             aa_data = {
                                        DATA_STORE[_j + 31 - (aa_dw*4)],
                                        DATA_STORE[_j + 30 - (aa_dw*4)],
@@ -1475,7 +1476,7 @@ end
                                 6 : begin len_i = len_i - 6; s_axis_rq_tkeep <= #(Tcq) 8'h3F; end  // D0-D1-D2-D3-D4-D5------
                                 7 : begin len_i = len_i - 7; s_axis_rq_tkeep <= #(Tcq) 8'h7F; end  // D0-D1-D2-D3-D4-D5-D6---
                                 0 : begin len_i = len_i - 8; s_axis_rq_tkeep <= #(Tcq) 8'hFF; end  // D0-D1-D2-D3-D4-D5-D6-D7
-                            endcase 
+                            endcase
                         end else begin
                             len_i               = len_i - 8; s_axis_rq_tkeep <= #(Tcq) 8'hFF;      // D0-D1-D2-D3-D4-D5-D6-D7
                         end
@@ -1542,7 +1543,7 @@ end
                                 6 : begin _len = _len - 6; pcie_tlp_rem  <= #(Tcq) 3'b010; end  // D0-D1-D2-D3-D4-D5------
                                 7 : begin _len = _len - 7; pcie_tlp_rem  <= #(Tcq) 3'b001; end  // D0-D1-D2-D3-D4-D5-D6---
                                 0 : begin _len = _len - 8; pcie_tlp_rem  <= #(Tcq) 3'b000; end  // D0-D1-D2-D3-D4-D5-D6-D7
-                            endcase 
+                            endcase
                         end else begin
                             _len               = _len - 8; pcie_tlp_rem   <= #(Tcq) 3'b000;     // D0-D1-D2-D3-D4-D5-D6-D7
                         end
@@ -1603,7 +1604,7 @@ end
                 start_addr  = 16;
                 aa_dw       = 3'b000;
             end
-            
+
             len_i           = len_ + aa_dw;
             _len            = len_;
             //-----------------------------------------------------------------------\\
@@ -1710,7 +1711,7 @@ end
                                          data_pcie_i    // Payload Data
                                           //256
                                         };
-                                         
+
             pcie_tlp_rem      <= #(Tcq) (_len > 3) ? 3'b000 : (4-_len);
             set_malformed     <= #(Tcq) 1'b0;
             _len               = (_len > 3) ? (_len - 11'h4) : 11'h0;
@@ -1740,9 +1741,9 @@ end
                     s_axis_rq_tkeep      <= #(Tcq) 8'h7F;
                 else // len_i == 4
                     s_axis_rq_tkeep      <= #(Tcq) 8'hFF;
-                
+
                 s_axis_rq_tlast          <= #(Tcq) 1'b1;
-                
+
                 len_i                     = 0;
 
                 TSK_TX_SYNCHRONIZE(1, 1, 1, `SYNC_RQ_RDY);
@@ -1751,11 +1752,11 @@ end
             //-----------------------------------------------------------------------\\
             // Start of Second and Subsequent Data Beat
             if (len_i != 0 || AXISTEN_IF_RQ_ALIGNMENT_MODE == "TRUE") begin
-                fork 
-                
+                fork
+
                 begin // Sequential group 1 - AXIS RQ
                     for (_j = start_addr; len_i != 0; _j = _j + 32) begin
-                        if(_j == start_addr) begin 
+                        if(_j == start_addr) begin
                             aa_data = {
                                        DATA_STORE[_j + 31],
                                        DATA_STORE[_j + 30],
@@ -1790,7 +1791,7 @@ end
                                        DATA_STORE[_j +  1],
                                        DATA_STORE[_j +  0]
                                        } << (aa_dw*4*8);
-                        end else begin 
+                        end else begin
                             aa_data = {
                                        DATA_STORE[_j + 31 - (aa_dw*4)],
                                        DATA_STORE[_j + 30 - (aa_dw*4)],
@@ -1828,7 +1829,7 @@ end
                         end
 
                         s_axis_rq_tdata           <= #(Tcq) aa_data;
-                        
+
                         if((len_i)/8 == 0) begin
                             case ((len_i) % 8)
                                 1 : begin len_i = len_i - 1; s_axis_rq_tkeep <= #(Tcq) 8'h01; end  // D0---------------------
@@ -1839,11 +1840,11 @@ end
                                 6 : begin len_i = len_i - 6; s_axis_rq_tkeep <= #(Tcq) 8'h3F; end  // D0-D1-D2-D3-D4-D5------
                                 7 : begin len_i = len_i - 7; s_axis_rq_tkeep <= #(Tcq) 8'h7F; end  // D0-D1-D2-D3-D4-D5-D6---
                                 0 : begin len_i = len_i - 8; s_axis_rq_tkeep <= #(Tcq) 8'hFF; end  // D0-D1-D2-D3-D4-D5-D6-D7
-                            endcase 
+                            endcase
                         end else begin
                             len_i               = len_i - 8; s_axis_rq_tkeep <= #(Tcq) 8'hFF;      // D0-D1-D2-D3-D4-D5-D6-D7
                         end
-                        
+
                         if (len_i == 0)
                             s_axis_rq_tlast        <= #(Tcq) 1'b1;
                         else
@@ -1855,10 +1856,10 @@ end
                         // to be one beat longer than the actual PCIe TLP. When it happens do not log the last clock beat
                         // but just send the packet on AXIS RQ interface
                         TSK_TX_SYNCHRONIZE(0, 0, 0, `SYNC_RQ_RDY);
-                            
+
                     end // for loop
                 end // End sequential group 1 - AXIS RQ
-                
+
                 begin // Sequential group 2 - pcie_tlp
                     for (_j = 16; _len != 0; _j = _j + 32) begin
                         pcie_tlp_data <= #(Tcq) {
@@ -1895,7 +1896,7 @@ end
                                                 DATA_STORE[_j + 30],
                                                 DATA_STORE[_j + 31]
                                                 };
-                        
+
                         if ((_len)/8 == 0) begin
                             case ((_len) % 8)
                                 1 : begin _len = _len - 1; pcie_tlp_rem <= #(Tcq) 3'b111; end  // D0---------------------
@@ -1910,14 +1911,14 @@ end
                         end else begin
                             _len               = _len - 8; pcie_tlp_rem <= #(Tcq) 3'b000; // D0-D1-D2-D3-D4-D5-D6-D7
                         end
-                        
+
                         if (_len == 0)
                             TSK_TX_SYNCHRONIZE(0, 1, 1, `SYNC_RQ_RDY);
                         else
                             TSK_TX_SYNCHRONIZE(0, 1, 0, `SYNC_RQ_RDY);
                     end // for loop
                 end // End sequential group 2 - pcie_tlp
-                             
+
                 join
             end // if
             // End of Second and Subsequent Data Beat
@@ -2017,7 +2018,7 @@ end
                                                 128'b0          // *unused*
                                                  //256
                                                };
-                                               
+
             pcie_tlp_rem             <= #(Tcq)  3'b101;
             //-----------------------------------------------------------------------\\
             TSK_TX_SYNCHRONIZE(1, 1, 1, `SYNC_CC_RDY);
@@ -2059,7 +2060,7 @@ end
         integer          _j;           // Byte Index
         integer          start_addr;   // Start Location for Payload DW0
 		integer			 tmp;
-        
+
         begin
             //-----------------------------------------------------------------------\\
 
@@ -2071,7 +2072,7 @@ end
                 start_addr  = 20;
                 aa_dw       = 3'b000;
             end
-            
+
             len_i           = len_ + aa_dw;
             _len            = len_;
             //-----------------------------------------------------------------------\\
@@ -2175,26 +2176,26 @@ end
                                          1'b0,           // *reserved
                                          lower_addr_[6:0],    // Starting Address of the Completion Data Byte           //96
                                          data_pcie_i };  // 160-bit completion data                                //256
-                                         
+
             pcie_tlp_rem      <= #(Tcq) (_len > 4) ? 3'b000 : (5-_len);
             _len               = (_len > 4) ? (_len - 11'h5) : 11'h0;
             //-----------------------------------------------------------------------\\
             s_axis_cc_tvalid  <= #(Tcq) 1'b1;
-            
+
             if (len_i > 5 || AXISTEN_IF_CC_ALIGNMENT_MODE == "TRUE") begin
                 s_axis_cc_tlast          <= #(Tcq) 1'b0;
                 s_axis_cc_tkeep          <= #(Tcq) 8'hFF;
-                
+
                 len_i = (AXISTEN_IF_CC_ALIGNMENT_MODE == "FALSE") ? (len_i - 11'h5) : len_i; // Don't subtract 5 in Address Aligned because
                                                                                              // it's always padded with zeros on first beat
-                
+
                 // pcie_tlp_data doesn't append zero even in Address Aligned mode, so it should mark this cycle as the last beat if it has no more payload to log.
                 // The AXIS CC interface will need to execute the next cycle, but we're just not going to log that data beat in pcie_tlp_data
                 if (_len == 0)
                     TSK_TX_SYNCHRONIZE(1, 1, 1, `SYNC_CC_RDY);
                 else
                     TSK_TX_SYNCHRONIZE(1, 1, 0, `SYNC_CC_RDY);
-                
+
             end else begin
                 if (len_i == 1)
                     s_axis_cc_tkeep      <= #(Tcq) 8'h0F;
@@ -2206,9 +2207,9 @@ end
                     s_axis_cc_tkeep      <= #(Tcq) 8'h7F;
                 else // len_i == 5
                     s_axis_cc_tkeep      <= #(Tcq) 8'hFF;
-                    
+
                 s_axis_cc_tlast          <= #(Tcq) 1'b1;
-                    
+
                 len_i                    = 0;
 
                 TSK_TX_SYNCHRONIZE(1, 1, 1, `SYNC_CC_RDY);
@@ -2217,11 +2218,11 @@ end
             //-----------------------------------------------------------------------\\
             // Start of Second and Subsequent Data Beat
             if (len_i != 0 || AXISTEN_IF_CC_ALIGNMENT_MODE == "TRUE") begin
-                fork 
-                
+                fork
+
                 begin // Sequential group 1 - AXIS CC
                     for (_j = (lower_addr_+start_addr); len_i != 0; _j = _j + 32) begin
-                        if(_j == (lower_addr_+start_addr)) begin 
+                        if(_j == (lower_addr_+start_addr)) begin
                             aa_data = {
                                        DATA_STORE[_j + 31],
                                        DATA_STORE[_j + 30],
@@ -2292,9 +2293,9 @@ end
                                        DATA_STORE[_j +  0 - (aa_dw*4)]
                                       };
                         end
-                                               
+
                         s_axis_cc_tdata           <= #(Tcq) aa_data;
-						$display ("length = %d \n", len_i); 
+						$display ("length = %d \n", len_i);
                         if ((len_i)/8 == 0) begin
                             case (len_i % 8)
                               1 : begin len_i = len_i - 1; s_axis_cc_tkeep <= #(Tcq) 8'h01; end  // D0---------------------
@@ -2315,7 +2316,7 @@ end
                             s_axis_cc_tlast          <= #(Tcq) 1'b0;
 
 							tmp = _j;
-                            
+
                         // Call this just to check for the tready, but don't log anything. That's the job for pcie_tlp_data
                         // The reason for splitting the TSK_TX_SYNCHRONIZE task and distribute them in both sequential group
                         // is that in address aligned mode, it's possible that the additional padded zeros cause the AXIS CC
@@ -2325,10 +2326,10 @@ end
                         TSK_TX_SYNCHRONIZE(0, 0, 0, `SYNC_CC_RDY);
 
 							_j = tmp;
-                    
+
                     end // for loop
                 end // End sequential group 1 - AXIS CC
-                
+
                 begin // Sequential group 2 - pcie_tlp
                     for (_j = 20; _len != 0; _j = _j + 32) begin
                         pcie_tlp_data <= #(Tcq)    {
@@ -2365,7 +2366,7 @@ end
                                                     DATA_STORE[_j + 30],
                                                     DATA_STORE[_j + 31]
                                                    };
-                                                   
+
                         if ((_len/8) == 0) begin
                             case (_len % 8)
                                 1 : begin _len = _len - 1; pcie_tlp_rem  <= #(Tcq) 3'b111; end  // D0---------------------
@@ -2376,11 +2377,11 @@ end
                                 6 : begin _len = _len - 6; pcie_tlp_rem  <= #(Tcq) 3'b010; end  // D0-D1-D2-D3-D4-D5------
                                 7 : begin _len = _len - 7; pcie_tlp_rem  <= #(Tcq) 3'b001; end  // D0-D1-D2-D3-D4-D5-D6---
                                 0 : begin _len = _len - 8; pcie_tlp_rem  <= #(Tcq) 3'b000; end  // D0-D1-D2-D3-D4-D5-D6-D7
-                            endcase 
+                            endcase
                         end else begin
                             _len               = _len - 8; pcie_tlp_rem   <= #(Tcq) 3'b000;     // D0-D1-D2-D3-D4-D5-D6-D7
                         end
-                        
+
                         if (_len == 0)
                             TSK_TX_SYNCHRONIZE(0, 1, 1, `SYNC_CC_RDY);
                         else
@@ -2815,7 +2816,7 @@ end
                                                 32'b0,          // *unused*                                           //128
                                                 128'b0          // *unused*                                           //256
                                                };
-                                               
+
             pcie_tlp_rem             <= #(Tcq)  3'b101;
             set_malformed            <= #(Tcq)  1'b0;
             //-----------------------------------------------------------------------\\
@@ -4318,7 +4319,7 @@ task TSK_SPEED_CHANGE;
        TSK_TX_TYPE0_CONFIGURATION_READ(DEFAULT_TAG, LINK_CTRL_REG_ADDR, 4'hF);
        DEFAULT_TAG = DEFAULT_TAG + 1;
        TSK_WAIT_FOR_READ_DATA;
-     
+
        if  (P_READ_DATA[19:16] == target_link_speed) begin
           if (P_READ_DATA[19:16] == 1)
              $display("[%t] :    Check Max Link Speed = 2.5GT/s", $realtime);
@@ -4348,7 +4349,7 @@ begin
                                 board.RP.tx_usrapp.TSK_TX_MEMORY_READ_32(board.RP.tx_usrapp.DEFAULT_TAG,
                                     board.RP.tx_usrapp.DEFAULT_TC, 11'd1,
                                     board.RP.tx_usrapp.BAR_INIT_P_BAR[board.RP.tx_usrapp.xdma_bar][31:0]+read_addr[15:0], 4'h0, 4'hF);
-                             end else if(board.RP.tx_usrapp.BAR_INIT_P_BAR_ENABLED[board.RP.tx_usrapp.xdma_bar] == 2'b11) begin                  
+                             end else if(board.RP.tx_usrapp.BAR_INIT_P_BAR_ENABLED[board.RP.tx_usrapp.xdma_bar] == 2'b11) begin
                                 board.RP.tx_usrapp.TSK_TX_MEMORY_READ_64(board.RP.tx_usrapp.DEFAULT_TAG,
                                     board.RP.tx_usrapp.DEFAULT_TC, 11'd1,{board.RP.tx_usrapp.BAR_INIT_P_BAR[board.RP.tx_usrapp.xdma_bar+1][31:0],
                                     board.RP.tx_usrapp.BAR_INIT_P_BAR[board.RP.tx_usrapp.xdma_bar][31:0]+read_addr[15:0]}, 4'h0, 4'hF);
@@ -4384,7 +4385,7 @@ begin
                     board.RP.tx_usrapp.DEFAULT_TC, 11'd1,
                     board.RP.tx_usrapp.BAR_INIT_P_BAR[jj][31:0]+16'h0, 4'h0, 4'hF);
                 board.RP.tx_usrapp.TSK_WAIT_FOR_READ_DATA;
-          end else if(board.RP.tx_usrapp.BAR_INIT_P_BAR_ENABLED[jj] == 2'b11) begin                  
+          end else if(board.RP.tx_usrapp.BAR_INIT_P_BAR_ENABLED[jj] == 2'b11) begin
                 board.RP.tx_usrapp.TSK_TX_MEMORY_READ_64(board.RP.tx_usrapp.DEFAULT_TAG,
                     board.RP.tx_usrapp.DEFAULT_TC, 11'd1,{board.RP.tx_usrapp.BAR_INIT_P_BAR[jj+1][31:0],
                     board.RP.tx_usrapp.BAR_INIT_P_BAR[jj][31:0]+16'h0}, 4'h0, 4'hF);
@@ -4428,7 +4429,7 @@ task TSK_XDMA_REG_WRITE;
   input [31:0] data;
   input [3:0] byte_en;
 
-   begin 
+   begin
 
         DATA_STORE[0] = data[7:0];
         DATA_STORE[1] = data[15:8];
@@ -4441,7 +4442,7 @@ task TSK_XDMA_REG_WRITE;
           board.RP.tx_usrapp.TSK_TX_MEMORY_WRITE_32(board.RP.tx_usrapp.DEFAULT_TAG,
               board.RP.tx_usrapp.DEFAULT_TC, 11'd1,
               board.RP.tx_usrapp.BAR_INIT_P_BAR[board.RP.tx_usrapp.xdma_bar][31:0]+addr[20:0], 4'h0, byte_en, 1'b0);
-        end else if(board.RP.tx_usrapp.BAR_INIT_P_BAR_ENABLED[board.RP.tx_usrapp.xdma_bar] == 2'b11) begin                  
+        end else if(board.RP.tx_usrapp.BAR_INIT_P_BAR_ENABLED[board.RP.tx_usrapp.xdma_bar] == 2'b11) begin
           board.RP.tx_usrapp.TSK_TX_MEMORY_WRITE_64(board.RP.tx_usrapp.DEFAULT_TAG,
               board.RP.tx_usrapp.DEFAULT_TC, 11'd1,{board.RP.tx_usrapp.BAR_INIT_P_BAR[board.RP.tx_usrapp.xdma_bar+1][31:0],
               board.RP.tx_usrapp.BAR_INIT_P_BAR[board.RP.tx_usrapp.xdma_bar][31:0]+addr[20:0]}, 4'h0, byte_en, 1'b0);
@@ -4449,17 +4450,461 @@ task TSK_XDMA_REG_WRITE;
         board.RP.tx_usrapp.TSK_TX_CLK_EAT(100);
         board.RP.tx_usrapp.DEFAULT_TAG = board.RP.tx_usrapp.DEFAULT_TAG + 1;
 
-  $display("[%t] : Done register write!!" ,$realtime);  
+  $display("[%t] : Done register write!!" ,$realtime);
 
 end
 
 endtask
 
 /************************************************************
+Task : TSK_INIT_DATA_RDM
+Inputs : opcode, addr, length
+Outputs : None
+Description : Initialize Descriptor and Data for H2C and C2H RDM
+*************************************************************/
+
+task TSK_INIT_DATA_RDM;
+
+   input [7:0] opcode;
+   input [63:0] addr;
+   input [15:0] length; // not includes header
+
+   begin
+      board.RP.tx_usrapp.TSK_INIT_DATA_H2C_RDM(opcode, addr, length);
+      /* only prepare polling for read request */
+      if (opcode == 8'h00) begin
+         board.RP.tx_usrapp.TSK_INIT_DATA_C2H_RDM(opcode, length);
+      end
+   end
+endtask
+
+/************************************************************
+Task : TSK_INIT_DATA_H2C_RDM
+Inputs : opcode, addr, length
+Outputs : None
+Description : Initialize Descriptor and Data for RDM
+*************************************************************/
+
+task TSK_INIT_DATA_H2C_RDM;
+
+   input [7:0] opcode;
+   input [63:0] addr;
+   input [15:0] length; // not includes header
+   integer k;
+
+   begin
+    $display(" **** TASK DATA H2C RDM ***\n");
+    $display(" **** Initilize Descriptor data ***\n");
+    DATA_STORE[256+0] = 8'h13; // -- Magic
+    DATA_STORE[256+1] = 8'h00;
+    DATA_STORE[256+2] = 8'h4b;
+    DATA_STORE[256+3] = 8'had;
+    if (opcode == 8'h01) begin
+    /* write */
+        length = length + 16'h80;
+        DATA_STORE[256+4] = length[7:0];  //-- Length lsb
+        DATA_STORE[256+5] = length[15:8]; //-- Length msb
+    end else begin
+    /* read */
+        DATA_STORE[256+4] = 8'h80; //-- Length lsb
+        DATA_STORE[256+5] = 8'h00; //-- Length msb
+    end
+
+    DATA_STORE[256+6] = 8'h00;
+    DATA_STORE[256+7] = 8'h00;
+    DATA_STORE[256+8] = 8'h00; //-- Src_add [31:0] x0400
+    DATA_STORE[256+9] = 8'h04;
+    DATA_STORE[256+10] = 8'h00;
+    DATA_STORE[256+11] = 8'h00;
+    DATA_STORE[256+12] = 8'h00; //-- Src add [63:32]
+    DATA_STORE[256+13] = 8'h00;
+    DATA_STORE[256+14] = 8'h00;
+    DATA_STORE[256+15] = 8'h00;
+    DATA_STORE[256+16] = 8'h00; //-- Dst add [31:0] x0000
+    DATA_STORE[256+17] = 8'h00;
+    DATA_STORE[256+18] = 8'h00;
+    DATA_STORE[256+19] = 8'h00;
+    DATA_STORE[256+20] = 8'h00; //-- Dst add [63:32]
+    DATA_STORE[256+21] = 8'h00;
+    DATA_STORE[256+22] = 8'h00;
+    DATA_STORE[256+23] = 8'h00;
+    DATA_STORE[256+24] = 8'h00; //-- Nxt add [31:0]
+    DATA_STORE[256+25] = 8'h00;
+    DATA_STORE[256+26] = 8'h00;
+    DATA_STORE[256+27] = 8'h00;
+    DATA_STORE[256+28] = 8'h00; //-- Nxt add [63:32]
+    DATA_STORE[256+29] = 8'h00;
+    DATA_STORE[256+30] = 8'h00;
+    DATA_STORE[256+31] = 8'h00;
+
+    for (k = 0; k < 32; k = k + 1)  begin
+        $display(" **** Descriptor data *** data = %h, addr= %d\n", DATA_STORE[256+k], 256+k);
+        #(Tcq);
+    end
+    for (k = 0; k < length+16'h80+32; k = k + 1)  begin
+       if( k < length+16'h80) begin
+          DATA_STORE[1024+k] = k;
+       end else begin
+          DATA_STORE[1024+k] = 8'h00;
+       end
+    end
+
+    /* LEGO_FPGA REQ */
+    DATA_STORE[1024+42] = 0; // LEGO app id
+    DATA_STORE[1024+64] = opcode; // read request op code
+
+    /* Read Addr & Length */
+    DATA_STORE[1024+65] = addr[7:0]; // addr
+    DATA_STORE[1024+66] = addr[15:8]; // addr
+    DATA_STORE[1024+67] = addr[23:16]; // addr
+    DATA_STORE[1024+68] = addr[31:24]; // addr
+    DATA_STORE[1024+69] = addr[39:32]; // addr
+    DATA_STORE[1024+70] = addr[47:40]; // addr
+    DATA_STORE[1024+71] = addr[55:48]; // addr
+    DATA_STORE[1024+72] = addr[63:56]; // addr
+    for (k = 0; k < 8; k = k + 1) begin
+        DATA_STORE[1024+73+k] = 8'h00; // length reset to 0
+    end
+    DATA_STORE[1024+73] = length[7:0]; // length
+    DATA_STORE[1024+74] = length[15:8]; // length
+
+   end
+endtask
+
+/************************************************************
+Task : TSK_INIT_DATA_C2H_RDM
+Inputs : opcode, length
+Outputs : None
+Description : Initialize Descriptor and Data for RDM
+*************************************************************/
+
+task TSK_INIT_DATA_C2H_RDM;
+
+   input [7:0] opcode;
+   input [15:0] length; // not includes header
+   integer k;
+
+   begin
+
+    $display(" **** TASK DATA C2H ***\n");
+
+    if (opcode == 8'h01) begin
+        $display(" !!!! RDM WRITE Request shouldn't call this !!!\n");
+    end
+
+    $display(" **** Initilize Descriptor data ***\n");
+    DATA_STORE[768+0] = 8'h13; // -- Magic
+    DATA_STORE[768+1] = 8'h00;
+    DATA_STORE[768+2] = 8'h4b;
+    DATA_STORE[768+3] = 8'had;
+    DATA_STORE[768+4] = 8'hFF; //-- Length lsb
+    DATA_STORE[768+5] = 8'hFF; //-- Length msb
+    DATA_STORE[768+6] = 8'h00;
+    DATA_STORE[768+7] = 8'h00;
+    DATA_STORE[768+8] = 8'h00; //-- Src_add [31:0] x0000
+    DATA_STORE[768+9] = 8'h00;
+    DATA_STORE[768+10] = 8'h00;
+    DATA_STORE[768+11] = 8'h00;
+    DATA_STORE[768+12] = 8'h00; //-- Src add [63:32]
+    DATA_STORE[768+13] = 8'h00;
+    DATA_STORE[768+14] = 8'h00;
+    DATA_STORE[768+15] = 8'h00;
+    DATA_STORE[768+16] = 8'h00; //-- Dst add [31:0] x0800
+    DATA_STORE[768+17] = 8'h08;
+    DATA_STORE[768+18] = 8'h00;
+    DATA_STORE[768+19] = 8'h00;
+    DATA_STORE[768+20] = 8'h00; //-- Dst add [63:32]
+    DATA_STORE[768+21] = 8'h00;
+    DATA_STORE[768+22] = 8'h00;
+    DATA_STORE[768+23] = 8'h00;
+    DATA_STORE[768+24] = 8'h00; //-- Nxt add [31:0]
+    DATA_STORE[768+25] = 8'h00;
+    DATA_STORE[768+26] = 8'h00;
+    DATA_STORE[768+27] = 8'h00;
+    DATA_STORE[768+28] = 8'h00; //-- Nxt add [63:32]
+    DATA_STORE[768+29] = 8'h00;
+    DATA_STORE[768+30] = 8'h00;
+    DATA_STORE[768+31] = 8'h00;
+
+    for (k = 0; k < 32; k = k + 1)  begin
+        $display(" **** Descriptor data *** data = %h, addr= %d\n", DATA_STORE[768+k], 768+k);
+        #(Tcq);
+    end
+    for (k = 0; k < length+32; k = k + 1)  begin
+        #(Tcq) DATA_STORE[2048+k] = 8'h00;
+    end
+
+   end
+endtask
+
+
+/************************************************************
+Task : TSK_INIT_DATA_KVS
+Inputs : opcode, addr, length
+Outputs : None
+Description : Initialize Descriptor and Data for H2C and C2H KVS
+*************************************************************/
+
+task TSK_INIT_DATA_KVS;
+
+   input [7:0] opcode;
+   input [15:0] valuelength;
+   input [7:0] identifier;  // used for generating key and value
+
+   begin
+      board.RP.tx_usrapp.TSK_INIT_DATA_H2C_KVS(opcode, valuelength, identifier);
+      board.RP.tx_usrapp.TSK_INIT_DATA_C2H_RDM(opcode, valuelength);
+   end
+endtask
+
+/************************************************************
+Task : TSK_INIT_DATA_H2C_KVS
+Inputs :  opcode, valuelength, identifier
+Outputs : None
+Description : Initialize Descriptor and Data for KVS
+*************************************************************/
+
+task TSK_INIT_DATA_H2C_KVS;
+
+   input [7:0] opcode;
+   input [15:0] valuelength;
+   input [7:0] identifier;  // used for generating key and value
+   integer k;
+
+   begin
+    $display(" **** TASK DATA H2C KVS ***\n");
+
+    $display(" **** Initilize Descriptor data ***\n");
+    DATA_STORE[256+0] = 8'h13; // -- Magic
+    DATA_STORE[256+1] = 8'h00;
+    DATA_STORE[256+2] = 8'h4b;
+    DATA_STORE[256+3] = 8'had;
+    if (opcode == 8'h01) begin
+    /* SET */
+        valuelength = valuelength + 16'd46;
+        DATA_STORE[256+4] = valuelength[7:0];  //-- Length lsb
+        DATA_STORE[256+5] = valuelength[15:8]; //-- Length msb
+    end else begin
+    /* GET */
+        DATA_STORE[256+4] = 8'd46; //-- Length lsb
+        DATA_STORE[256+5] = 8'h00; //-- Length msb
+    end
+
+    DATA_STORE[256+6] = 8'h00;
+    DATA_STORE[256+7] = 8'h00;
+    DATA_STORE[256+8] = 8'h00; //-- Src_add [31:0] x0400
+    DATA_STORE[256+9] = 8'h04;
+    DATA_STORE[256+10] = 8'h00;
+    DATA_STORE[256+11] = 8'h00;
+    DATA_STORE[256+12] = 8'h00; //-- Src add [63:32]
+    DATA_STORE[256+13] = 8'h00;
+    DATA_STORE[256+14] = 8'h00;
+    DATA_STORE[256+15] = 8'h00;
+    DATA_STORE[256+16] = 8'h00; //-- Dst add [31:0] x0000
+    DATA_STORE[256+17] = 8'h00;
+    DATA_STORE[256+18] = 8'h00;
+    DATA_STORE[256+19] = 8'h00;
+    DATA_STORE[256+20] = 8'h00; //-- Dst add [63:32]
+    DATA_STORE[256+21] = 8'h00;
+    DATA_STORE[256+22] = 8'h00;
+    DATA_STORE[256+23] = 8'h00;
+    DATA_STORE[256+24] = 8'h00; //-- Nxt add [31:0]
+    DATA_STORE[256+25] = 8'h00;
+    DATA_STORE[256+26] = 8'h00;
+    DATA_STORE[256+27] = 8'h00;
+    DATA_STORE[256+28] = 8'h00; //-- Nxt add [63:32]
+    DATA_STORE[256+29] = 8'h00;
+    DATA_STORE[256+30] = 8'h00;
+    DATA_STORE[256+31] = 8'h00;
+
+    for (k = 0; k < 32; k = k + 1)  begin
+        $display(" **** Descriptor data *** data = %h, addr= %d\n", DATA_STORE[256+k], 256+k);
+        #(Tcq);
+    end
+
+    /* Memcached SET REQ */
+    if (opcode == 8'h01) begin
+            DATA_STORE[1024+0] = 8'h80;
+            DATA_STORE[1024+1] = 8'h01;
+            DATA_STORE[1024+2] = 8'h00;
+            DATA_STORE[1024+3] = 8'h16;
+            DATA_STORE[1024+4] = 8'h08;
+            DATA_STORE[1024+5] = 8'h00;
+            DATA_STORE[1024+6] = 8'h00;
+            DATA_STORE[1024+7] = 8'h00;
+            DATA_STORE[1024+8] = 8'h00;
+            DATA_STORE[1024+9] = 8'h00;
+            DATA_STORE[1024+10] = 8'h00;
+            DATA_STORE[1024+11] = 8'h20;
+            DATA_STORE[1024+12] = 8'h00;
+            DATA_STORE[1024+13] = 8'h00;
+            DATA_STORE[1024+14] = 8'h00;
+            DATA_STORE[1024+15] = 8'h00;
+            DATA_STORE[1024+16] = 8'h00;
+            DATA_STORE[1024+17] = 8'h00;
+            DATA_STORE[1024+18] = 8'h00;
+            DATA_STORE[1024+19] = 8'h00;
+            DATA_STORE[1024+20] = 8'h00;
+            DATA_STORE[1024+21] = 8'h00;
+            DATA_STORE[1024+22] = 8'h00;
+            DATA_STORE[1024+23] = 8'h00;
+            DATA_STORE[1024+24] = 8'h10 + identifier;
+            DATA_STORE[1024+25] = 8'h20 + identifier;
+            DATA_STORE[1024+26] = 8'h30 + identifier;
+            DATA_STORE[1024+27] = 8'h40 + identifier;
+            DATA_STORE[1024+28] = 8'h50 + identifier;
+            DATA_STORE[1024+29] = 8'h60 + identifier;
+            DATA_STORE[1024+30] = 8'h70 + identifier;
+            DATA_STORE[1024+31] = 8'h80 + identifier;
+
+            DATA_STORE[1024+32] = 8'h3B;
+            DATA_STORE[1024+33] = 8'hC6;
+            DATA_STORE[1024+34] = 8'hE5;
+            DATA_STORE[1024+35] = 8'hD7;
+            DATA_STORE[1024+36] = 8'hCD;
+            DATA_STORE[1024+37] = 8'h07;
+            DATA_STORE[1024+38] = 8'h38;
+            DATA_STORE[1024+39] = 8'h57;
+            DATA_STORE[1024+40] = 8'h72;
+            DATA_STORE[1024+41] = 8'h65;
+            DATA_STORE[1024+42] = 8'h73;
+            DATA_STORE[1024+43] = 8'h75;
+            DATA_STORE[1024+44] = 8'h2D;
+            DATA_STORE[1024+45] = 8'h65;
+            DATA_STORE[1024+46] = 8'h6C;
+            DATA_STORE[1024+47] = 8'h62;
+            DATA_STORE[1024+48] = 8'h61;
+            DATA_STORE[1024+49] = 8'h74;
+            DATA_STORE[1024+50] = 8'h72;
+            DATA_STORE[1024+51] = 8'h65 + identifier; // different key for each request
+            DATA_STORE[1024+52] = 8'h73;
+            DATA_STORE[1024+53] = 8'h75 + identifier; // different key for each request
+            /* preset more than needed */
+            for (k = 0; k < valuelength; k = k + 1)  begin
+                DATA_STORE[1024+54+k] = 8'hff - k;
+            end
+    end else begin
+    /* Memcached GET REQ */
+            DATA_STORE[1024+0] = 8'h80;
+            DATA_STORE[1024+1] = 8'h00;
+            DATA_STORE[1024+2] = 8'h00;
+            DATA_STORE[1024+3] = 8'h16;
+            DATA_STORE[1024+4] = 8'h08;
+            DATA_STORE[1024+5] = 8'h00;
+            DATA_STORE[1024+6] = 8'h00;
+            DATA_STORE[1024+7] = 8'h00;
+            DATA_STORE[1024+8] = 8'h00;
+            DATA_STORE[1024+9] = 8'h00;
+            DATA_STORE[1024+10] = 8'h00;
+            DATA_STORE[1024+11] = 8'h16;
+            DATA_STORE[1024+12] = 8'h00;
+            DATA_STORE[1024+13] = 8'h00;
+            DATA_STORE[1024+14] = 8'h00;
+            DATA_STORE[1024+15] = 8'h00;
+            DATA_STORE[1024+16] = 8'h00;
+            DATA_STORE[1024+17] = 8'h00;
+            DATA_STORE[1024+18] = 8'h00;
+            DATA_STORE[1024+19] = 8'h00;
+            DATA_STORE[1024+20] = 8'h00;
+            DATA_STORE[1024+21] = 8'h00;
+            DATA_STORE[1024+22] = 8'h00;
+            DATA_STORE[1024+23] = 8'h00;
+
+            DATA_STORE[1024+24] = 8'h3B;
+            DATA_STORE[1024+25] = 8'hC6;
+            DATA_STORE[1024+26] = 8'hE5;
+            DATA_STORE[1024+27] = 8'hD7;
+            DATA_STORE[1024+28] = 8'hCD;
+            DATA_STORE[1024+29] = 8'h07;
+            DATA_STORE[1024+30] = 8'h38;
+            DATA_STORE[1024+31] = 8'h57;
+            DATA_STORE[1024+32] = 8'h72;
+            DATA_STORE[1024+33] = 8'h65;
+            DATA_STORE[1024+34] = 8'h73;
+            DATA_STORE[1024+35] = 8'h75;
+            DATA_STORE[1024+36] = 8'h2D;
+            DATA_STORE[1024+37] = 8'h65;
+            DATA_STORE[1024+38] = 8'h6C;
+            DATA_STORE[1024+39] = 8'h62;
+            DATA_STORE[1024+40] = 8'h61;
+            DATA_STORE[1024+41] = 8'h74;
+            DATA_STORE[1024+42] = 8'h72;
+            DATA_STORE[1024+43] = 8'h65 + identifier; // different key for each request
+            DATA_STORE[1024+44] = 8'h73;
+            DATA_STORE[1024+45] = 8'h75 + identifier; // different key for each request
+    end
+
+   end
+endtask
+
+/************************************************************
+Task : TSK_INIT_DATA_C2H_KVS
+Inputs : None
+Outputs : None
+Description : Initialize Descriptor and Data for KVS
+*************************************************************/
+
+task TSK_INIT_DATA_C2H_KVS;
+
+   input [7:0] opcode;
+   input [15:0] valuelength;
+   integer k;
+
+   begin
+
+    $display(" **** TASK DATA C2H ***\n");
+
+    $display(" **** Initilize Descriptor data ***\n");
+    DATA_STORE[768+0] = 8'h13; // -- Magic
+    DATA_STORE[768+1] = 8'h00;
+    DATA_STORE[768+2] = 8'h4b;
+    DATA_STORE[768+3] = 8'had;
+    DATA_STORE[768+4] = 8'hFF; //-- Length lsb
+    DATA_STORE[768+5] = 8'hFF; //-- Length msb
+    DATA_STORE[768+6] = 8'h00;
+    DATA_STORE[768+7] = 8'h00;
+    DATA_STORE[768+8] = 8'h00; //-- Src_add [31:0] x0000
+    DATA_STORE[768+9] = 8'h00;
+    DATA_STORE[768+10] = 8'h00;
+    DATA_STORE[768+11] = 8'h00;
+    DATA_STORE[768+12] = 8'h00; //-- Src add [63:32]
+    DATA_STORE[768+13] = 8'h00;
+    DATA_STORE[768+14] = 8'h00;
+    DATA_STORE[768+15] = 8'h00;
+    DATA_STORE[768+16] = 8'h00; //-- Dst add [31:0] x0800
+    DATA_STORE[768+17] = 8'h08;
+    DATA_STORE[768+18] = 8'h00;
+    DATA_STORE[768+19] = 8'h00;
+    DATA_STORE[768+20] = 8'h00; //-- Dst add [63:32]
+    DATA_STORE[768+21] = 8'h00;
+    DATA_STORE[768+22] = 8'h00;
+    DATA_STORE[768+23] = 8'h00;
+    DATA_STORE[768+24] = 8'h00; //-- Nxt add [31:0]
+    DATA_STORE[768+25] = 8'h00;
+    DATA_STORE[768+26] = 8'h00;
+    DATA_STORE[768+27] = 8'h00;
+    DATA_STORE[768+28] = 8'h00; //-- Nxt add [63:32]
+    DATA_STORE[768+29] = 8'h00;
+    DATA_STORE[768+30] = 8'h00;
+    DATA_STORE[768+31] = 8'h00;
+
+    for (k = 0; k < 32; k = k + 1)  begin
+        $display(" **** Descriptor data *** data = %h, addr= %d\n", DATA_STORE[768+k], 768+k);
+        #(Tcq);
+    end
+    for (k = 0; k < DMA_BYTE_CNT+32; k = k + 1)  begin
+        #(Tcq) DATA_STORE[2048+k] = 8'h00;
+    end
+
+   end
+endtask
+
+
+/************************************************************
 Task : TSK_INIT_DATA_H2C
 Inputs : None
 Outputs : None
-Description : Initialize Descriptor and Data 
+Description : Initialize Descriptor and Data
 *************************************************************/
 
 task TSK_INIT_DATA_H2C;
@@ -4486,6 +4931,7 @@ task TSK_INIT_DATA_H2C;
     DATA_STORE[256+3] = 8'had;
     DATA_STORE[256+4] = DMA_BYTE_CNT[7:0]; //-- Length lsb
     DATA_STORE[256+5] = DMA_BYTE_CNT[15:8];//-- Length msb
+
     DATA_STORE[256+6] = 8'h00;
     DATA_STORE[256+7] = 8'h00;
     DATA_STORE[256+8] = 8'h00; //-- Src_add [31:0] x0400
@@ -4532,7 +4978,7 @@ endtask
 Task : TSK_INIT_DATA_C2H
 Inputs : None
 Outputs : None
-Description : Initialize Descriptor 
+Description : Initialize Descriptor
 *************************************************************/
 
 task TSK_INIT_DATA_C2H;
@@ -4548,8 +4994,15 @@ task TSK_INIT_DATA_C2H;
     DATA_STORE[768+1] = 8'h00;
     DATA_STORE[768+2] = 8'h4b;
     DATA_STORE[768+3] = 8'had;
-    DATA_STORE[768+4] = DMA_BYTE_CNT[7:0]; //-- Length lsb
-    DATA_STORE[768+5] = DMA_BYTE_CNT[15:8]; //-- Length msb
+    if (test_count < 5) begin
+    /* write */
+        DATA_STORE[768+4] = 8'h00; //DMA_BYTE_CNT[7:0]; //-- Length lsb
+        DATA_STORE[768+5] = 8'd24; //DMA_BYTE_CNT[15:8]; //-- Length msb
+    end else begin
+    /* read */
+        DATA_STORE[768+4] = 8'h00; //DMA_BYTE_CNT[7:0]; //-- Length lsb
+        DATA_STORE[768+5] = 8'h34; //DMA_BYTE_CNT[15:8]; //-- Length msb
+    end
     DATA_STORE[768+6] = 8'h00;
     DATA_STORE[768+7] = 8'h00;
     DATA_STORE[768+8] = 8'h00; //-- Src_add [31:0] x0000
@@ -4589,8 +5042,8 @@ task TSK_INIT_DATA_C2H;
 endtask
 
 /************************************************************
-Task : COMPARE_DATA_H2C 
-Inputs : Number of Payload Bytes 
+Task : COMPARE_DATA_H2C
+Inputs : Number of Payload Bytes
 Outputs : None
 Description : Compare Data received at XDMA with data sent from RP - user TB
 *************************************************************/
@@ -4607,14 +5060,14 @@ task COMPARE_DATA_H2C;
 
   begin
 /*
-		matched_data_counter = 0;	
+		matched_data_counter = 0;
 
         //Calculate number of beats for payload on XDMA
-		
-    case (board.EP.C_DATA_WIDTH)    
-		64:		data_beat_count = ((payload_bytes % 32'h8) == 0) ? (payload_bytes/32'h8) : ((payload_bytes/32'h8)+32'h1); 
-		128:	data_beat_count = ((payload_bytes % 32'h10) == 0) ? (payload_bytes/32'h10) : ((payload_bytes/32'h10)+32'h1); 
-		256:	data_beat_count = ((payload_bytes % 32'h20) == 0) ? (payload_bytes/32'h20) : ((payload_bytes/32'h20)+32'h1); 
+
+    case (board.EP.C_DATA_WIDTH)
+		64:		data_beat_count = ((payload_bytes % 32'h8) == 0) ? (payload_bytes/32'h8) : ((payload_bytes/32'h8)+32'h1);
+		128:	data_beat_count = ((payload_bytes % 32'h10) == 0) ? (payload_bytes/32'h10) : ((payload_bytes/32'h10)+32'h1);
+		256:	data_beat_count = ((payload_bytes % 32'h20) == 0) ? (payload_bytes/32'h20) : ((payload_bytes/32'h20)+32'h1);
     endcase
 
         $display ("Enters into compare read data task at %gns\n", $realtime);
@@ -4626,8 +5079,8 @@ task COMPARE_DATA_H2C;
 
 		end
 
-			
- 
+
+
 		//Sampling data payload on XDMA
 
 		@ (posedge board.EP.m_axi_wvalid) ;		  			//valid data comes at wvalid
@@ -4698,7 +5151,7 @@ task COMPARE_DATA_H2C;
                 	end
             end
 
-		
+
 
 		//Sampling stored data from User TB in reg
 
@@ -4706,7 +5159,7 @@ task COMPARE_DATA_H2C;
 
 		case (board.EP.C_DATA_WIDTH)
 
-            64: 
+            64:
                 begin
 				for (i = 0; i < data_beat_count; i = i + 1)   begin
             		for (j=7; j>=0; j=j-1) begin
@@ -4719,7 +5172,7 @@ task COMPARE_DATA_H2C;
 	            end
 		        end
 
-           128: 
+           128:
                 begin
                 for (i = 0; i < data_beat_count; i = i + 1)   begin
                     for (j=15; j>=0; j=j-1) begin
@@ -4731,11 +5184,11 @@ task COMPARE_DATA_H2C;
     		        $display ("-- Data Stored in TB for H2C Transfer = %h--\n", DATA_STORE_256[i]);
                 end
                 end
-                
-           256: 
+
+           256:
 				begin
 				for (i = 0; i < data_beat_count; i = i + 1)   begin
-					for (j=31; j>=0; j=j-1) begin 
+					for (j=31; j>=0; j=j-1) begin
 					DATA_STORE_256[i] = {DATA_STORE_256[i], DATA_STORE[1024+k+j]};
 					end
 
@@ -4745,10 +5198,10 @@ task COMPARE_DATA_H2C;
                 end
 				end
 
-		endcase		
+		endcase
 
 		//Compare sampled data from XDMA with stored TB data
-	 
+
 		for (i=0; i<data_beat_count; i=i+1)   begin
 
 			if (READ_DATA[i] == DATA_STORE_256[i]) begin
@@ -4766,7 +5219,7 @@ task COMPARE_DATA_H2C;
 */
 
     end
-           
+
 endtask
 
 
@@ -4780,7 +5233,7 @@ Description : Compare Data received and stored at RP - user TB with the data sen
 task COMPARE_DATA_C2H;
 
   input [31:0] payload_bytes ;
-  
+
   reg [255:0] READ_DATA_C2H [(DMA_BYTE_CNT/8):0];
   reg [255:0] DATA_STORE_256 [(DMA_BYTE_CNT/8):0];
 
@@ -4799,8 +5252,8 @@ task COMPARE_DATA_C2H;
 		cq_data_beat_count = ((((payload_bytes-32'h10) % 32'h20) == 0) ? ((payload_bytes-32'h10)/32'h20) : (((payload_bytes-32'h10)/32'h20)+32'h1)) + 32'h1;
 		$display ("payload_bytes = %h, data_beat_count = %h\n", payload_bytes, data_beat_count);
 
-//Sampling CQ data payload on RP	
-	
+//Sampling CQ data payload on RP
+
     if(testname =="dma_stream0") begin
         cq_valid_wait_cnt = 3;
     end else begin
@@ -4813,7 +5266,7 @@ task COMPARE_DATA_C2H;
 
 
 
-			for (i=0; i<cq_data_beat_count; i=i+1)   begin	
+			for (i=0; i<cq_data_beat_count; i=i+1)   begin
 
                 @ (negedge user_clk);						//Samples data at negedge of user_clk
 
@@ -4827,7 +5280,7 @@ task COMPARE_DATA_C2H;
 						end else begin						//Second and Subsequent Data Beat
 
 //						$display ("m_axis_cq_tkeep = %h\n", board.RP.m_axis_cq_tkeep);
-						
+
 						case (board.RP.m_axis_cq_tkeep)
                         8'h01: begin READ_DATA_C2H[i-1][255:128] = {96'b0,board.RP.m_axis_cq_tdata [31:0]}; $display ("-- C2H data at RP = %h--\n", READ_DATA_C2H[i-1]); end
                         8'h03: begin READ_DATA_C2H[i-1][255:128] = {64'b0,board.RP.m_axis_cq_tdata [63:0]}; $display ("-- C2H data at RP = %h--\n", READ_DATA_C2H[i-1]); end
@@ -4846,7 +5299,7 @@ task COMPARE_DATA_C2H;
 
             end
 
-			
+
 //Sampling stored data from User TB in 256 bit reg
 
         k = 0;
@@ -4879,7 +5332,7 @@ task COMPARE_DATA_C2H;
         end else
             $display ("---***ERROR*** C2H Transfer Data MISMATCH ---\n");
 
-end		
+end
 
 endtask
 

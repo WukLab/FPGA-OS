@@ -342,7 +342,7 @@ static void access(stream<struct pipeline_info> *pi_in,
 		break;
 	case ACCESS_READ:
 		d.keep(NR_BYTES_AXIS_512 - 1, 0) = 0xffffffffffffffff;
-		data = dram[offset + pi.pa_index];
+		d.data = dram[offset + pi.pa_index];
 		offset++;
 
 		if (offset >= pi.nr_units) {

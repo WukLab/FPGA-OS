@@ -48,12 +48,188 @@
 //
 //-----------------------------------------------------------------------------
 //
-// Project    : The Xilinx PCI Express DMA 
+// Project    : The Xilinx PCI Express DMA
 // File       : sample_tests.vh
 // Version    : 4.1
 //-----------------------------------------------------------------------------
 //
 //------------------------------------------------------------------------------
+
+else if(testname =="rdm")
+begin
+
+   //----------------------------------------------------------------------------------------
+   // XDMA H2C Test Starts
+   //----------------------------------------------------------------------------------------
+
+    $display(" **** XDMA RDM *** \n");
+    $display(" **** read Address at BAR0  = %h\n", board.RP.tx_usrapp.BAR_INIT_P_BAR[0][31:0]);
+    $display(" **** read Address at BAR1  = %h\n", board.RP.tx_usrapp.BAR_INIT_P_BAR[1][31:0]);
+
+    test_count = 0;
+    while (test_count < 10) begin
+        //-------------- Load DATA in Buffer ----------------------------------------------------
+        /*
+         * 1  -->  write
+         * 0  -->  read
+         */
+        board.RP.tx_usrapp.TSK_INIT_DATA_RDM(0, (test_count%5)*10, 10);
+
+        board.RP.tx_usrapp.TSK_XDMA_REG_READ(16'h00);
+
+        //-------------- Descriptor start address for both H2C and C2H --------------------------
+        board.RP.tx_usrapp.TSK_XDMA_REG_WRITE(16'h4080, 32'h00000100, 4'hF);
+        board.RP.tx_usrapp.TSK_XDMA_REG_WRITE(16'h5080, 32'h00000300, 4'hF);
+
+        // completion count writeback addresses
+        board.RP.tx_usrapp.TSK_XDMA_REG_WRITE(16'h0088, 32'h00000000, 4'hF);
+        board.RP.tx_usrapp.TSK_XDMA_REG_WRITE(16'h008C, 32'h0, 4'hF);
+        board.RP.tx_usrapp.TSK_XDMA_REG_WRITE(16'h1088, 32'h00000080, 4'hF);
+        board.RP.tx_usrapp.TSK_XDMA_REG_WRITE(16'h108C, 32'h0, 4'hF);
+
+        //-------------- Start DMA tranfer ------------------------------------------------------
+        $display(" **** Start DMA Stream for both H2C and C2H transfer ***\n");
+
+        board.RP.tx_usrapp.TSK_XDMA_REG_WRITE(16'h1004, 32'h2fffe7f, 4'hF);   // Enable C2H DMA
+        board.RP.tx_usrapp.TSK_XDMA_REG_WRITE(16'h0004, 32'h2fffe7f, 4'hF);   // Enable H2C DMA
+
+        // Wait for data transfer complete.
+
+        // For this example design there is 1 descriptor for H2c and 1 for C2H
+        // Read C2H Descriptor count and wiat until it returns 1.
+        // Becase it is a loopback, by reading C2H descriptor count to 1
+        // it ensures H2C descriptor is also set to 1.
+        loop_timeout = 0;
+        desc_count = 0;
+        while (desc_count == 0 && loop_timeout <= 10) begin
+              board.RP.tx_usrapp.TSK_XDMA_REG_READ(16'h1040);
+              $display ("**** C2H status = %h\n", P_READ_DATA);
+              board.RP.tx_usrapp.TSK_XDMA_REG_READ(16'h0040);
+              $display ("**** H2C status = %h\n", P_READ_DATA);
+              board.RP.tx_usrapp.TSK_XDMA_REG_READ(16'h0048);
+              $display ("**** H2C Decsriptor Count = %h\n", P_READ_DATA);
+              board.RP.tx_usrapp.TSK_XDMA_REG_READ(16'h1048);
+              $display ("**** C2H Decsriptor Count = %h\n", P_READ_DATA);
+              if (P_READ_DATA == 32'h1) begin
+                desc_count = 1;
+              end else begin
+                #10;
+                loop_timeout = loop_timeout + 1;
+              end
+        end
+
+            if (desc_count != 1) begin
+                $display ("---***ERROR*** C2H Descriptor count mismatch,Loop Timeout occured ---\n");
+            end
+        // Read status of both H2C and C2H engines.
+        board.RP.tx_usrapp.TSK_XDMA_REG_READ(16'h1040);
+        c2h_status = P_READ_DATA;
+        if (c2h_status != 32'h6) begin
+            $display ("---***ERROR*** C2H status mismatch ---\n");
+        end
+        board.RP.tx_usrapp.TSK_XDMA_REG_READ(16'h0040);
+        h2c_status = P_READ_DATA;
+        if (h2c_status != 32'h6) begin
+            $display ("---***ERROR*** H2C status mismatch ---\n");
+        end
+        // Disable run bit for H2C and C2H engine
+        board.RP.tx_usrapp.TSK_XDMA_REG_WRITE(16'h1004, 32'h0, 4'hF);
+        board.RP.tx_usrapp.TSK_XDMA_REG_WRITE(16'h0004, 32'h0, 4'hF);
+
+        #100;
+    test_count = test_count + 1;
+    end
+   $finish;
+end
+
+else if(testname =="kvs")
+begin
+
+   //----------------------------------------------------------------------------------------
+   // XDMA H2C Test Starts
+   //----------------------------------------------------------------------------------------
+
+    $display(" **** XDMA KVS *** \n");
+    $display(" **** read Address at BAR0  = %h\n", board.RP.tx_usrapp.BAR_INIT_P_BAR[0][31:0]);
+    $display(" **** read Address at BAR1  = %h\n", board.RP.tx_usrapp.BAR_INIT_P_BAR[1][31:0]);
+
+    test_count = 0;
+    while (test_count < 10) begin
+        //-------------- Load DATA in Buffer ----------------------------------------------------
+        board.RP.tx_usrapp.TSK_INIT_DATA_KVS(1 - test_count/5, 10, test_count%5);
+
+        board.RP.tx_usrapp.TSK_XDMA_REG_READ(16'h00);
+
+        //-------------- Descriptor start address for both H2C and C2H --------------------------
+        board.RP.tx_usrapp.TSK_XDMA_REG_WRITE(16'h4080, 32'h00000100, 4'hF);
+        board.RP.tx_usrapp.TSK_XDMA_REG_WRITE(16'h5080, 32'h00000300, 4'hF);
+
+        // completion count writeback addresses
+        board.RP.tx_usrapp.TSK_XDMA_REG_WRITE(16'h0088, 32'h00000000, 4'hF);
+        board.RP.tx_usrapp.TSK_XDMA_REG_WRITE(16'h008C, 32'h0, 4'hF);
+        board.RP.tx_usrapp.TSK_XDMA_REG_WRITE(16'h1088, 32'h00000080, 4'hF);
+        board.RP.tx_usrapp.TSK_XDMA_REG_WRITE(16'h108C, 32'h0, 4'hF);
+
+        //-------------- Start DMA tranfer ------------------------------------------------------
+        $display(" **** Start DMA Stream for both H2C and C2H transfer ***\n");
+
+        board.RP.tx_usrapp.TSK_XDMA_REG_WRITE(16'h1004, 32'h2fffe7f, 4'hF);   // Enable C2H DMA
+        fork
+        board.RP.tx_usrapp.TSK_XDMA_REG_WRITE(16'h0004, 32'h2fffe7f, 4'hF);   // Enable H2C DMA
+
+        //compare C2H data
+        $display("------Compare C2H Data--------\n");
+        // board.RP.tx_usrapp.COMPARE_DATA_C2H({16'h0,board.RP.tx_usrapp.DMA_BYTE_CNT});
+        join
+
+        // Wait for data transfer complete.
+
+        // For this example design there is 1 descriptor for H2c and 1 for C2H
+        // Read C2H Descriptor count and wiat until it returns 1.
+        // Becase it is a loopback, by reading C2H descriptor count to 1
+        // it ensures H2C descriptor is also set to 1.
+        loop_timeout = 0;
+        desc_count = 0;
+        while (desc_count == 0 && loop_timeout <= 10) begin
+              board.RP.tx_usrapp.TSK_XDMA_REG_READ(16'h1040);
+              $display ("**** C2H status = %h\n", P_READ_DATA);
+              board.RP.tx_usrapp.TSK_XDMA_REG_READ(16'h0040);
+              $display ("**** H2C status = %h\n", P_READ_DATA);
+              board.RP.tx_usrapp.TSK_XDMA_REG_READ(16'h0048);
+              $display ("**** H2C Decsriptor Count = %h\n", P_READ_DATA);
+              board.RP.tx_usrapp.TSK_XDMA_REG_READ(16'h1048);
+              $display ("**** C2H Decsriptor Count = %h\n", P_READ_DATA);
+              if (P_READ_DATA == 32'h1) begin
+                desc_count = 1;
+              end else begin
+                #10;
+                loop_timeout = loop_timeout + 1;
+              end
+        end
+
+            if (desc_count != 1) begin
+                $display ("---***ERROR*** C2H Descriptor count mismatch,Loop Timeout occured ---\n");
+            end
+        // Read status of both H2C and C2H engines.
+        board.RP.tx_usrapp.TSK_XDMA_REG_READ(16'h1040);
+        c2h_status = P_READ_DATA;
+        if (c2h_status != 32'h6) begin
+            $display ("---***ERROR*** C2H status mismatch ---\n");
+        end
+        board.RP.tx_usrapp.TSK_XDMA_REG_READ(16'h0040);
+        h2c_status = P_READ_DATA;
+        if (h2c_status != 32'h6) begin
+            $display ("---***ERROR*** H2C status mismatch ---\n");
+        end
+        // Disable run bit for H2C and C2H engine
+        board.RP.tx_usrapp.TSK_XDMA_REG_WRITE(16'h1004, 32'h0, 4'hF);
+        board.RP.tx_usrapp.TSK_XDMA_REG_WRITE(16'h0004, 32'h0, 4'hF);
+
+        #100;
+    test_count = test_count + 1;
+    end
+   $finish;
+end
 
 else if(testname =="dma_stream0")
 begin
@@ -71,24 +247,24 @@ begin
     board.RP.tx_usrapp.TSK_INIT_DATA_C2H;
 
     board.RP.tx_usrapp.TSK_XDMA_REG_READ(16'h00);
-      
+
     //-------------- Descriptor start address for both H2C and C2H --------------------------
     board.RP.tx_usrapp.TSK_XDMA_REG_WRITE(16'h4080, 32'h00000100, 4'hF);
     board.RP.tx_usrapp.TSK_XDMA_REG_WRITE(16'h5080, 32'h00000300, 4'hF);
-    
+
     // completion count writeback addresses
     board.RP.tx_usrapp.TSK_XDMA_REG_WRITE(16'h0088, 32'h00000000, 4'hF);
     board.RP.tx_usrapp.TSK_XDMA_REG_WRITE(16'h008C, 32'h0, 4'hF);
     board.RP.tx_usrapp.TSK_XDMA_REG_WRITE(16'h1088, 32'h00000080, 4'hF);
     board.RP.tx_usrapp.TSK_XDMA_REG_WRITE(16'h108C, 32'h0, 4'hF);
-      
+
     //-------------- Start DMA tranfer ------------------------------------------------------
-    $display(" **** Start DMA Stream for both H2C and C2H transfer ***\n");    
-    
+    $display(" **** Start DMA Stream for both H2C and C2H transfer ***\n");
+
     board.RP.tx_usrapp.TSK_XDMA_REG_WRITE(16'h1004, 32'h2fffe7f, 4'hF);   // Enable C2H DMA
     fork
     board.RP.tx_usrapp.TSK_XDMA_REG_WRITE(16'h0004, 32'h2fffe7f, 4'hF);   // Enable H2C DMA
-    
+
     //compare C2H data
     $display("------Compare C2H Data--------\n");
     board.RP.tx_usrapp.COMPARE_DATA_C2H({16'h0,board.RP.tx_usrapp.DMA_BYTE_CNT});
@@ -146,7 +322,7 @@ begin
     board.RP.tx_usrapp.TSK_XDMA_REG_WRITE(16'h1004, 32'h0, 4'hF);
     board.RP.tx_usrapp.TSK_XDMA_REG_WRITE(16'h0004, 32'h0, 4'hF);
 
-    #100;  
+    #100;
    $finish;
 end
 
@@ -169,10 +345,10 @@ begin
 
 	//-------------- DMA Engine ID Read -----------------------------------------------------
       board.RP.tx_usrapp.TSK_XDMA_REG_READ(16'h00);
-      
+
     //-------------- Descriptor start address x0100 -----------------------------------------
 	  board.RP.tx_usrapp.TSK_XDMA_REG_WRITE(16'h4080, 32'h00000100, 4'hF);
-      
+
     //-------------- Start DMA tranfer ------------------------------------------------------
       $display(" **** Start DMA H2C transfer ***\n");
 
@@ -217,7 +393,7 @@ begin
     //----------------------------------------------------------------------------------------
     // XDMA C2H Test Starts
     //----------------------------------------------------------------------------------------
-	
+
       $display(" *** XDMA C2H *** \n");
 
       desc_count = 0;
@@ -286,9 +462,9 @@ begin
 
 
 
-    
-    $display("[%t] : Expected Device/Vendor ID = %x", $realtime, DEV_VEN_ID); 
-    
+
+    $display("[%t] : Expected Device/Vendor ID = %x", $realtime, DEV_VEN_ID);
+
     //--------------------------------------------------------------------------
     // Read core configuration space via PCIe fabric interface
     //--------------------------------------------------------------------------
@@ -298,7 +474,7 @@ begin
     TSK_TX_TYPE0_CONFIGURATION_READ(DEFAULT_TAG, 12'h0, 4'hF);
     TSK_WAIT_FOR_READ_DATA;
     if  (P_READ_DATA != DEV_VEN_ID) begin
-        $display("[%t] : TEST FAILED --- Data Error Mismatch, Write Data %x != Read Data %x", $realtime, 
+        $display("[%t] : TEST FAILED --- Data Error Mismatch, Write Data %x != Read Data %x", $realtime,
                                     DEV_VEN_ID, P_READ_DATA);
     end
     else begin
@@ -347,9 +523,9 @@ fork
     // List Rx TLP expections
     //---------------------------------------------------------------------------
   begin
-    test_vars[0] = 0;                                                                                                                         
-                                          
-    $display("[%t] : Expected Device/Vendor ID = %x", $realtime, DEV_VEN_ID);                                              
+    test_vars[0] = 0;
+
+    $display("[%t] : Expected Device/Vendor ID = %x", $realtime, DEV_VEN_ID);
 
     expect_cpld_payload[0] = DEV_VEN_ID[31:24];
     expect_cpld_payload[1] = DEV_VEN_ID[23:16];
@@ -374,11 +550,11 @@ fork
       expect_status //expect_status;
     );
 
-    if (expect_status) 
-      test_vars[0] = test_vars[0] + 1;      
+    if (expect_status)
+      test_vars[0] = test_vars[0] + 1;
   end
 join
-  
+
   expect_finish_check = 1;
 
   if (test_vars[0] == 1) begin
