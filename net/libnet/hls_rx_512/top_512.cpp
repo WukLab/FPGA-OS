@@ -15,9 +15,9 @@ enum SM {
 	SM_STREAM,
 };
 
-void libnet_rx_256(hls::stream<struct net_axis_256> *input,
-		   hls::stream<struct net_axis_256> *data_out,
-		   hls::stream<struct net_axis_256> *ack_out)
+void libnet_rx_512(hls::stream<struct net_axis_512> *input,
+		   hls::stream<struct net_axis_512> *data_out,
+		   hls::stream<struct net_axis_512> *ack_out)
 {
 #pragma HLS PIPELINE II=1 enable_flush
 #pragma HLS INTERFACE ap_ctrl_none port=return
@@ -27,8 +27,8 @@ void libnet_rx_256(hls::stream<struct net_axis_256> *input,
 #pragma HLS INTERFACE axis both port=ack_output
 
 	static enum SM state = SM_IDLE;
-	struct net_axis_256 current;
-	static struct net_axis_256 tmp_ack;
+	struct net_axis_512 current;
+	static struct net_axis_512 tmp_ack;
 	static int i = 1;
 
 	switch (state) {
@@ -38,8 +38,8 @@ void libnet_rx_256(hls::stream<struct net_axis_256> *input,
 		current = input->read();
 		data_out->write(current);
 
-		tmp_ack.data(31, 0) = i++;
-		tmp_ack.keep = 0xFFFFFFFF;
+		tmp_ack.data = i++;
+		tmp_ack.keep = 0xFFFFFFFFFFFFFFFF;
 		tmp_ack.last = 1;
 		ack_out->write(tmp_ack);
 

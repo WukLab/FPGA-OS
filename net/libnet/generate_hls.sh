@@ -13,7 +13,7 @@ GENERATED_HLS_PROJECT="generated_hls_project"
 HLS_DIR="$PWD"
 
 # Customize: sub-folders 
-HLS_IP_CORES=(hls_rx_256)
+HLS_IP_CORES=(hls_rx_256 hls_rx_512)
 
 # Customize: relative path
 GENERATED_IP_FOLDER="${HLS_DIR}/../../generated_ip"

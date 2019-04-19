@@ -22,8 +22,7 @@ open_solution -reset solution1
 # VCU108:	xcvu095-2ffva2104e
 set_part {xcvu095-ffva2104-2-e}
 
-# 125MHz
-create_clock -period 8 -name default
+create_clock -period 3.33 -name default
 set_clock_uncertainty 1.25
 
 # Simulate the C code 
@@ -33,7 +32,7 @@ set_clock_uncertainty 1.25
 csynth_design
 
 # Export IP block
-export_design -format ip_catalog -display_name "net_libnet_rx" -description "Reliable LibNet RX Path" -vendor "wuklab" -version "1.0"
+export_design -format ip_catalog -display_name "net_libnet_rx_512" -description "Reliable LibNet RX Path" -vendor "wuklab" -version "1.0"
 
 # Do not perform any other steps
 # - The basic project will be opened in the GUI 
