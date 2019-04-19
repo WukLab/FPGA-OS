@@ -34,8 +34,8 @@ set_property IOSTANDARD LVCMOS18 [get_ports user_lnk_up]
 #
 # Any other Constraints
 # (From reference design)
-set_false_path -through [get_pins u_pcie/inst/pcie3_ip_i/inst/pcie3_uscale_top_inst/pcie3_uscale_wrapper_inst/PCIE_3_1_inst/CFGMAX*]
-set_false_path -through [get_nets u_pcie/inst/cfg_max*]
+set_false_path -through [get_pins u_pcie/xdma_0/inst/pcie3_ip_i/inst/pcie3_uscale_top_inst/pcie3_uscale_wrapper_inst/PCIE_3_1_inst/CFGMAX*]
+set_false_path -through [get_nets u_pcie/xdma_0/inst/cfg_max*]
 
 
 # ignore signal probe's path
