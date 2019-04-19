@@ -21,6 +21,8 @@
 #include <net/if.h>
 #include <netinet/ether.h>
 
+#define ROUND_UP(N, S) ((((N) + (S) - 1) / (S)) * (S))
+
 static void printHelp(char *name);
 double diff_ns(struct timespec *start, struct timespec *end);
 void myDump(char *desc, uint8_t *addr, int len);
