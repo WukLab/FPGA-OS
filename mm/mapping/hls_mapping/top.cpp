@@ -87,8 +87,8 @@ void paging_top(hls::stream<struct mapping_request>	*in_read,
 
 	static stream<struct mapping_request>	fifo_read_req;
 	static stream<struct mapping_request>	fifo_write_req;
-#pragma HLS STREAM variable=fifo_read_req	depth=256
-#pragma HLS STREAM variable=fifo_write_req	depth=256
+#pragma HLS STREAM variable=fifo_read_req	depth=128
+#pragma HLS STREAM variable=fifo_write_req	depth=128
 
 #pragma HLS DATA_PACK variable=fifo_read_req
 #pragma HLS DATA_PACK variable=fifo_write_req
@@ -97,10 +97,10 @@ void paging_top(hls::stream<struct mapping_request>	*in_read,
 	static stream<struct mem_cmd> fifo_DRAM_wr_cmd("fifo_DRAM_wr_cmd");
 	static stream<struct mem_cmd> fifo_BRAM_rd_cmd("fifo_BRAM_rd_cmd");
 	static stream<struct mem_cmd> fifo_BRAM_wr_cmd("fifo_BRAM_wr_cmd");
-#pragma HLS STREAM variable=fifo_DRAM_rd_cmd	depth=256
-#pragma HLS STREAM variable=fifo_DRAM_wr_cmd	depth=256
-#pragma HLS STREAM variable=fifo_BRAM_rd_cmd	depth=256
-#pragma HLS STREAM variable=fifo_BRAM_wr_cmd	depth=256
+#pragma HLS STREAM variable=fifo_DRAM_rd_cmd	depth=128
+#pragma HLS STREAM variable=fifo_DRAM_wr_cmd	depth=128
+#pragma HLS STREAM variable=fifo_BRAM_rd_cmd	depth=16
+#pragma HLS STREAM variable=fifo_BRAM_wr_cmd	depth=16
 
 #pragma HLS DATA_PACK variable=fifo_DRAM_rd_cmd
 #pragma HLS DATA_PACK variable=fifo_DRAM_wr_cmd
@@ -111,10 +111,10 @@ void paging_top(hls::stream<struct mapping_request>	*in_read,
 	static stream<ap_uint<MEM_BUS_WIDTH> > fifo_DRAM_wr_data("fifo_DRAM_wr_data");
 	static stream<ap_uint<MEM_BUS_WIDTH> > fifo_BRAM_rd_data("fifo_BRAM_rd_data");
 	static stream<ap_uint<MEM_BUS_WIDTH> > fifo_BRAM_wr_data("fifo_BRAM_wr_data");
-#pragma HLS STREAM variable=fifo_DRAM_rd_data	depth=256
-#pragma HLS STREAM variable=fifo_DRAM_wr_data	depth=256
-#pragma HLS STREAM variable=fifo_BRAM_rd_data	depth=256
-#pragma HLS STREAM variable=fifo_BRAM_wr_data	depth=256
+#pragma HLS STREAM variable=fifo_DRAM_rd_data	depth=128
+#pragma HLS STREAM variable=fifo_DRAM_wr_data	depth=128
+#pragma HLS STREAM variable=fifo_BRAM_rd_data	depth=16
+#pragma HLS STREAM variable=fifo_BRAM_wr_data	depth=16
 
 	/*
 	 * Front-end buffers were here to consume incoming
