@@ -2,28 +2,28 @@
 Copyright (c) 2016, Xilinx, Inc.
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification, 
+Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
 
-1. Redistributions of source code must retain the above copyright notice, 
+1. Redistributions of source code must retain the above copyright notice,
 this list of conditions and the following disclaimer.
 
-2. Redistributions in binary form must reproduce the above copyright notice, 
-this list of conditions and the following disclaimer in the documentation 
+2. Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
 and/or other materials provided with the distribution.
 
-3. Neither the name of the copyright holder nor the names of its contributors 
-may be used to endorse or promote products derived from this software 
+3. Neither the name of the copyright holder nor the names of its contributors
+may be used to endorse or promote products derived from this software
 without specific prior written permission.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, 
-THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
-IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
-INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
-PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
-HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, 
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, 
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.// Copyright (c) 2015 Xilinx, Inc.
 ************************************************/
 #include "../globals.h"
@@ -119,6 +119,7 @@ void response_r(stream<ap_uint<248> > &metadataBuffer, stream<ap_uint<64> > &val
 	static uint8_t			outOpCode		= 0;
 	static uint8_t			errorCode		= 0;
 	static ap_uint<32>  		resp_ValueConvertTemp 	= 0;
+	static uint8_t			align_counter		= 0;
 	ap_uint<1> 			readTemp 		= 0;
 
 	static ap_uint<248>		outMetadataTempBuffer;		// This value store the metadata coming from the UDP until they can be written into the metadatabuffer.
@@ -151,9 +152,8 @@ void response_r(stream<ap_uint<248> > &metadataBuffer, stream<ap_uint<64> > &val
 			else
 				tempOutput.data.range(39, 32)	= 0;									// Extras Length
 			tempOutput.data.range(63, 56) 	= outMetadataTempBuffer.range(119,112);
-			ap_uint<16> br_valueLengthTemp = 24; 	
+			ap_uint<16> br_valueLengthTemp = 24;
 			if (outOpCode == 0 && errorCode != 1) {
-				
 				ap_uint<16> tempVar = outMetadataTempBuffer.range(23, 8);
 				br_valueLengthTemp += (tempVar - 4);
 			}
@@ -164,6 +164,7 @@ void response_r(stream<ap_uint<248> > &metadataBuffer, stream<ap_uint<64> > &val
 			tempOutput.keep = 0xFF;
 			br_outWordCounter++;
 			respOutput.write(tempOutput);
+			align_counter++;
 		}
 	}
 	else if (br_outWordCounter == 2) {		// 2nd packet header word
@@ -178,17 +179,23 @@ void response_r(stream<ap_uint<248> > &metadataBuffer, stream<ap_uint<64> > &val
 		//tempOutput.data.range(63, 32) 	= outMetadataTempBuffer.range(279, 248);
 		br_outWordCounter++;
 		respOutput.write(tempOutput);
+		align_counter++;
 	}
 	else if (br_outWordCounter == 3) {	// 3rd packet header word
 		if (errorCode == 1)				// error Packet, go to error state
 			br_outWordCounter = 7;
 		else  if (outOpCode == 1 || outOpCode ==  4 || outOpCode == 8) {	// Set operation
-			br_outWordCounter = 0;
-			tempOutput.last = 1;
+			if ((align_counter + 1) % 4 == 0) {
+				br_outWordCounter = 0;
+				tempOutput.last = 1;
+			} else {
+				br_outWordCounter = 8;
+			}
 		}
 		else if (outOpCode == 0) // Get operation, output value
 			br_outWordCounter++;
 		respOutput.write(tempOutput);
+		align_counter++;
 	}
 	else if (br_outWordCounter == 4) { 	// Xtras & Value
 		if (!valueBuffer.empty()) {
@@ -199,8 +206,12 @@ void response_r(stream<ap_uint<248> > &metadataBuffer, stream<ap_uint<64> > &val
 #if DEBUG_PRINT
 				std::cout << "Output: " << std::hex << tempOutput.data << std::endl;
 #endif
-				br_outWordCounter = 0;
-				tempOutput.last = 1;
+				if ((align_counter + 1) % 4 == 0) {
+					br_outWordCounter = 0;
+					tempOutput.last = 1;
+				} else {
+					br_outWordCounter = 8;
+				}
 				tempOutput.keep = length2keep_mapping(valueLength);
 				valueLength = 0;
 				}
@@ -210,6 +221,7 @@ void response_r(stream<ap_uint<248> > &metadataBuffer, stream<ap_uint<64> > &val
 				valueLength -= 8;
 			}
 			respOutput.write(tempOutput);
+			align_counter++;
 		}
 	}
 	else if (br_outWordCounter == 5) {
@@ -222,36 +234,84 @@ void response_r(stream<ap_uint<248> > &metadataBuffer, stream<ap_uint<64> > &val
 			ap_uint<8> tempKeep = length2keep_mapping(valueLength);
 			valueLength > 8 ? valueLength -=8 : valueLength = 0;
 			if (valueLength == 0) {
-				tempOutput.last = 1;
-				br_outWordCounter = 0;
+				if ((align_counter + 1) % 4 == 0) {
+					br_outWordCounter = 0;
+					tempOutput.last = 1;
+				} else {
+					br_outWordCounter = 8;
+				}
 				tempOutput.keep = tempKeep;
 			}
 			else if (valueLength <= 4)
 				br_outWordCounter++;
 			respOutput.write(tempOutput);
+			align_counter++;
 		}
 		else if (valueLength <= 4) {
 			tempOutput.data.range((valueLength*8)-1, 0) = xtrasBuffer((valueLength*8)+31, 32);
 			tempOutput.keep = length2keep_mapping(valueLength);
 			valueLength = 0;
-			tempOutput.last = 1;
-			br_outWordCounter = 0;
+			if ((align_counter + 1) % 4 == 0) {
+				br_outWordCounter = 0;
+				tempOutput.last = 1;
+			} else {
+				br_outWordCounter = 8;
+			}
 			respOutput.write(tempOutput);
+			align_counter++;
 		}
 	}
 	else if (br_outWordCounter == 6) {
+		/* prepare payload */
 		tempOutput.data.range(31, 0) = xtrasBuffer(63, 32);
 		tempOutput.keep = length2keep_mapping(valueLength);
 		valueLength = 0;
-		tempOutput.last = 1;
-		br_outWordCounter = 0;
+
+		/* set next state */
+		if ((align_counter + 1) % 4 == 0) {
+			br_outWordCounter = 0;
+			tempOutput.last = 1;
+		} else {
+			br_outWordCounter = 8;
+		}
+
+		/* send out packet */
 		respOutput.write(tempOutput);
+		align_counter++;
 	}
 	else if (br_outWordCounter == 7) {
-		br_outWordCounter = 0;
-		tempOutput.last = 1;
+		/* prepare payload */
 		tempOutput.data.range(63, 0)	= 0x313020524F525245;
+
+		/* set next state */
+		if ((align_counter + 1) % 4 == 0) {
+			br_outWordCounter = 0;
+			tempOutput.last = 1;
+		} else {
+			br_outWordCounter = 8;
+		}
+
+		/* send out packet */
 		respOutput.write(tempOutput);
+		align_counter++;
+	}
+	else if (br_outWordCounter == 8) {	// checkout output align to 4 (bits align to 256)
+		/* prepare payload */
+		tempOutput.data = 0;
+		tempOutput.keep = 0;
+
+		/* set next state */
+		if ((align_counter + 1) % 4 == 0) {
+			br_outWordCounter = 0;
+			tempOutput.last = 1;
+		} else {
+			/* stay this state */
+			br_outWordCounter = 8;
+		}
+
+		/* send out packet */
+		respOutput.write(tempOutput);
+		align_counter++;
 	}
 }
 
