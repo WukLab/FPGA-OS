@@ -8,8 +8,8 @@
 module RDM_BD_for_pcie_tb;
 
 // Change this to absolute path
-parameter IN_FILEPATH="/root/ys/FPGA/system/vcu108/tb/rdm/input_pcie.txt";
-parameter OUT_FILEPATH="/root/ys/FPGA/system/vcu108/tb/rdm/output_pcie.txt";
+parameter IN_FILEPATH="/root/Github/FPGA/system/vcu108/tb/rdm/input_pcie.txt";
+parameter OUT_FILEPATH="/root/Github/FPGA/system/vcu108/tb/rdm/output_pcie.txt";
 
 // 250MHZ for PCIe AXI-Stream
 parameter CLK_PERIOD = 4000000;
@@ -32,12 +32,14 @@ parameter TIMEOUT_THRESH = 100000000;
 
 	reg	sys_reset;
 	reg	sysclk_250_rst_n;
+	reg	sysclk_300_rst_n;
 
 	wire	default_sysclk_300_clk_p;
 	wire	default_sysclk_300_clk_n;
     
 	reg	sysclk_300_clk_ref;
 	reg	sysclk_250_clk_ref;
+	reg	sysclk_150_clk_ref;
 
 	reg [255:0] tx_tdata;
 	reg [31:0] tx_tkeep;
@@ -67,8 +69,12 @@ parameter TIMEOUT_THRESH = 100000000;
 		.mc_ddr4_ui_clk_rst_n		(mc_ddr4_ui_clk_rst_n),
 		.mc_init_calib_complete		(mc_init_calib_complete),
 
-		.sys_rst			(sys_reset),
-		.driver_ready			(1'b1),
+		.clk_150		(sysclk_150_clk_ref),
+		.clk_300		(sysclk_300_clk_ref),
+		.clk_300_rst_n		(sysclk_300_rst_n),
+
+		.sys_rst		(sys_reset),
+		.driver_ready		(1'b1),
 
 		.RX_clk			(sysclk_250_clk_ref),
 		.RX_rst_n		(sysclk_250_rst_n),
@@ -130,9 +136,11 @@ parameter TIMEOUT_THRESH = 100000000;
 		mc_enable_model = 1'b0;
 		enable_send = 1'b0;
 		sysclk_250_rst_n = 1'b1;
+		sysclk_300_rst_n = 1'b1;
 
 		sysclk_300_clk_ref = 1;
 		sysclk_250_clk_ref = 1;
+		sysclk_150_clk_ref = 1;
 
 		// Reset MC
 		sys_reset = 1'b0;
@@ -156,6 +164,12 @@ parameter TIMEOUT_THRESH = 100000000;
                 @(posedge sysclk_250_clk_ref);
                 sysclk_250_rst_n = 1;
 
+	        @(posedge sysclk_300_clk_ref);
+                sysclk_300_rst_n = 0;
+                #50000000
+                @(posedge sysclk_300_clk_ref);
+                sysclk_300_rst_n = 1;
+
 		#50000000
 		enable_send = 1'b1;
 	end
@@ -165,6 +179,9 @@ parameter TIMEOUT_THRESH = 100000000;
 	    
 	always
 		#2000000.000 sysclk_250_clk_ref = ~sysclk_250_clk_ref;
+
+	always
+		#3333333.333 sysclk_150_clk_ref = ~sysclk_150_clk_ref;
 
 	assign default_sysclk_300_clk_p = sysclk_300_clk_ref;
 	assign default_sysclk_300_clk_n = ~sysclk_300_clk_ref;

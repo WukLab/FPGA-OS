@@ -235,6 +235,7 @@ module top_pcie_c2h_RDM #
 
 		.driver_ready	(user_lnk_up),
 
+		.clk_150	(clk_150),
 		.clk_300	(clk_300),
 		.clk_300_rst_n	(clk_300_rst_n),
 
