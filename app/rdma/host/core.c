@@ -17,6 +17,7 @@
 #include <netinet/ether.h>
 
 #include "../include/rdma.h"
+#include "../include/host_helper.h"
 #include "../../../include/uapi/net_header.h"
 
 #define MY_DEST_MAC0	0x01
@@ -159,6 +160,7 @@ int main(int argc, char *argv[])
 	printf("Read\n");
 	tx_len = APP_RDMA_DATA_OFFSET;
 	app_rdma_prepare_read(sendbuf, addr, 64);
+
 	if (sendto(sockfd, sendbuf, tx_len, 0,
 		   (struct sockaddr *)&socket_address,
 		   sizeof(struct sockaddr_ll)) < 0)

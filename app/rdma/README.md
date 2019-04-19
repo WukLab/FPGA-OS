@@ -39,11 +39,7 @@ struct header for alloc is:
 	u64	va
 	u64	pa
 
-## Status
+## Reply
 
-- Partial Read
-	- HLS Simulation
-- Partial Read Reply
-	- HLS Simulation
-- Partial Wrie
-	- HLS Simulation
+Write does not have reply for now.
+Read and Alloc will have reply.

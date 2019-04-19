@@ -11,6 +11,7 @@
 
 #include "top.hpp"
 #include "../include/rdma.h"
+#include "../include/hls.h"
 
 using namespace hls;
 

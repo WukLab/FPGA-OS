@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "../include/rdma.h"
+#include "../include/hls.h"
 
 using namespace hls;
 

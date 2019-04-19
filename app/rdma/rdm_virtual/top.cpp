@@ -11,6 +11,7 @@
 
 #include "top.hpp"
 #include "../include/rdma.h"
+#include "../include/hls.h"
 
 using namespace hls;
 
@@ -269,10 +270,7 @@ static void handle_write(stream<struct request> *req_s,
  * 	N B |          Data         |
  */
 
-static struct segment_entry seg_table[NR_SEGMENT_ENTRIES] = {
-	[0] = {0x00000000, 0x10000000, 0x00000000},
-	[1] = {0x10000000, 0x20000000, 0x10000000}
-};
+static struct segment_entry seg_table[NR_SEGMENT_ENTRIES];
 
 static void parser(stream<struct net_axis_512> *from_net,
 		   stream<struct request> *s_req_read,

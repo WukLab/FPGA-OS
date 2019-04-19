@@ -10,8 +10,6 @@
 #ifndef _APP_RDMA_RDMA_H_
 #define _APP_RDMA_RDMA_H_
 
-#include <fpga/axis_net.h>
-
 /*
  * This config affects both RDM and RDM_test.
  * If this option is enabled, DRAM access will be disabled.
@@ -55,6 +53,9 @@ static inline char *app_rdma_opcode_to_string(char opcode)
 	switch (opcode) {
 	case APP_RDMA_OPCODE_READ:		return (char *)"READ";
 	case APP_RDMA_OPCODE_WRITE:		return (char *)"WRITE";
+	case APP_RDMA_OPCODE_ALLOC:		return (char *)"ALLOC";
+	case APP_RDMA_OPCODE_REPLY_ALLOC:	return (char *)"ALLOC REPLY";
+	case APP_RDMA_OPCODE_REPLY_ALLOC_ERROR:	return (char *)"ALLOC REPLY ERROR";
 	case APP_RDMA_OPCODE_REPLY_READ:	return (char *)"READ REPLY";
 	case APP_RDMA_OPCODE_REPLY_READ_ERROR:	return (char *)"READ REPLY ERROR";
 	default:				return (char *)"Unknown";
@@ -67,43 +68,5 @@ static inline char *app_rdma_opcode_to_string(char opcode)
  * All packets' data start from the third unit, thus 128
  */
 #define APP_RDMA_DATA_OFFSET	(128)
-
-static inline void set_hdr_opcode(struct net_axis_512 *hdr, char op)
-{
-#pragma HLS INLINE
-	hdr->data(7, 0) = op;
-}
-
-static inline void set_hdr_address(struct net_axis_512 *hdr,
-				   unsigned long address)
-{
-#pragma HLS INLINE
-	hdr->data(71, 8) = address;
-}
-
-static inline void set_hdr_length(struct net_axis_512 *hdr,
-				  unsigned long length)
-{
-#pragma HLS INLINE
-	hdr->data(135, 72) = length;
-}
-
-static inline unsigned char get_hdr_opcode(struct net_axis_512 *hdr)
-{
-#pragma HLS INLINE
-	return hdr->data(7, 0);
-}
-
-static inline unsigned long get_hdr_address(struct net_axis_512 *hdr)
-{
-#pragma HLS INLINE
-	return hdr->data(71, 8);
-}
-
-static inline unsigned long get_hdr_length(struct net_axis_512 *hdr)
-{
-#pragma HLS INLINE
-	return hdr->data(135, 72);
-}
 
 #endif /* _APP_RDMA_RDMA_H_ */
