@@ -471,7 +471,7 @@ void data_path(stream<struct mapping_request> *rd_request,
 #pragma HLS STREAM variable=PI_fillS1_to_fillS2		depth=256
 #pragma HLS STREAM variable=PI_fillS2_to_out		depth=256
 
-#if 0
+#if 1
 #pragma HLS DATA_PACK variable=PI_pipeline_info
 #pragma HLS DATA_PACK variable=PI_hash_to_compare
 #pragma HLS DATA_PACK variable=PI_compare_to_fillS1
