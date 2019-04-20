@@ -359,23 +359,29 @@ int deliverRequestPCIe(int request_num, size_t *size_array,
     memset(pcie_send_addr + pad_size, 0x31, PCIE_SEND_ALLOC_SIZE - pad_size);
     time_diff = malloc(sizeof(double) * request_num);
 
+    // alloc big memory space on FPGA
+    app_rdm_hdr_alloc(pcie_send_addr, MAX_ACCESS_OFFSET, RDM_APP_ID);
+
     /* Construct the LEGO header */
     for (each_request = 0; each_request < request_num; each_request++) {
 
         // set LEGOFPGA header here and issue request
         clock_gettime(CLOCK_MONOTONIC, &start);
         if (header_array[each_request].mode == 'w') {
-            app_rdm_hdr_write(pcie_send_addr, 0x0,
+            app_rdm_hdr_write(pcie_send_addr, header_array[each_request].offset,
                               header_array[each_request].size, RDM_APP_ID);
             dma_to_fpga(pcie_send_addr, header_array[each_request].size);
         } else {
-            app_rdm_hdr_read(pcie_send_addr, 0x0, read_size, RDM_APP_ID);
+            app_rdm_hdr_read(pcie_send_addr, header_array[each_request].offset,
+                             read_size, RDM_APP_ID);
             dma_to_fpga(pcie_send_addr, 128);
         }
         /* dump frame */
         if (debug_mode) {
             printf("===== %d =====\n", each_request);
-            printf("type: %c size: %d\n", header_array[each_request].mode,
+            printf("type:%c\t offset:%llx\tsize:%d\n",
+                   header_array[each_request].mode,
+                   header_array[each_request].offset,
                    header_array[each_request].size);
             myDump(NULL, pcie_send_addr, 128);
         }
