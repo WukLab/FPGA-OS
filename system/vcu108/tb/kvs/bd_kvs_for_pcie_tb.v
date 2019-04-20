@@ -56,7 +56,7 @@ parameter TIMEOUT_THRESH = 100000000;
 
 	reg enable_send;
 
-	LegoFPGA_KVS_for_pcie	DUT (
+	LegoFPGA_KVS_for_pcie_all	DUT (
 		// DDR4 MC
 		.C0_SYS_CLK_0_clk_n		(default_sysclk_300_clk_n),
 		.C0_SYS_CLK_0_clk_p		(default_sysclk_300_clk_p),
