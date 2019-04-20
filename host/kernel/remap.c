@@ -40,6 +40,11 @@ static int remap_init(void)
 	pr_info("VA range: [%#18lx - %#18lx]\n",
 		virt_base, virt_base + phys_size);
 
+#define NR_BYTES_TO_DUMP	(4096)
+	//memset((void *)virt_base, 0, NR_BYTES_TO_DUMP);
+	print_hex_dump(KERN_INFO, "RDM: ", DUMP_PREFIX_OFFSET,
+		       32, 1, (const void *)virt_base, NR_BYTES_TO_DUMP, false);
+
 	return 0;
 }
 
