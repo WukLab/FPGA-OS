@@ -30,6 +30,7 @@
 #define LEGOFPGA_HEADER_SIZE 64
 
 #define RDM_APP_ID (0)
+#define BUF_SIZE 0x3ffff000
 
 struct osdi_mem_workload_struct {
     // uint32_t batch_id;

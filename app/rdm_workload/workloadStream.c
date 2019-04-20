@@ -68,7 +68,7 @@ void myDump(char *desc, uint8_t *addr, int len) {
         }
         printf(" %02x", pc[i]);
     }
-    printf("\n %d", fast_rand(5));
+    printf("\n");
 }
 
 int getWorkload(size_t **size_array_ptr, uint8_t ***packet_array_ptr,
@@ -120,8 +120,10 @@ int getWorkload(size_t **size_array_ptr, uint8_t ***packet_array_ptr,
         num_of_lines++;
     }
     fclose(fp);
-    printf("total request num %d:%d\n max access offset %llu\n", num_of_lines,
-           num_of_reqs, (unsigned long long int)MAX_ACCESS_OFFSET);
+    printf(
+        "\ttotal batch request num:%d\n\ttotal small request num:%d\n\tmax "
+        "access offset:%llu\n",
+        num_of_lines, num_of_reqs, (unsigned long long int)MAX_ACCESS_OFFSET);
     NUM_OF_LINES = num_of_lines;
     workload_array = malloc(sizeof(workload_struct) * num_of_reqs);
 
@@ -348,15 +350,17 @@ int deliverRequestPCIe(int request_num, size_t *size_array,
     int each_request;
 
     char reply[DEFAULT_REPLY_SIZE];
-    // void *base = pcie_send_addr;
+    void *base = pcie_send_addr;
     struct timespec start, end;
     double *time_diff, average_sum;
-    int *check_counter_addr = (int *)pcie_recv_addr;
     int read_size = 128;
+    int start_time_flag = 0;
+    int request_size;
+    int each_line = 0;
 
     memset(reply, 0, DEFAULT_REPLY_SIZE);
     assert(PCIE_SEND_ALLOC_SIZE > 0);
-    memset(pcie_send_addr + pad_size, 0x31, PCIE_SEND_ALLOC_SIZE - pad_size);
+    memset(pcie_send_addr, 0x31, PCIE_SEND_ALLOC_SIZE);
     time_diff = malloc(sizeof(double) * request_num);
 
     // alloc big memory space on FPGA
@@ -364,42 +368,70 @@ int deliverRequestPCIe(int request_num, size_t *size_array,
 
     /* Construct the LEGO header */
     for (each_request = 0; each_request < request_num; each_request++) {
-
         // set LEGOFPGA header here and issue request
-        clock_gettime(CLOCK_MONOTONIC, &start);
-        if (header_array[each_request].mode == 'w') {
-            app_rdm_hdr_write(pcie_send_addr, header_array[each_request].offset,
-                              header_array[each_request].size, RDM_APP_ID);
-            dma_to_fpga(pcie_send_addr, header_array[each_request].size);
-        } else {
-            app_rdm_hdr_read(pcie_send_addr, header_array[each_request].offset,
-                             read_size, RDM_APP_ID);
-            dma_to_fpga(pcie_send_addr, 128);
+        if (start_time_flag ==
+            0)  // this is the first request inside a big batch request
+        {
+            start_time_flag = 1;
+            base = pcie_send_addr;
         }
+
+        // makesure the header part is clean
+        //[YIZHOU][TODO] this can be removed if you feel this is useless
+        memset(base, 0, LEGOFPGA_HEADER_SIZE);
+        if (header_array[each_request].mode == 'w') {  // write request
+            app_rdm_hdr_write(base, header_array[each_request].offset,
+                              header_array[each_request].size, RDM_APP_ID);
+            request_size = header_array[each_request]
+                               .size;  // request size = write request size
+        } else {
+            app_rdm_hdr_read(base, header_array[each_request].offset, read_size,
+                             RDM_APP_ID);
+            request_size = read_size;  // request size = 128
+        }
+        base = base + request_size + pad_size;  // move base address accordingly
+        // makesure the batch request size does not overflow the buffer
+        assert((base - pcie_send_addr) < BUF_SIZE);
         /* dump frame */
         if (debug_mode) {
             printf("===== %d =====\n", each_request);
-            printf("type:%c\t offset:%llx\tsize:%d\n",
-                   header_array[each_request].mode,
-                   header_array[each_request].offset,
-                   header_array[each_request].size);
+            printf(
+                "type:%c\t "
+                "offset:%#llx(local:%#llx)\tsize:%#llx(size_in_header:%#llx)\n",
+                header_array[each_request].mode,
+                (unsigned long long int)header_array[each_request].offset,
+                (unsigned long long int)(base - pcie_send_addr),
+                header_array[each_request].size, request_size);
             myDump(NULL, pcie_send_addr, 128);
         }
-        while (*check_counter_addr != each_request + 1)  // wait for the reply
+        if (start_time_flag && interarrival_array[each_request] ||
+            each_request == request_num - 1)  // this is the last SMALL request
+                                              // in a BIG batch request
+            // for example, the last page inside a 200 page request
+            // or this is the last ruquest in the log
         {
-            ;
+            if (debug_mode)
+                printf("total request size: %#llx\n", base - pcie_send_addr);
+            clock_gettime(CLOCK_MONOTONIC, &start);
+            //[YIZHOU][TODO] after having correct header, enable the next line
+            // dma_to_fpga(pcie_send_addr,
+            // base-pcie_send_addr);//base-pcie_send_addr is the total cumulated
+            // request size
+            //[YIZHOU][TODO] check receiving here. I am not sure how to check
+            //receiving
+            clock_gettime(CLOCK_MONOTONIC, &end);
+            time_diff[each_line] = diff_ns(&start, &end);
+            usleep(interarrival_array[each_request]);
+            start_time_flag = 0;
         }
-        clock_gettime(CLOCK_MONOTONIC, &end);
-        time_diff[each_request] = diff_ns(&start, &end);
-        usleep(interarrival_array[each_request]);
     }
 
     average_sum = 0;
-    for (each_request = 0; each_request < request_num; each_request++) {
-        average_sum += time_diff[each_request];
+    for (each_line = 0; each_line < NUM_OF_LINES; each_line++) {
+        average_sum += time_diff[each_line];
     }
 
-    printf("average latency: %f (ns)\n", average_sum / request_num);
+    printf("average latency: %f (ns)\n", average_sum / NUM_OF_LINES);
     return 0;
 }
 
@@ -433,13 +465,15 @@ void *getPCIeSendAddr(size_t required_size) {
     // Shin-Yeh Tsai 041619
     // void *ret_addr = malloc(required_size);
     void *ret_addr;
-    posix_memalign((void **)&ret_addr, 4096 /*alignment */, required_size);
+    // posix_memalign((void **)&ret_addr, 4096 /*alignment */, required_size);
+    assert(required_size < BUF_SIZE);
+    posix_memalign((void **)&ret_addr, 4096 /*alignment */, BUF_SIZE);
     if (ret_addr == NULL) {
         printf("generate send addr error\n");
         exit(1);
     }
     memset(ret_addr, 0, required_size);
-    PCIE_SEND_ALLOC_SIZE = required_size;
+    PCIE_SEND_ALLOC_SIZE = BUF_SIZE;
     return ret_addr;
 }
 
