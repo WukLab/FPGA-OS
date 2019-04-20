@@ -14,27 +14,7 @@ uint64_t MAX_ACCESS_OFFSET = 0;
 int MACHINE_ID = -1;
 uint64_t SEPARATE_SIZE = 0;
 uint64_t NUM_OF_LINES = 0;
-
-struct osdi_mem_workload_struct {
-    // uint32_t batch_id;
-    uint64_t time_stamp;
-    uint64_t offset;
-    uint32_t size;  // should be multiple of 4K pages or DEFAULT_PAGE_SIZE
-    char mode;
-
-    // above variables are provided by workload
-    // below variables are calculated by this program
-    uint32_t interarrival_time;
-};
-
-struct osdi_mem_workload_header {
-    char mode;
-    uint64_t offset;
-    uint32_t size;  // should be multiple of 4K pages or DEFAULT_PAGE_SIZE
-};
-
-typedef struct osdi_mem_workload_struct workload_struct;
-typedef struct osdi_mem_workload_header workload_header;
+uint64_t PCIE_SEND_ALLOC_SIZE = 0;
 
 int debug_mode = 0;
 
@@ -56,14 +36,14 @@ static void printHelp(char *name) {
     printf("\t-v \tverbose mode\n");
     printf("\t--help             \tprint this message.\n");
     printf(
-        "\t./workloadStream -w "
-        "graphlab/0-mem-ec2-54-197-111-1.compute-1.amazonaws.com.merged -p 14 "
-        "-m pcie -n 1000 -i 50000 -v\n");
+        "\tfor PCIe: ./workloadStream.o -w rdm_test_input -p 64 -m pcie -n 1 "
+        "-i 50000 -s 5 -v\n");
     printf(
-        "./workloadStream.o -w "
-        "graphlab/0-mem-ec2-54-197-111-1.compute-1.amazonaws.com.merged -p 14 "
-        "-m rdma -n 1000 -i 50000 -v -s 1 -I 1\n");
-    printf("\n");
+        "\tfor RDMA: ./workloadStream.o -w rdm_test_input -p 64 -m rdma -n 1 "
+        "-i 50000 -s 5 -v -I 0\n");
+    // make clean all ; ./workloadStream.o -w
+    // graphlab/0-mem-ec2-54-197-111-1.compute-1.amazonaws.com.merged -p 14 -m
+    // rdma -n 10000 -i 50000 -s 5 -I 0
 }
 
 double diff_ns(struct timespec *start, struct timespec *end) {
@@ -92,7 +72,8 @@ void myDump(char *desc, uint8_t *addr, int len) {
 }
 
 int getWorkload(size_t **size_array_ptr, uint8_t ***packet_array_ptr,
-                uint32_t **interarrival_array_ptr, char *filename,
+                uint32_t **interarrival_array_ptr,
+                workload_header **header_array_ptr, char *filename,
                 int pad_size) {
     size_t *size_array;
     uint8_t **packet_array;
@@ -104,9 +85,8 @@ int getWorkload(size_t **size_array_ptr, uint8_t ***packet_array_ptr,
     long long int _last_time = 0;
     int i;
     int current_request = 0, current_line = 0;
-    workload_header *header_ptr;
-
     workload_struct *workload_array;
+    workload_header *header_array;
 
     fp = fopen(filename, "r");
     if (fp == NULL) {
@@ -148,6 +128,7 @@ int getWorkload(size_t **size_array_ptr, uint8_t ***packet_array_ptr,
     size_array = malloc(sizeof(size_t) * num_of_reqs);
     packet_array = malloc(sizeof(char *) * num_of_reqs);
     interarrival_array = malloc(sizeof(uint32_t) * num_of_reqs);
+    header_array = malloc(sizeof(workload_header) * num_of_reqs);
 
     fp = fopen(filename, "r");
 
@@ -218,8 +199,7 @@ int getWorkload(size_t **size_array_ptr, uint8_t ***packet_array_ptr,
 
     // record
     for (i = 0; i < num_of_reqs; i++) {
-        size_array[i] =
-            pad_size + sizeof(workload_header) + workload_array[i].size;
+        size_array[i] = pad_size + workload_array[i].size;
         interarrival_array[i] = workload_array[i].interarrival_time;
         // printf("%d %llu %lld %llu\n", i, workload_array[i].offset,
         // workload_array[i].size, workload_array[i].interarrival_time);
@@ -236,22 +216,22 @@ int getWorkload(size_t **size_array_ptr, uint8_t ***packet_array_ptr,
     // this part should be modified in the future once rdm finalizes the header
     // format
     for (i = 0; i < num_of_reqs; i++) {
-        header_ptr = (workload_header *)&packet_array[i][pad_size];
-        header_ptr->mode = workload_array[i].mode;
-        header_ptr->offset = workload_array[i].offset;
-        header_ptr->size = workload_array[i].size;
+        header_array[i].mode = workload_array[i].mode;
+        header_array[i].offset = workload_array[i].offset;
+        header_array[i].size = workload_array[i].size;
     }
 
     *size_array_ptr = size_array;
     *packet_array_ptr = packet_array;
     *interarrival_array_ptr = interarrival_array;
+    *header_array_ptr = header_array;
 
     return num_of_reqs;
 }
 
 int deliverRequestRDMA(int request_num, size_t *size_array,
                        uint8_t **packet_array, uint32_t *interarrival_array,
-                       int pad_size) {
+                       workload_header *header_array, int pad_size) {
     struct ib_inf *node_inf;
     node_inf = ib_setup(1, MACHINE_ID);
     struct ibv_mr *tmp_mr;
@@ -288,8 +268,8 @@ int deliverRequestRDMA(int request_num, size_t *size_array,
         int each_request;
 
         struct timespec start, end;
-        //uint64_t page_num;
-        //double per_page_sum;
+        // uint64_t page_num;
+        // double per_page_sum;
         double *time_diff, average_sum;
         int start_time_flag = 0;
         int each_line = 0;
@@ -301,8 +281,7 @@ int deliverRequestRDMA(int request_num, size_t *size_array,
         for (each_request = 0; each_request < request_num; each_request++) {
             // copy header into send_addr
             // issue request
-            workload_header *hptr =
-                (void *)packet_array[each_request] + pad_size;
+            workload_header *hptr = &header_array[each_request];
             /*printf("%d:\t %lld %lld %lld %c\n", each_request,
                    (long long int)interarrival_array[each_request],
                    (long long int)hptr->offset, (long long int)hptr->size,
@@ -353,81 +332,74 @@ int deliverRequestRDMA(int request_num, size_t *size_array,
     return 0;
 }
 
+/*
+ * request_num: number of request (big requests are already sparated into
+ * several small requests)
+ * interarrival_array: interarrival time (us level) (usleep time after each
+ * request, it will be 0 if this request is a small request within a big
+ * requets)
+ * header_array: keeps mode (read/write) and size
+ * pcie_send_addr: page align address
+ */
 int deliverRequestPCIe(int request_num, size_t *size_array,
                        uint8_t **packet_array, uint32_t *interarrival_array,
-                       int pad_size, void *pcie_send_addr,
-                       void *pcie_recv_addr) {
+                       workload_header *header_array, int pad_size,
+                       void *pcie_send_addr, void *pcie_recv_addr) {
     int each_request;
 
     char reply[DEFAULT_REPLY_SIZE];
-    void *base = pcie_send_addr;
+    // void *base = pcie_send_addr;
     struct timespec start, end;
-    uint64_t page_num;
-    double *time_diff, average_sum, per_page_sum;
+    double *time_diff, average_sum;
     int *check_counter_addr = (int *)pcie_recv_addr;
+    int read_size = 128;
 
     memset(reply, 0, DEFAULT_REPLY_SIZE);
+    assert(PCIE_SEND_ALLOC_SIZE > 0);
+    memset(pcie_send_addr + pad_size, 0x31, PCIE_SEND_ALLOC_SIZE - pad_size);
+    time_diff = malloc(sizeof(double) * request_num);
 
-    /* Construct the Ethernet header */
+    // alloc big memory space on FPGA
+    app_rdm_hdr_alloc(pcie_send_addr, MAX_ACCESS_OFFSET, RDM_APP_ID);
+
+    /* Construct the LEGO header */
     for (each_request = 0; each_request < request_num; each_request++) {
 
-        // set LEGOFPGA header here
-
-        /* dump network frame */
+        // set LEGOFPGA header here and issue request
+        clock_gettime(CLOCK_MONOTONIC, &start);
+        if (header_array[each_request].mode == 'w') {
+            app_rdm_hdr_write(pcie_send_addr, header_array[each_request].offset,
+                              header_array[each_request].size, RDM_APP_ID);
+            dma_to_fpga(pcie_send_addr, header_array[each_request].size);
+        } else {
+            app_rdm_hdr_read(pcie_send_addr, header_array[each_request].offset,
+                             read_size, RDM_APP_ID);
+            dma_to_fpga(pcie_send_addr, 128);
+        }
+        /* dump frame */
         if (debug_mode) {
             printf("===== %d =====\n", each_request);
-            // myDump(NULL, packet_array[each_request],
-            // size_array[each_request]);
-            myDump(NULL, packet_array[each_request],
-                   pad_size + sizeof(workload_header));
+            printf("type:%c\t offset:%llx\tsize:%d\n",
+                   header_array[each_request].mode,
+                   header_array[each_request].offset,
+                   header_array[each_request].size);
+            myDump(NULL, pcie_send_addr, 128);
         }
-    }
-
-    /* Send packet */
-    time_diff = malloc(sizeof(double) * request_num);
-    for (each_request = 0; each_request < request_num; each_request++) {
-        // copy header into send_addr
-        clock_gettime(CLOCK_MONOTONIC, &start);
-        memcpy(base, packet_array[each_request],
-               pad_size + sizeof(workload_header));
-        if (debug_mode) {
-            workload_header *hptr = base + pad_size;
-            printf("%d:\t %lld %lld %lld %c\n", each_request,
-                   (long long int)interarrival_array[each_request],
-                   (long long int)hptr->offset, (long long int)hptr->size,
-                   hptr->mode);
-            *check_counter_addr = each_request + 1;
-        }
-        // issue request
-        //[TODO]
-        // this part should be done once LEGOFPGA has interface
         while (*check_counter_addr != each_request + 1)  // wait for the reply
         {
             ;
         }
         clock_gettime(CLOCK_MONOTONIC, &end);
         time_diff[each_request] = diff_ns(&start, &end);
-
-        // I manually disable interarrival time here since the interarrival time
-        // is too long to do microbenchmark
-        // and this is a blocking call. Therefore, interarrival time doesn't
-        // make any difference
         usleep(interarrival_array[each_request]);
     }
 
     average_sum = 0;
-    per_page_sum = 0;
     for (each_request = 0; each_request < request_num; each_request++) {
-        page_num =
-            (size_array[each_request] - pad_size - sizeof(workload_header)) /
-            DEFAULT_PAGE_SIZE;
         average_sum += time_diff[each_request];
-        per_page_sum += time_diff[each_request] / page_num;
     }
 
     printf("average latency: %f (ns)\n", average_sum / request_num);
-    printf("per_page(per_request per_page) latency: %f (ns)\n",
-           per_page_sum / request_num);
     return 0;
 }
 
@@ -459,17 +431,21 @@ void *getPCIeSendAddr(size_t required_size) {
 
     // Currently, I used a regular malloc to get this address
     // Shin-Yeh Tsai 041619
-    void *ret_addr = malloc(required_size);
-    memset(ret_addr, 0, required_size);
+    // void *ret_addr = malloc(required_size);
+    void *ret_addr;
+    posix_memalign((void **)&ret_addr, 4096 /*alignment */, required_size);
     if (ret_addr == NULL) {
         printf("generate send addr error\n");
         exit(1);
     }
+    memset(ret_addr, 0, required_size);
+    PCIE_SEND_ALLOC_SIZE = required_size;
     return ret_addr;
 }
 
 int deliverRequest(int request_num, size_t *size_array, uint8_t **packet_array,
-                   uint32_t *interarrival_array, int pad_size, int interface) {
+                   uint32_t *interarrival_array, workload_header *header_array,
+                   int pad_size, int interface) {
     int ret = -1;
     void *pcie_recv_addr, *pcie_send_addr;
     uint64_t max_size;
@@ -484,12 +460,13 @@ int deliverRequest(int request_num, size_t *size_array, uint8_t **packet_array,
             pcie_recv_addr = getPCIeRecvAddr();
             pcie_send_addr = getPCIeSendAddr(max_size);
             ret = deliverRequestPCIe(request_num, size_array, packet_array,
-                                     interarrival_array, pad_size,
+                                     interarrival_array, header_array, pad_size,
                                      pcie_send_addr, pcie_recv_addr);
             break;
         case INTERFACE_RDMA:
-            ret = deliverRequestRDMA(request_num, size_array, packet_array,
-                                     interarrival_array, pad_size);
+            ret =
+                deliverRequestRDMA(request_num, size_array, packet_array,
+                                   interarrival_array, header_array, pad_size);
             break;
         default:
             printf("interface %d is not implemented yet\n", interface);
@@ -503,6 +480,7 @@ int main(int argc, char *argv[]) {
     size_t *size_array;
     uint8_t **packet_array;
     uint32_t *interarrival_array;
+    workload_header *header_array;
 
     int pad_size = -1;
     int opt;
@@ -564,31 +542,35 @@ int main(int argc, char *argv[]) {
         printf("check help\n");
         exit(1);
     }
-    /*if (pad_size < sizeof(struct ether_header)) {
-        printf("pad_size: %d should at least %lu\n", pad_size,
-               sizeof(struct ether_header));
+    // if (pad_size < sizeof(struct ether_header)) {
+    if (pad_size < LEGOFPGA_HEADER_SIZE) {
+        printf("pad_size: %d should at least %d\n", pad_size,
+               LEGOFPGA_HEADER_SIZE);
         exit(1);
-    }*/
+    }
 
     printf("workload_file_name is %s\n", workload_file_name);
     printf("pad_size is %d B\n", pad_size);
 
     // parse workload
     request_num = getWorkload(&size_array, &packet_array, &interarrival_array,
-                              workload_file_name, pad_size);
+                              &header_array, workload_file_name, pad_size);
     printf("request num:%d max_offset:%llu\n", request_num,
            (unsigned long long)MAX_ACCESS_OFFSET);
 
     // deliver request
     if (strcmp(deliver_mode, "eth") == 0)
         deliverRequest(request_num, size_array, packet_array,
-                       interarrival_array, pad_size, INTERFACE_ETHERNET);
+                       interarrival_array, header_array, pad_size,
+                       INTERFACE_ETHERNET);
     else if (strcmp(deliver_mode, "pcie") == 0)
         deliverRequest(request_num, size_array, packet_array,
-                       interarrival_array, pad_size, INTERFACE_PCIE);
+                       interarrival_array, header_array, pad_size,
+                       INTERFACE_PCIE);
     else if (strcmp(deliver_mode, "rdma") == 0)
         deliverRequest(request_num, size_array, packet_array,
-                       interarrival_array, pad_size, INTERFACE_RDMA);
+                       interarrival_array, header_array, pad_size,
+                       INTERFACE_RDMA);
     else {
         printf("error mode %s\n", deliver_mode);
         printHelp(deliver_mode);

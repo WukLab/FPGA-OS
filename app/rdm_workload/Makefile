@@ -1,6 +1,7 @@
 
 CFLAGS := -Wall -Wmissing-prototypes -Wstrict-prototypes\
-	  -fomit-frame-pointer -freg-struct-return -ggdb
+	  -fomit-frame-pointer -freg-struct-return -ggdb \
+	  -I ../../include -I ../../include/uapi/
 	  #mbed_lib/libmbedcrypto.so mbed_lib/libmbedtls.so mbed_lib/libmbedx509.so
 	  #-Lmbed_lib -llibmbedx509.so -libmbedtlx -libmbedcrypto\
 
