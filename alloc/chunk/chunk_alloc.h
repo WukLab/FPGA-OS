@@ -17,7 +17,7 @@ void malloc(sysmmu_alloc_if& alloc,
 	    hls::stream<sysmmu_ctrl_if>& ctrl,
 	    hls::stream<ap_uint<1> >& ctrl_ret);
 
-void free(sysmmu_alloc_if& alloc,
+void mfree(sysmmu_alloc_if& alloc,
 	  hls::stream<sysmmu_alloc_ret_if>& alloc_ret,
 	  hls::stream<sysmmu_ctrl_if>& ctrl,
 	  hls::stream<ap_uint<1> >& ctrl_ret);
