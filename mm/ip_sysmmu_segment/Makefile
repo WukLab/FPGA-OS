@@ -11,7 +11,7 @@ ifeq ($(TARGET_BOARD), )
   TARGET_BOARD = vcu108
 endif
 
-all: ip testbench
+all: ip
 .PHONY: ip
 
 simple_ip:

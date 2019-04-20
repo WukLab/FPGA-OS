@@ -270,6 +270,7 @@ proc cr_bd_sys_mm { parentCell } {
   # Create interface ports
   set ctrl_V_0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 ctrl_V_0 ]
   set_property -dict [ list \
+   CONFIG.FREQ_HZ {300000000} \
    CONFIG.HAS_TKEEP {0} \
    CONFIG.HAS_TLAST {0} \
    CONFIG.HAS_TREADY {1} \
@@ -281,11 +282,15 @@ proc cr_bd_sys_mm { parentCell } {
    CONFIG.TUSER_WIDTH {0} \
    ] $ctrl_V_0
   set ctrl_stat_V_V_0 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 ctrl_stat_V_V_0 ]
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {300000000} \
+   ] $ctrl_stat_V_V_0
   set m_axi_0 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 m_axi_0 ]
   set_property -dict [ list \
+   CONFIG.FREQ_HZ {300000000} \
    CONFIG.ADDR_WIDTH {32} \
    CONFIG.CLK_DOMAIN {sys_mm_s_axi_clk_0} \
-   CONFIG.DATA_WIDTH {128} \
+   CONFIG.DATA_WIDTH {512} \
    CONFIG.HAS_QOS {0} \
    CONFIG.HAS_REGION {0} \
    CONFIG.NUM_READ_OUTSTANDING {2} \
@@ -294,12 +299,13 @@ proc cr_bd_sys_mm { parentCell } {
    ] $m_axi_0
   set s_axi_0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 s_axi_0 ]
   set_property -dict [ list \
+   CONFIG.FREQ_HZ {300000000} \
    CONFIG.ADDR_WIDTH {32} \
    CONFIG.ARUSER_WIDTH {1} \
    CONFIG.AWUSER_WIDTH {1} \
    CONFIG.BUSER_WIDTH {1} \
    CONFIG.CLK_DOMAIN {sys_mm_s_axi_clk_0} \
-   CONFIG.DATA_WIDTH {128} \
+   CONFIG.DATA_WIDTH {512} \
    CONFIG.HAS_BRESP {1} \
    CONFIG.HAS_BURST {1} \
    CONFIG.HAS_CACHE {1} \
@@ -309,7 +315,7 @@ proc cr_bd_sys_mm { parentCell } {
    CONFIG.HAS_REGION {0} \
    CONFIG.HAS_RRESP {1} \
    CONFIG.HAS_WSTRB {1} \
-   CONFIG.ID_WIDTH {4} \
+   CONFIG.ID_WIDTH {11} \
    CONFIG.MAX_BURST_LENGTH {256} \
    CONFIG.NUM_READ_OUTSTANDING {2} \
    CONFIG.NUM_READ_THREADS {1} \
@@ -339,8 +345,8 @@ proc cr_bd_sys_mm { parentCell } {
    CONFIG.AXI_ARUSER_WIDTH {1} \
    CONFIG.AXI_AWUSER_WIDTH {1} \
    CONFIG.AXI_BUSER_WIDTH {1} \
-   CONFIG.AXI_DATA_WIDTH {128} \
-   CONFIG.AXI_ID_WIDTH {4} \
+   CONFIG.AXI_DATA_WIDTH {512} \
+   CONFIG.AXI_ID_WIDTH {11} \
    CONFIG.AXI_RUSER_WIDTH {1} \
    CONFIG.AXI_STRB_WIDTH {16} \
    CONFIG.AXI_WUSER_WIDTH {1} \
@@ -376,7 +382,15 @@ proc cr_bd_sys_mm { parentCell } {
   create_bd_addr_seg -range 0x000100000000 -offset 0x00000000 [get_bd_addr_spaces s_axi_0] [get_bd_addr_segs axi_mmu_wrapper_sync_0/s_axi/reg0] SEG_axi_mmu_wrapper_sync_0_reg0
   exclude_bd_addr_seg [get_bd_addr_segs s_axi_0/SEG_axi_mmu_wrapper_sync_0_reg0]
 
+  # set clock frequency
+  set_property CONFIG.FREQ_HZ 300000000 [get_bd_intf_pins /axi_mmu_wrapper_sync_0/s_axi]
+  set_property CONFIG.FREQ_HZ 300000000 [get_bd_intf_pins /axi_mmu_wrapper_sync_0/m_axi]
+  set_property CONFIG.FREQ_HZ 300000000 [get_bd_intf_pins /axi_mmu_wrapper_sync_0/toMM_RD]
+  set_property CONFIG.FREQ_HZ 300000000 [get_bd_intf_pins /axi_mmu_wrapper_sync_0/toMM_WR]
+  set_property CONFIG.FREQ_HZ 300000000 [get_bd_intf_pins /axi_mmu_wrapper_sync_0/fromMM_RD]
+  set_property CONFIG.FREQ_HZ 300000000 [get_bd_intf_pins /axi_mmu_wrapper_sync_0/fromMM_WR]
 
+  set_property CONFIG.FREQ_HZ 300000000 [get_bd_ports s_axi_clk_0]
 
   # Restore current instance
   current_bd_instance $oldCurInst
@@ -623,6 +637,11 @@ set_property -name "steps.write_bitstream.args.verbose" -value "0" -objects $obj
 
 # set the current impl run
 current_run -implementation [get_runs impl_1]
+
+# Export the project, not just the block diagram
+ipx::package_project -root_dir ../../generated_ip/mm_ip_sysmmu_segment_vcu108 -vendor wuklab -library user -taxonomy UserIP -import_files -set_current false -force
+
+update_ip_catalog -rebuild
 
 puts "INFO: Project created:${_xil_proj_name_}"
 exit
