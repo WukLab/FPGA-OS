@@ -22,8 +22,8 @@
  */
 
 static inline void
-app_rdm_hdr_write(void *buf, unsigned int app_id,
-		  unsigned long base_addr, unsigned long length)
+app_rdm_hdr_write(void *buf, unsigned long base_addr, unsigned long length,
+		  unsigned int app_id)
 {
 	struct app_rdma_header *app;
 	struct lego_header *lego;
@@ -41,8 +41,8 @@ app_rdm_hdr_write(void *buf, unsigned int app_id,
 }
 
 static inline void
-app_rdm_hdr_read(void *buf, unsigned int app_id,
-		 unsigned long base_addr, unsigned long length)
+app_rdm_hdr_read(void *buf, unsigned long base_addr, unsigned long length,
+		 unsigned long app_id)
 {
 	struct lego_header *lego;
 	struct app_rdma_header *app;
@@ -59,7 +59,7 @@ app_rdm_hdr_read(void *buf, unsigned int app_id,
 }
 
 static inline void
-app_rdm_hdr_alloc(void *buf, unsigned int app_id, unsigned long alloc_size)
+app_rdm_hdr_alloc(void *buf, unsigned long alloc_size, unsigned int app_id)
 {
 	struct lego_header *lego;
 	struct app_rdma_header *app;

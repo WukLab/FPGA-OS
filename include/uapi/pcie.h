@@ -38,8 +38,8 @@ ssize_t read_to_buffer(char *fname, int fd, char *buffer, uint64_t size,
 ssize_t write_from_buffer(char *fname, int fd, char *buffer, uint64_t size,
 			uint64_t base);
 
-int dev_read(uint64_t addr, uint64_t size, uint64_t count, char *buffer);
 
-int dev_write(uint64_t addr, uint64_t size, uint64_t count, char *buffer);
+int dma_to_fpga(char *buffer, uint64_t size);
+int dma_from_fpga(char *buffer, uint64_t size);
 
 #endif /* _PCIE_H_ */

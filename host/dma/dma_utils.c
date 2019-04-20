@@ -10,6 +10,9 @@
  * You may select, at your option, one of the above-listed licenses.
  */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
 #include "../../include/uapi/pcie.h"
 
 /*
@@ -82,7 +85,7 @@ ssize_t read_to_buffer(char *fname, int fd, char *buffer, uint64_t size,
 }
 
 ssize_t write_from_buffer(char *fname, int fd, char *buffer, uint64_t size,
-			uint64_t base)
+			  uint64_t base)
 {
 	ssize_t rc;
 	uint64_t count = 0;
@@ -164,3 +167,86 @@ void timespec_sub(struct timespec *t1, struct timespec *t2)
 	}
 }
 
+/*
+ * @buffer: align to page
+ */
+int dma_from_fpga(char *buffer, uint64_t size)
+{
+	ssize_t rc;
+	uint64_t i;
+	struct timespec ts_start, ts_end;
+	int fpga_fd;
+	long total_time = 0;
+	float BW;
+	float avg_time = 0;
+
+	fpga_fd = open(DEVICE_READ_DEFAULT, O_RDWR | O_NONBLOCK);
+	if (fpga_fd < 0) {
+                fprintf(stderr, "unable to open device %s, %d.\n",
+                        DEVICE_READ_DEFAULT, fpga_fd);
+		perror("open device");
+                return -EINVAL;
+        }
+
+	clock_gettime(CLOCK_MONOTONIC, &ts_start);
+
+	rc = read_to_buffer(DEVICE_READ_DEFAULT, fpga_fd, buffer, size, 0);
+	if (rc < 0)
+		goto out;
+
+	clock_gettime(CLOCK_MONOTONIC, &ts_end);
+	timespec_sub(&ts_end, &ts_start);
+	total_time = ts_end.tv_nsec;
+	avg_time = (float)total_time;
+	BW = ((float)size)*1000/avg_time;
+
+	printf("** Avg time device %s, total time %ld nsec, avg_time = %f, size = %lu, BW = %f \n",
+		DEVICE_READ_DEFAULT, total_time, avg_time, size, BW);
+
+	rc = 0;
+out:
+	close(fpga_fd);
+	return rc;
+}
+
+/*
+ * @buffer: align to page
+ * @size: size in bytes
+ */
+int dma_to_fpga(char *buffer, uint64_t size)
+{
+	ssize_t rc;
+	struct timespec ts_start, ts_end;
+	int fpga_fd;
+	long total_time = 0;
+	float BW;
+	float avg_time = 0;
+
+	fpga_fd = open(DEVICE_WRITE_DEFAULT, O_RDWR);
+	if (fpga_fd < 0) {
+		fprintf(stderr, "unable to open device %s, %d.\n",
+			DEVICE_WRITE_DEFAULT, fpga_fd);
+		perror("open device");
+		return -EINVAL;
+	}
+
+	clock_gettime(CLOCK_MONOTONIC, &ts_start);
+
+	rc = write_from_buffer(DEVICE_WRITE_DEFAULT, fpga_fd, buffer, size, 0);
+	if (rc < 0)
+		goto out;
+
+	clock_gettime(CLOCK_MONOTONIC, &ts_end);
+	timespec_sub(&ts_end, &ts_start);
+	total_time = ts_end.tv_nsec;
+	avg_time = (float)total_time;
+	BW= ((float)size)*1000/avg_time;
+
+	printf("** Avg time device %s, total time %ld nsec, avg_time = %f, size = %lu, BW = %f \n",
+		DEVICE_WRITE_DEFAULT, total_time, avg_time, size, BW);
+	rc = 0;
+
+out:
+	close(fpga_fd);
+	return rc;
+}

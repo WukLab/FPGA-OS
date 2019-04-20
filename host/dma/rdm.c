@@ -17,8 +17,9 @@
 #include <pthread.h>
 
 #include "../../include/uapi/net_header.h"
-#include "../include/app_rdma.h"
 #include "../../include/uapi/pcie.h"
+#include "../../app/rdma/include/rdma.h"
+#include "../../app/rdma/include/host_helper.h"
 
 #define MY_DEST_MAC0	0x01
 #define MY_DEST_MAC1	0x02
@@ -27,53 +28,8 @@
 #define MY_DEST_MAC4	0x05
 #define MY_DEST_MAC5	0x06
 
-//#define DEFAULT_IF	"wlx24050ff6fc10"
 #define DEFAULT_IF	"eno1"
 #define BUF_SIZ		4096
-
-/* Check README.md for packet format */
-void app_rdma_prepare_write(void *buf, int tx_len, unsigned long addr)
-{
-	struct lego_header *lego;
-	struct app_rdma_header *app;
-	char *data;
-	int i, data_length;
-
-	/* 64B for all eth/ip/udp/lego headers. System-level */
-	lego = buf + LEGO_HEADER_OFFSET;
-	lego->app_id = 0;
-
-	/* 64B app-level, we control */
-	app = buf + APP_HEADER_OFFSET;
-	app->opcode = APP_RDMA_OPCODE_WRITE;
-	app->address = addr;
-
-	data_length = tx_len - APP_RDMA_DATA_OFFSET;
-	app->length = data_length;
-
-	data = buf + APP_RDMA_DATA_OFFSET;
-	for (i = 0; i < data_length; i ++) {
-		data[i] = i + 1;
-	}
-}
-
-void app_rdma_prepare_read(void *buf, unsigned long address, unsigned long length)
-{
-	struct lego_header *lego;
-	struct app_rdma_header *app;
-	char *data;
-	int i;
-
-	/* 64B for all eth/ip/udp/lego headers. System-level */
-	lego = buf + LEGO_HEADER_OFFSET;
-	lego->app_id = 0;
-
-	/* 64B app-level, we control */
-	app = buf + APP_HEADER_OFFSET;
-	app->opcode = APP_RDMA_OPCODE_READ;
-	app->address = address;
-	app->length = length;
-}
 
 struct to_pthread {
 	unsigned long addr;
@@ -90,7 +46,7 @@ static void *pcie_read(void *metadata)
 	struct to_pthread* desc = (struct to_pthread*)metadata;
 	//for(int i = 0; i < desc->count; i++) {
 		printf("Reading....");
-		dev_read(desc->addr, desc->len, desc->count, desc->buf);
+		dma_from_fpga(desc->buf, desc->len);
 		printf("complete one read request\n");
 	//}
 	pthread_exit(0);
@@ -183,22 +139,23 @@ int main(int argc, char *argv[])
 
 	addr = 0x0;
 
-#if 1
-	/* Write */
-	printf("Write\n");
-	app_rdma_prepare_write(sendbuf, BUF_SIZ, addr);
-	dev_write(addr, BUF_SIZ, 1, sendbuf);
+	/*
+	 * For RDM packet format, please check app/rdma/README.md
+	 * Both alloc and read packets are 128B.
+	 * They only have headers.
+	 */
+	app_rdm_hdr_alloc(sendbuf, 4096, 0);
+	app_rdm_hdr_read(sendbuf + 128, addr, 128, 0);
+	dma_to_fpga(sendbuf, 256); //two packets=256B
 
+#if 0
+	/* Write */
+	app_rdm_hdr_write(sendbuf, addr, BUF_SIZ, 0);
+	dma_to_fpga(sendbuf, BUF_SIZ);
 #endif
 
-	/* READ */
-	printf("Read\n");
-	app_rdma_prepare_read(sendbuf, addr, BUF_SIZ);
-	dev_write(addr, APP_RDMA_DATA_OFFSET, 1, sendbuf);
-
-	pthread_join(pcie_read_thread, &pthread_ret);
-
-	free(sendbuf);
-	free(rcvbuf);
+	//pthread_join(pcie_read_thread, &pthread_ret);
+	//free(sendbuf);
+	//free(rcvbuf);
 	return 0;
 }
