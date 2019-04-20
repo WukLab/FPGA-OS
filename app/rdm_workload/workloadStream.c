@@ -13,6 +13,7 @@ uint64_t IGNORE_REQUEST = 0;
 uint64_t MAX_ACCESS_OFFSET = 0;
 int MACHINE_ID = -1;
 uint64_t SEPARATE_SIZE = 0;
+uint64_t NUM_OF_LINES = 0;
 
 struct osdi_mem_workload_struct {
     // uint32_t batch_id;
@@ -48,7 +49,9 @@ static void printHelp(char *name) {
     printf("\t-i \tignore first i lines. \n");
     printf("\t-I \tmachine id. \n");
     printf("\t-p \tpad_size. pad Bytes before payload\n");
-    printf("\t-s \tseparate_size. cut big requests into small requests - multiple of pages\n");
+    printf(
+        "\t-s \tseparate_size. cut big requests into small requests - "
+        "multiple of pages\n");
     printf("\t-m \tmode. eth/pcie\n");
     printf("\t-v \tverbose mode\n");
     printf("\t--help             \tprint this message.\n");
@@ -121,21 +124,25 @@ int getWorkload(size_t **size_array_ptr, uint8_t ***packet_array_ptr,
     // get number of request
     while (fgets(str_line, sizeof(str_line), fp) != NULL &&
            num_of_lines < MAX_REQUEST) {
-            sscanf(str_line, "%llu %llu %lld %llu", &_batch_id, &_time_stamp, &_request_offset, &_request_size);
-            if(SEPARATE_SIZE)
-                num_of_reqs += ROUND_UP(_request_size, SEPARATE_SIZE) / SEPARATE_SIZE;
-            else
-                num_of_reqs++;
-            if(_request_offset<0)
-                _request_offset = -_request_offset;
-            if(_request_offset + _request_size * DEFAULT_PAGE_SIZE > MAX_ACCESS_OFFSET)
-            {
-                MAX_ACCESS_OFFSET = (_request_offset + _request_size * DEFAULT_PAGE_SIZE);
-            }
+        sscanf(str_line, "%llu %llu %lld %llu", &_batch_id, &_time_stamp,
+               &_request_offset, &_request_size);
+        if (SEPARATE_SIZE)
+            num_of_reqs +=
+                ROUND_UP(_request_size, SEPARATE_SIZE) / SEPARATE_SIZE;
+        else
+            num_of_reqs++;
+        if (_request_offset < 0) _request_offset = -_request_offset;
+        if (_request_offset + _request_size * DEFAULT_PAGE_SIZE >
+            MAX_ACCESS_OFFSET) {
+            MAX_ACCESS_OFFSET =
+                (_request_offset + _request_size * DEFAULT_PAGE_SIZE);
+        }
         num_of_lines++;
     }
     fclose(fp);
-    printf("total request num %d:%d\n max access offset %llu\n", num_of_lines, num_of_reqs, (unsigned long long int)MAX_ACCESS_OFFSET);
+    printf("total request num %d:%d\n max access offset %llu\n", num_of_lines,
+           num_of_reqs, (unsigned long long int)MAX_ACCESS_OFFSET);
+    NUM_OF_LINES = num_of_lines;
     workload_array = malloc(sizeof(workload_struct) * num_of_reqs);
 
     size_array = malloc(sizeof(size_t) * num_of_reqs);
@@ -151,36 +158,42 @@ int getWorkload(size_t **size_array_ptr, uint8_t ***packet_array_ptr,
         num_of_ignore++;
     }
     // get packet size
-    while (fgets(str_line, sizeof(str_line), fp) != NULL && current_line < num_of_lines) {
-        sscanf(str_line, "%llu %llu %lld %llu", &_batch_id, &_time_stamp, &_request_offset, &_request_size);
-        if(SEPARATE_SIZE)
-        {
+    while (fgets(str_line, sizeof(str_line), fp) != NULL &&
+           current_line < num_of_lines) {
+        sscanf(str_line, "%llu %llu %lld %llu", &_batch_id, &_time_stamp,
+               &_request_offset, &_request_size);
+        if (SEPARATE_SIZE) {
             int cumulate_request = 0;
-            for(cumulate_request = 0; cumulate_request*SEPARATE_SIZE < _request_size; cumulate_request++)
-            {
+            for (cumulate_request = 0;
+                 cumulate_request * SEPARATE_SIZE < _request_size;
+                 cumulate_request++) {
                 if (_request_offset >= 0) {
                     workload_array[current_request].mode = 'w';
-                    workload_array[current_request].offset = _request_offset + cumulate_request * SEPARATE_SIZE * DEFAULT_PAGE_SIZE;
+                    workload_array[current_request].offset =
+                        _request_offset +
+                        cumulate_request * SEPARATE_SIZE * DEFAULT_PAGE_SIZE;
                 } else {
                     workload_array[current_request].mode = 'r';
-                    workload_array[current_request].offset = -_request_offset + cumulate_request * SEPARATE_SIZE * DEFAULT_PAGE_SIZE;
+                    workload_array[current_request].offset =
+                        -_request_offset +
+                        cumulate_request * SEPARATE_SIZE * DEFAULT_PAGE_SIZE;
                 }
                 workload_array[current_request].time_stamp = _time_stamp;
-                if((cumulate_request+1) * SEPARATE_SIZE < _request_size)
+                if ((cumulate_request + 1) * SEPARATE_SIZE < _request_size)
                     workload_array[current_request].size = SEPARATE_SIZE;
                 else
-                    workload_array[current_request].size = _request_size - (cumulate_request*SEPARATE_SIZE);
+                    workload_array[current_request].size =
+                        _request_size - (cumulate_request * SEPARATE_SIZE);
                 workload_array[current_request].size *= DEFAULT_PAGE_SIZE;
                 if (_last_time == 0)
                     _last_time = workload_array[current_request].time_stamp;
                 if (current_request > 0)
-                    workload_array[current_request-1].interarrival_time = workload_array[current_request].time_stamp - _last_time;
+                    workload_array[current_request - 1].interarrival_time =
+                        workload_array[current_request].time_stamp - _last_time;
                 _last_time = workload_array[current_request].time_stamp;
                 current_request++;
             }
-        }
-        else
-        {
+        } else {
             if (_request_offset >= 0) {
                 workload_array[current_request].mode = 'w';
                 workload_array[current_request].offset = _request_offset;
@@ -208,7 +221,8 @@ int getWorkload(size_t **size_array_ptr, uint8_t ***packet_array_ptr,
         size_array[i] =
             pad_size + sizeof(workload_header) + workload_array[i].size;
         interarrival_array[i] = workload_array[i].interarrival_time;
-        //printf("%d %llu %lld %llu\n", i, workload_array[i].offset, workload_array[i].size, workload_array[i].interarrival_time);
+        // printf("%d %llu %lld %llu\n", i, workload_array[i].offset,
+        // workload_array[i].size, workload_array[i].interarrival_time);
     }
 
     // alloc header space and pad size
@@ -274,11 +288,16 @@ int deliverRequestRDMA(int request_num, size_t *size_array,
         int each_request;
 
         struct timespec start, end;
-        uint64_t page_num;
-        double *time_diff, average_sum, per_page_sum;
+        //uint64_t page_num;
+        //double per_page_sum;
+        double *time_diff, average_sum;
+        int start_time_flag = 0;
+        int each_line = 0;
+        int signal_flag = 0;
+        int cumulative_request = 0;
 
         /* Send packet */
-        time_diff = malloc(sizeof(double) * request_num);
+        time_diff = malloc(sizeof(double) * NUM_OF_LINES);
         for (each_request = 0; each_request < request_num; each_request++) {
             // copy header into send_addr
             // issue request
@@ -288,21 +307,35 @@ int deliverRequestRDMA(int request_num, size_t *size_array,
                    (long long int)interarrival_array[each_request],
                    (long long int)hptr->offset, (long long int)hptr->size,
                    hptr->mode);*/
-            clock_gettime(CLOCK_MONOTONIC, &start);
+            if (!start_time_flag) {
+                clock_gettime(CLOCK_MONOTONIC, &start);
+                start_time_flag = 1;
+            }
             // if it's a read request
+            if (interarrival_array[each_request] ||
+                cumulative_request >= RDMA_CQ_DEPTH / 2) {
+                signal_flag = 1;
+                cumulative_request = 0;
+            } else {
+                signal_flag = 0;
+                cumulative_request++;
+            }
             if (hptr->mode == 'r') {
                 userspace_one_read(node_inf->conn_qp[0], tmp_mr, hptr->size,
-                                   get_mr, hptr->offset);
-                userspace_one_poll(node_inf->conn_cq[0], 1);
+                                   get_mr, hptr->offset, signal_flag);
             } else if (hptr->mode == 'w') {  // if it's a write request
                 userspace_one_write(node_inf->conn_qp[0], tmp_mr, hptr->size,
-                                    get_mr, hptr->offset);
-                userspace_one_poll(node_inf->conn_cq[0], 1);
+                                    get_mr, hptr->offset, signal_flag);
             }
+            if (signal_flag) userspace_one_poll(node_inf->conn_cq[0], 1);
 
             // this part should be done once LEGOFPGA has interface
-            clock_gettime(CLOCK_MONOTONIC, &end);
-            time_diff[each_request] = diff_ns(&start, &end);
+            if (start_time_flag && interarrival_array[each_request]) {
+                clock_gettime(CLOCK_MONOTONIC, &end);
+                time_diff[each_line] = diff_ns(&start, &end);
+                each_line++;
+                start_time_flag = 0;
+            }
 
             // I found out that using usleep will slow the overall latency - I
             // am not sure why
@@ -310,20 +343,12 @@ int deliverRequestRDMA(int request_num, size_t *size_array,
             // sleep
             // usleep(interarrival_array[each_request]);
         }
-
         average_sum = 0;
-        per_page_sum = 0;
-        for (each_request = 0; each_request < request_num; each_request++) {
-            page_num = (size_array[each_request] - pad_size -
-                        sizeof(workload_header)) /
-                       DEFAULT_PAGE_SIZE;
-            average_sum += time_diff[each_request];
-            per_page_sum += time_diff[each_request] / page_num;
+        for (each_line = 0; each_line < NUM_OF_LINES; each_line++) {
+            average_sum += time_diff[each_line];
         }
 
-        printf("average latency: %f (ns)\n", average_sum / request_num);
-        printf("per_page(per_request per_page) latency: %f (ns)\n",
-               per_page_sum / request_num);
+        printf("average latency: %f (ns)\n", average_sum / NUM_OF_LINES);
     }
     return 0;
 }
