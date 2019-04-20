@@ -378,7 +378,7 @@ struct ib_inf *ib_setup(int port, int machine_id) {
 
 int userspace_one_write(struct ibv_qp *qp, struct ibv_mr *local_mr,
                         int request_size, struct ib_mr_attr *remote_mr,
-                        unsigned long long offset) {
+                        unsigned long long offset, int signal_flag) {
     struct ibv_sge test_sge;
     struct ibv_send_wr wr, *bad_send_wr;
     int ret;
@@ -389,7 +389,7 @@ int userspace_one_write(struct ibv_qp *qp, struct ibv_mr *local_mr,
     wr.num_sge = 1;
     wr.next = NULL;
     wr.sg_list = &test_sge;
-    wr.send_flags = IBV_SEND_SIGNALED;
+    wr.send_flags = signal_flag ? IBV_SEND_SIGNALED : 0;
     wr.wr_id = 0;
     wr.wr.rdma.remote_addr = remote_mr->addr + offset;
     wr.wr.rdma.rkey = remote_mr->rkey;
@@ -400,7 +400,7 @@ int userspace_one_write(struct ibv_qp *qp, struct ibv_mr *local_mr,
 
 int userspace_one_read(struct ibv_qp *qp, struct ibv_mr *local_mr,
                        int request_size, struct ib_mr_attr *remote_mr,
-                       unsigned long long offset) {
+                       unsigned long long offset, int signal_flag) {
     struct ibv_sge test_sge;
     struct ibv_send_wr wr, *bad_send_wr;
     int ret;
@@ -411,7 +411,7 @@ int userspace_one_read(struct ibv_qp *qp, struct ibv_mr *local_mr,
     wr.num_sge = 1;
     wr.next = NULL;
     wr.sg_list = &test_sge;
-    wr.send_flags = IBV_SEND_SIGNALED;
+    wr.send_flags = signal_flag ? IBV_SEND_SIGNALED : 0;
     wr.wr.rdma.remote_addr = remote_mr->addr + offset;
     wr.wr.rdma.rkey = remote_mr->rkey;
     ret = ibv_post_send(qp, &wr, &bad_send_wr);

@@ -96,9 +96,9 @@ int userspace_one_poll(struct ibv_cq *cq, int tar_mem);
 inline int hrd_poll_cq(struct ibv_cq *cq, int num_comps, struct ibv_wc *wc);
 int userspace_one_read(struct ibv_qp *qp, struct ibv_mr *local_mr,
                        int request_size, struct ib_mr_attr *remote_mr,
-                       unsigned long long offset);
+                       unsigned long long offset, int signal_flag);
 int userspace_one_write(struct ibv_qp *qp, struct ibv_mr *local_mr,
                         int request_size, struct ib_mr_attr *remote_mr,
-                        unsigned long long offset);
+                        unsigned long long offset, int signal_flag);
 int stick_this_thread_to_core(int core_id);
 #endif

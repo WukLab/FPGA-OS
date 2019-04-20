@@ -12,6 +12,8 @@ uint64_t MAX_REQUEST = 0xffffffffffffffff;
 uint64_t IGNORE_REQUEST = 0;
 uint64_t MAX_ACCESS_OFFSET = 0;
 int MACHINE_ID = -1;
+uint64_t SEPARATE_SIZE = 0;
+uint64_t NUM_OF_LINES = 0;
 
 struct osdi_mem_workload_struct {
     // uint32_t batch_id;
@@ -47,6 +49,9 @@ static void printHelp(char *name) {
     printf("\t-i \tignore first i lines. \n");
     printf("\t-I \tmachine id. \n");
     printf("\t-p \tpad_size. pad Bytes before payload\n");
+    printf(
+        "\t-s \tseparate_size. cut big requests into small requests - "
+        "multiple of pages\n");
     printf("\t-m \tmode. eth/pcie\n");
     printf("\t-v \tverbose mode\n");
     printf("\t--help             \tprint this message.\n");
@@ -57,7 +62,7 @@ static void printHelp(char *name) {
     printf(
         "./workloadStream.o -w "
         "graphlab/0-mem-ec2-54-197-111-1.compute-1.amazonaws.com.merged -p 14 "
-        "-m rdma -n 1000 -i 50000 -v -I 1\n");
+        "-m rdma -n 1000 -i 50000 -v -s 1 -I 1\n");
     printf("\n");
 }
 
@@ -92,13 +97,13 @@ int getWorkload(size_t **size_array_ptr, uint8_t ***packet_array_ptr,
     size_t *size_array;
     uint8_t **packet_array;
     uint32_t *interarrival_array;
-    int num_of_reqs = 0, num_of_ignore = 0;
+    int num_of_reqs = 0, num_of_ignore = 0, num_of_lines = 0;
     FILE *fp;
     char str_line[100];
     long long int _request_offset, _request_size, _batch_id, _time_stamp;
     long long int _last_time = 0;
     int i;
-    int current_request = 0;
+    int current_request = 0, current_line = 0;
     workload_header *header_ptr;
 
     workload_struct *workload_array;
@@ -118,11 +123,26 @@ int getWorkload(size_t **size_array_ptr, uint8_t ***packet_array_ptr,
 
     // get number of request
     while (fgets(str_line, sizeof(str_line), fp) != NULL &&
-           num_of_reqs < MAX_REQUEST) {
-        num_of_reqs++;
+           num_of_lines < MAX_REQUEST) {
+        sscanf(str_line, "%llu %llu %lld %llu", &_batch_id, &_time_stamp,
+               &_request_offset, &_request_size);
+        if (SEPARATE_SIZE)
+            num_of_reqs +=
+                ROUND_UP(_request_size, SEPARATE_SIZE) / SEPARATE_SIZE;
+        else
+            num_of_reqs++;
+        if (_request_offset < 0) _request_offset = -_request_offset;
+        if (_request_offset + _request_size * DEFAULT_PAGE_SIZE >
+            MAX_ACCESS_OFFSET) {
+            MAX_ACCESS_OFFSET =
+                (_request_offset + _request_size * DEFAULT_PAGE_SIZE);
+        }
+        num_of_lines++;
     }
     fclose(fp);
-    printf("total request num %d\n", num_of_reqs);
+    printf("total request num %d:%d\n max access offset %llu\n", num_of_lines,
+           num_of_reqs, (unsigned long long int)MAX_ACCESS_OFFSET);
+    NUM_OF_LINES = num_of_lines;
     workload_array = malloc(sizeof(workload_struct) * num_of_reqs);
 
     size_array = malloc(sizeof(size_t) * num_of_reqs);
@@ -139,33 +159,60 @@ int getWorkload(size_t **size_array_ptr, uint8_t ***packet_array_ptr,
     }
     // get packet size
     while (fgets(str_line, sizeof(str_line), fp) != NULL &&
-           current_request < num_of_reqs) {
+           current_line < num_of_lines) {
         sscanf(str_line, "%llu %llu %lld %llu", &_batch_id, &_time_stamp,
                &_request_offset, &_request_size);
-        if (_request_offset >= 0) {
-            workload_array[current_request].mode = 'w';
-            workload_array[current_request].offset = _request_offset;
+        if (SEPARATE_SIZE) {
+            int cumulate_request = 0;
+            for (cumulate_request = 0;
+                 cumulate_request * SEPARATE_SIZE < _request_size;
+                 cumulate_request++) {
+                if (_request_offset >= 0) {
+                    workload_array[current_request].mode = 'w';
+                    workload_array[current_request].offset =
+                        _request_offset +
+                        cumulate_request * SEPARATE_SIZE * DEFAULT_PAGE_SIZE;
+                } else {
+                    workload_array[current_request].mode = 'r';
+                    workload_array[current_request].offset =
+                        -_request_offset +
+                        cumulate_request * SEPARATE_SIZE * DEFAULT_PAGE_SIZE;
+                }
+                workload_array[current_request].time_stamp = _time_stamp;
+                if ((cumulate_request + 1) * SEPARATE_SIZE < _request_size)
+                    workload_array[current_request].size = SEPARATE_SIZE;
+                else
+                    workload_array[current_request].size =
+                        _request_size - (cumulate_request * SEPARATE_SIZE);
+                workload_array[current_request].size *= DEFAULT_PAGE_SIZE;
+                if (_last_time == 0)
+                    _last_time = workload_array[current_request].time_stamp;
+                if (current_request > 0)
+                    workload_array[current_request - 1].interarrival_time =
+                        workload_array[current_request].time_stamp - _last_time;
+                _last_time = workload_array[current_request].time_stamp;
+                current_request++;
+            }
         } else {
-            workload_array[current_request].mode = 'r';
-            workload_array[current_request].offset = -_request_offset;
-        }
-        workload_array[current_request].time_stamp = _time_stamp;
-        workload_array[current_request].size =
-            _request_size * DEFAULT_PAGE_SIZE;
-        if (workload_array[current_request].size +
-                workload_array[current_request].offset >
-            MAX_ACCESS_OFFSET) {
-            MAX_ACCESS_OFFSET = workload_array[current_request].size +
-                                workload_array[current_request].offset;
-        }
-        if (_last_time == 0)
+            if (_request_offset >= 0) {
+                workload_array[current_request].mode = 'w';
+                workload_array[current_request].offset = _request_offset;
+            } else {
+                workload_array[current_request].mode = 'r';
+                workload_array[current_request].offset = -_request_offset;
+            }
+            workload_array[current_request].time_stamp = _time_stamp;
+            workload_array[current_request].size =
+                _request_size * DEFAULT_PAGE_SIZE;
+            if (_last_time == 0)
+                _last_time = workload_array[current_request].time_stamp;
+            if (current_request > 0)
+                workload_array[current_request - 1].interarrival_time =
+                    workload_array[current_request].time_stamp - _last_time;
             _last_time = workload_array[current_request].time_stamp;
-        if (current_request > 0)
-            workload_array[current_request - 1].interarrival_time =
-                workload_array[current_request].time_stamp - _last_time;
-        _last_time = workload_array[current_request].time_stamp;
-
-        current_request++;
+            current_request++;
+        }
+        current_line++;
     }
     fclose(fp);
 
@@ -174,6 +221,8 @@ int getWorkload(size_t **size_array_ptr, uint8_t ***packet_array_ptr,
         size_array[i] =
             pad_size + sizeof(workload_header) + workload_array[i].size;
         interarrival_array[i] = workload_array[i].interarrival_time;
+        // printf("%d %llu %lld %llu\n", i, workload_array[i].offset,
+        // workload_array[i].size, workload_array[i].interarrival_time);
     }
 
     // alloc header space and pad size
@@ -239,11 +288,16 @@ int deliverRequestRDMA(int request_num, size_t *size_array,
         int each_request;
 
         struct timespec start, end;
-        uint64_t page_num;
-        double *time_diff, average_sum, per_page_sum;
+        //uint64_t page_num;
+        //double per_page_sum;
+        double *time_diff, average_sum;
+        int start_time_flag = 0;
+        int each_line = 0;
+        int signal_flag = 0;
+        int cumulative_request = 0;
 
         /* Send packet */
-        time_diff = malloc(sizeof(double) * request_num);
+        time_diff = malloc(sizeof(double) * NUM_OF_LINES);
         for (each_request = 0; each_request < request_num; each_request++) {
             // copy header into send_addr
             // issue request
@@ -253,21 +307,35 @@ int deliverRequestRDMA(int request_num, size_t *size_array,
                    (long long int)interarrival_array[each_request],
                    (long long int)hptr->offset, (long long int)hptr->size,
                    hptr->mode);*/
-            clock_gettime(CLOCK_MONOTONIC, &start);
+            if (!start_time_flag) {
+                clock_gettime(CLOCK_MONOTONIC, &start);
+                start_time_flag = 1;
+            }
             // if it's a read request
+            if (interarrival_array[each_request] ||
+                cumulative_request >= RDMA_CQ_DEPTH / 2) {
+                signal_flag = 1;
+                cumulative_request = 0;
+            } else {
+                signal_flag = 0;
+                cumulative_request++;
+            }
             if (hptr->mode == 'r') {
                 userspace_one_read(node_inf->conn_qp[0], tmp_mr, hptr->size,
-                                   get_mr, hptr->offset);
-                userspace_one_poll(node_inf->conn_cq[0], 1);
+                                   get_mr, hptr->offset, signal_flag);
             } else if (hptr->mode == 'w') {  // if it's a write request
                 userspace_one_write(node_inf->conn_qp[0], tmp_mr, hptr->size,
-                                    get_mr, hptr->offset);
-                userspace_one_poll(node_inf->conn_cq[0], 1);
+                                    get_mr, hptr->offset, signal_flag);
             }
+            if (signal_flag) userspace_one_poll(node_inf->conn_cq[0], 1);
 
             // this part should be done once LEGOFPGA has interface
-            clock_gettime(CLOCK_MONOTONIC, &end);
-            time_diff[each_request] = diff_ns(&start, &end);
+            if (start_time_flag && interarrival_array[each_request]) {
+                clock_gettime(CLOCK_MONOTONIC, &end);
+                time_diff[each_line] = diff_ns(&start, &end);
+                each_line++;
+                start_time_flag = 0;
+            }
 
             // I found out that using usleep will slow the overall latency - I
             // am not sure why
@@ -275,20 +343,12 @@ int deliverRequestRDMA(int request_num, size_t *size_array,
             // sleep
             // usleep(interarrival_array[each_request]);
         }
-
         average_sum = 0;
-        per_page_sum = 0;
-        for (each_request = 0; each_request < request_num; each_request++) {
-            page_num = (size_array[each_request] - pad_size -
-                        sizeof(workload_header)) /
-                       DEFAULT_PAGE_SIZE;
-            average_sum += time_diff[each_request];
-            per_page_sum += time_diff[each_request] / page_num;
+        for (each_line = 0; each_line < NUM_OF_LINES; each_line++) {
+            average_sum += time_diff[each_line];
         }
 
-        printf("average latency: %f (ns)\n", average_sum / request_num);
-        printf("per_page(per_request per_page) latency: %f (ns)\n",
-               per_page_sum / request_num);
+        printf("average latency: %f (ns)\n", average_sum / NUM_OF_LINES);
     }
     return 0;
 }
@@ -455,13 +515,14 @@ int main(int argc, char *argv[]) {
         {"ignore request", required_argument, 0, 'i'},
         {"machine id", required_argument, 0, 'I'},
         {"mode (pcie/eth)", required_argument, 0, 'm'},
+        {"separate_size", required_argument, 0, 's'},
         {"pad_size", required_argument, 0, 'p'},
         {"mode", required_argument, 0, 'p'},
         {"debug", required_argument, 0, 'v'},
         {"help", no_argument, 0, 'h'},
         {NULL, 0, 0, 0}};
 
-    while ((opt = getopt_long(argc, argv, "vhw:p:m:n:i:I:", long_options,
+    while ((opt = getopt_long(argc, argv, "vhw:p:m:n:i:I:s:", long_options,
                               &option_index)) >= 0) {
         switch (opt) {
             case 0:
@@ -477,6 +538,9 @@ int main(int argc, char *argv[]) {
                 break;
             case 'I':
                 MACHINE_ID = atoi(optarg);
+                break;
+            case 's':
+                SEPARATE_SIZE = atoi(optarg);
                 break;
             case 'm':
                 deliver_mode = optarg;
@@ -500,11 +564,11 @@ int main(int argc, char *argv[]) {
         printf("check help\n");
         exit(1);
     }
-    if (pad_size < sizeof(struct ether_header)) {
+    /*if (pad_size < sizeof(struct ether_header)) {
         printf("pad_size: %d should at least %lu\n", pad_size,
                sizeof(struct ether_header));
         exit(1);
-    }
+    }*/
 
     printf("workload_file_name is %s\n", workload_file_name);
     printf("pad_size is %d B\n", pad_size);
