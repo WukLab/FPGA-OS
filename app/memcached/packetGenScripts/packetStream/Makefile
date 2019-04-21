@@ -1,15 +1,18 @@
-OBJ_DIR=.
+CFLAGS := -Wall -Wmissing-prototypes -Wstrict-prototypes\
+      -fomit-frame-pointer -freg-struct-return -ggdb \
+      -I ../../../../include -I ../../../../include/uapi/
+      #mbed_lib/libmbedcrypto.so mbed_lib/libmbedtls.so mbed_lib/libmbedx509.so
+      #-Lmbed_lib -llibmbedx509.so -libmbedtlx -libmbedcrypto\
 
-CFLAGS += -O2 -Wall -m64 -g
-LIBCFLAGS += -O2 -Wall -m64
-#CFLAGS += -g -Wall -m64
-#LIBCFLAGS += -g -Wall -m64 -DDEBUG
-APP=packetStream
-
-all: ${APP}
-
-${APP} : ${APP}.c
-	${CC} ${APP}.c -o $@ ${CFLAGS} -L${PWD} -I${PWD} -lpthread -lrt
+#CFLAGS := -fomit-frame-pointer -freg-struct-return -O2
+LIBS := -libverbs -lpthread -lrdmacm -libverbs -lmemcached -lm
+SRCS := $(wildcard packetStream*.c)
+OBJS := $(SRCS:.c=.o)
+#DEPS :=
+all: $(OBJS)
 
 clean:
-	/bin/rm -f ${APP} *.a $(OBJ_DIR)/*.o
+	rm -f *.o
+
+%.o: %.c 
+	gcc -o $@ $(CFLAGS) $(LIBS) $<

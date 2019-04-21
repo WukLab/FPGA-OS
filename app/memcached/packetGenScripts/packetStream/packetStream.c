@@ -1,35 +1,7 @@
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <time.h>
-#include <getopt.h>
-#include <errno.h>
-#include <linux/types.h>
+#include "packetStream.h"
 
-#include <arpa/inet.h>
-#include <linux/if_packet.h>
-#include <sys/ioctl.h>
-#include <sys/socket.h>
-#include <net/if.h>
-#include <netinet/ether.h>
-
-#define MY_DEST_MAC0 0x00
-#define MY_DEST_MAC1 0x00
-#define MY_DEST_MAC2 0x00
-#define MY_DEST_MAC3 0x00
-#define MY_DEST_MAC4 0x00
-#define MY_DEST_MAC5 0x00
-
-enum INTERFACE_TYPE {
-    INTERFACE_ETHERNET = 1,
-    INTERFACE_PCIE = 2
-};
-#define DEFAULT_IF "virbr0"
-#define DEFAULT_REPLY_SIZE 4096
+uint64_t MAX_REQUEST = 0xffffffffffffffff;
+uint64_t PCIE_SEND_ALLOC_SIZE = 0;
 
 int debug_mode = 0;
 
@@ -38,10 +10,14 @@ static char *workload_file_name;
 static void printHelp(char *name) {
     printf("\nUSAGE: %s [OPTIONS]\n", name);
     printf("\t-w \tpacket data. (ycsb_workload_packets.txt)\n");
+    printf("\t-n \tmax request num. \n");
     printf("\t-p \tpad_size. pad Bytes before payload\n");
     printf("\t-m \tmode. eth/pcie\n");
     printf("\t-v \tverbose mode\n");
     printf("\t--help             \tprint this message.\n");
+    printf(
+        "\t./packetStream.o -w ../ycsb_workload_packets.txt -p 64 -m pcie -n "
+        "10 -v\n");
     printf("\n");
 }
 
@@ -142,7 +118,8 @@ int getWorkload(size_t **size_array_ptr, uint8_t ***packet_array_ptr,
     }
 
     // get number of packets
-    while (fgets(str_line, sizeof(str_line), fp) != NULL) {
+    while (fgets(str_line, sizeof(str_line), fp) != NULL &&
+           num_of_reqs < MAX_REQUEST) {
         if (available_line == 0) {
             sscanf(str_line, "%d", &available_line);
             num_of_reqs++;
@@ -159,7 +136,8 @@ int getWorkload(size_t **size_array_ptr, uint8_t ***packet_array_ptr,
     fp = fopen(filename, "r");
     // get packet size
     available_line = 0;
-    while (fgets(str_line, sizeof(str_line), fp) != NULL) {
+    while (fgets(str_line, sizeof(str_line), fp) != NULL &&
+           current_packet < MAX_REQUEST) {
         if (available_line == 0) {
             sscanf(str_line, "%d", &available_line);
             size_array[current_packet] = pad_size;
@@ -173,8 +151,10 @@ int getWorkload(size_t **size_array_ptr, uint8_t ***packet_array_ptr,
     }
     fclose(fp);
     for (i = 0; i < num_of_reqs; i++) {
-        size_t alloc_size = ((size_array[i] + 8 - 1) / 8) * 8;
+        // size_t alloc_size = ((size_array[i] + 8 - 1) / 8) * 8;
+        size_t alloc_size = ROUND_UP(size_array[i], 8);
         packet_array[i] = malloc(alloc_size);
+        memset(packet_array[i], 0, alloc_size);
         // printf("%d, %d\n", size_array[i], alloc_size);
     }
     fp = fopen(filename, "r");
@@ -182,7 +162,8 @@ int getWorkload(size_t **size_array_ptr, uint8_t ***packet_array_ptr,
     available_line = 0;
     current_packet = 0;
     base = pad_size;
-    while (fgets(str_line, sizeof(str_line), fp) != NULL) {
+    while (fgets(str_line, sizeof(str_line), fp) != NULL &&
+           current_packet < MAX_REQUEST) {
         if (available_line == 0) {
             sscanf(str_line, "%d", &available_line);
             base = pad_size;
@@ -213,14 +194,17 @@ int deliverRequestPCIe(int request_num, size_t *size_array,
     void *base = pcie_send_addr;
     struct timespec start, end;
     double time_diff;
-    int *check_counter_addr = (int *)pcie_recv_addr;
 
     memset(reply, 0, DEFAULT_REPLY_SIZE);
 
-    /* Construct the Ethernet header */
+    // alloc big memory space on FPGA
+    app_rdm_hdr_alloc(pcie_send_addr, BUF_SIZE, KVS_APP_ID);
+
     for (each_packet = 0; each_packet < request_num; each_packet++) {
 
         // set LEGOFPGA header here
+        // the HEADER is provided by Yutong's workload
+        // I only add 64B pad size in front of the workload
 
         /* dump network frame */
         if (debug_mode) {
@@ -229,14 +213,14 @@ int deliverRequestPCIe(int request_num, size_t *size_array,
         }
     }
 
-    clock_gettime(CLOCK_MONOTONIC, &start);
-    /* Send packet */
+    /* Setup packet */
+    // memcpy all request content to the registered space
     for (each_packet = 0; each_packet < request_num; each_packet++) {
         memcpy(base, packet_array[each_packet], size_array[each_packet]);
         base = base + size_array[each_packet];
     }
-    /* this part is for debugging */
 
+    /* this part is for debugging */
     if (debug_mode) {
         base = pcie_send_addr;
         for (each_packet = 0; each_packet < request_num; each_packet++) {
@@ -244,17 +228,16 @@ int deliverRequestPCIe(int request_num, size_t *size_array,
             base = base + size_array[each_packet];
         }
     }
+    clock_gettime(CLOCK_MONOTONIC, &start);
+    //[TODO] after having correct header, enable the next line
+    // dma_to_fpga(pcie_send_addr, base-pcie_send_addr);
+    // base-pcie_send_addr is the total cumulated request size
 
-    if (debug_mode) {
-        int count = 0;
-        while (*check_counter_addr != request_num && count <= 10) {
-            printf("%d\n", *check_counter_addr);
-            count++;
-        }
-    } else {
-        while (*check_counter_addr != request_num)
-            ;
-    }
+    //[TODO] check receiving here. I am not sure how to check receiving
+    printf(
+        "[WARNING] remember to disable this line and enable send and recv "
+        "functionalities\n");
+
     clock_gettime(CLOCK_MONOTONIC, &end);
     time_diff = diff_ns(&start, &end);
 
@@ -375,12 +358,17 @@ void *getPCIeSendAddr(size_t required_size) {
 
     // Currently, I used a regular malloc to get this address
     // Shin-Yeh Tsai 041619
-    void *ret_addr = malloc(required_size);
-    memset(ret_addr, 0, required_size);
+
+    void *ret_addr;
+    // posix_memalign((void **)&ret_addr, 4096 /*alignment */, required_size);
+    assert(required_size < BUF_SIZE);
+    posix_memalign((void **)&ret_addr, 4096 /*alignment */, BUF_SIZE);
     if (ret_addr == NULL) {
         printf("generate send addr error\n");
         exit(1);
     }
+    memset(ret_addr, 0, required_size);
+    PCIE_SEND_ALLOC_SIZE = BUF_SIZE;
     return ret_addr;
 }
 
@@ -423,6 +411,7 @@ int main(int argc, char *argv[]) {
     // parse parameters
     static struct option long_options[] = {
         {"workload_file_name", required_argument, 0, 'w'},
+        {"max request", required_argument, 0, 'n'},
         {"mode (pcie/eth)", required_argument, 0, 'm'},
         {"pad_size", required_argument, 0, 'p'},
         {"mode", required_argument, 0, 'p'},
@@ -430,13 +419,16 @@ int main(int argc, char *argv[]) {
         {"help", no_argument, 0, 'h'},
         {NULL, 0, 0, 0}};
 
-    while ((opt = getopt_long(argc, argv, "vhw:p:m:", long_options,
+    while ((opt = getopt_long(argc, argv, "vhw:p:m:n:", long_options,
                               &option_index)) >= 0) {
         switch (opt) {
             case 0:
                 break;
             case 'w':
                 workload_file_name = optarg;
+                break;
+            case 'n':
+                MAX_REQUEST = atoi(optarg);
                 break;
             case 'm':
                 deliver_mode = optarg;
@@ -460,9 +452,9 @@ int main(int argc, char *argv[]) {
         printf("check help\n");
         exit(1);
     }
-    if (pad_size < sizeof(struct ether_header)) {
-        printf("pad_size: %d should at least %lu\n", pad_size,
-               sizeof(struct ether_header));
+    if (pad_size < LEGOFPGA_HEADER_SIZE) {
+        printf("pad_size: %d should at least %d\n", pad_size,
+               LEGOFPGA_HEADER_SIZE);
         exit(1);
     }
 
