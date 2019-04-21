@@ -12,5 +12,4 @@
 
 int main(void)
 {
-
 }

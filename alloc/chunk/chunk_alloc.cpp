@@ -20,7 +20,7 @@ void handler(hls::stream<sysmmu_alloc_if>& alloc,
 		malloc(req, alloc_ret, ctrl, ctrl_ret);
 		break;
 	case CHUNK_FREE:
-		free(req, alloc_ret, ctrl, ctrl_ret);
+		mfree(req, alloc_ret, ctrl, ctrl_ret);
 		break;
 	}
 }
@@ -60,7 +60,7 @@ void malloc(sysmmu_alloc_if& alloc,
 	alloc_ret.write(ret);
 }
 
-void free(sysmmu_alloc_if& alloc,
+void mfree(sysmmu_alloc_if& alloc,
 	  hls::stream<sysmmu_alloc_ret_if>& alloc_ret,
 	  hls::stream<sysmmu_ctrl_if>& ctrl,
 	  hls::stream<ap_uint<1> >& ctrl_ret)

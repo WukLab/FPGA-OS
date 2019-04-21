@@ -36,7 +36,7 @@ parameter TIMEOUT_THRESH = 100000000;
 
 	wire	default_sysclk_300_clk_p;
 	wire	default_sysclk_300_clk_n;
-    
+
 	reg	sysclk_300_clk_ref;
 	reg	sysclk_250_clk_ref;
 	reg	sysclk_150_clk_ref;
@@ -61,7 +61,7 @@ parameter TIMEOUT_THRESH = 100000000;
 
 	reg enable_send;
 
-	LegoFPGA_RDM_for_pcie	DUT (
+	LegoFPGA_RDM_for_pcie_all	DUT (
 		// DDR4 MC
 		.C0_SYS_CLK_0_clk_n		(default_sysclk_300_clk_n),
 		.C0_SYS_CLK_0_clk_p		(default_sysclk_300_clk_p),
@@ -112,7 +112,7 @@ parameter TIMEOUT_THRESH = 100000000;
 		.ddr4_sdram_c1_odt	      (ddr4_odt),
 		.ddr4_sdram_c1_reset_n        (ddr4_reset_n)
 	);
-    
+
 	ddr4_tb_top ddr4_mem_model (
 		.model_enable_in          (mc_enable_model),
 		.c0_ddr4_act_n            (ddr4_act_n),
@@ -176,7 +176,7 @@ parameter TIMEOUT_THRESH = 100000000;
 
 	always
 		#1666666.667 sysclk_300_clk_ref = ~sysclk_300_clk_ref;
-	    
+
 	always
 		#2000000.000 sysclk_250_clk_ref = ~sysclk_250_clk_ref;
 
@@ -213,7 +213,7 @@ parameter TIMEOUT_THRESH = 100000000;
 		  $display("ERROR, input file not found\n");
 		  $finish;
 	      end
-	      
+
 	      // Wait reset signals
 	      wait(enable_send == 1'b1);
 
@@ -225,7 +225,7 @@ parameter TIMEOUT_THRESH = 100000000;
 
 	      while (!finished_send) begin
 		  $fscanf(infd,"%d\n",pktlen);
-		  
+
 		  // Take a break
 		  if (pktlen == 0) begin
 		      wait(nr_requests_send == nr_requests_received);
@@ -234,18 +234,18 @@ parameter TIMEOUT_THRESH = 100000000;
 		      this_packet_start = $time;
 		      $display("Send packet [%d] %d", nr_requests_send, $time);
                   end
- 
+
 		  while (pktlen != 0) begin
 		      if (tx_tready) begin
 			  $fscanf(infd,"%h\n",tx_tdata);
 			  tx_tkeep = 32'h0xffffffff;
 			  pktlen = pktlen - 1;
-			  
+
 			  if (pktlen == 0) begin
 			      tx_tlast = 1;
 			  end else begin
 			      tx_tlast = 0;
-			  end 
+			  end
 			  tx_tvalid = 1;
 
 			  if ($feof(infd)) begin
@@ -318,6 +318,7 @@ parameter TIMEOUT_THRESH = 100000000;
 	    end
 	end
 
+/*
 	// Monitor status
 	initial begin
 		wait (finished_send == 1);
@@ -332,5 +333,6 @@ parameter TIMEOUT_THRESH = 100000000;
 		$fclose(outfd);
 		$finish;
 	end
+*/
 
 endmodule

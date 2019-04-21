@@ -23,11 +23,11 @@ module axi_mmu_wrapper_sync #(
     parameter AXI_ADDR_WIDTH   = 32,
 	parameter AXI_STRB_WIDTH   = (AXI_DATA_WIDTH/8),
 	parameter AXI_ID_WIDTH     = 8,
-	parameter AXI_AWUSER_WIDTH = 2,
-	parameter AXI_WUSER_WIDTH  = 2,
-	parameter AXI_BUSER_WIDTH  = 2,
-	parameter AXI_ARUSER_WIDTH = 2,
-	parameter AXI_RUSER_WIDTH  = 2,
+	parameter AXI_AWUSER_WIDTH = 1,
+	parameter AXI_WUSER_WIDTH  = 1,
+	parameter AXI_BUSER_WIDTH  = 1,
+	parameter AXI_ARUSER_WIDTH = 1,
+	parameter AXI_RUSER_WIDTH  = 1,
     /* VIRT_ADDR + ID + LENGTH + SIZE + padding */
     parameter AXIS_TO_MM_WIDTH    = AXI_ADDR_WIDTH + AXI_ID_WIDTH + 8 + 3 + 5,
     /* PHY_ADDR + DONE/DROP + padding*/

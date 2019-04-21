@@ -200,7 +200,7 @@ module top_pcie_RDM #
 		.user_lnk_up     (user_lnk_up)
 	);
 
-	LegoFPGA_RDM_for_pcie u_LegoFPGA (
+	LegoFPGA_RDM_for_pcie_all u_LegoFPGA (
 		// MC clock
 		.C0_SYS_CLK_0_clk_n     (default_sysclk_300_clk_n),
 		.C0_SYS_CLK_0_clk_p     (default_sysclk_300_clk_p),
