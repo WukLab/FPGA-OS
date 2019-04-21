@@ -364,7 +364,7 @@ int deliverRequestPCIe(int request_num, size_t *size_array,
     time_diff = malloc(sizeof(double) * request_num);
 
     // alloc big memory space on FPGA
-    app_rdm_hdr_alloc(pcie_send_addr, MAX_ACCESS_OFFSET, RDM_APP_ID);
+    app_rdm_hdr_alloc(pcie_send_addr, BUFF_SIZE, RDM_APP_ID);
 
     /* Construct the LEGO header */
     for (each_request = 0; each_request < request_num; each_request++) {
@@ -377,7 +377,7 @@ int deliverRequestPCIe(int request_num, size_t *size_array,
         }
 
         // makesure the header part is clean
-        //[YIZHOU][TODO] this can be removed if you feel this is useless
+        //[TODO] this can be removed if you feel this is useless
         memset(base, 0, LEGOFPGA_HEADER_SIZE);
         if (header_array[each_request].mode == 'w') {  // write request
             app_rdm_hdr_write(base, header_array[each_request].offset,
@@ -413,11 +413,10 @@ int deliverRequestPCIe(int request_num, size_t *size_array,
             if (debug_mode)
                 printf("total request size: %#llx\n", base - pcie_send_addr);
             clock_gettime(CLOCK_MONOTONIC, &start);
-            //[YIZHOU][TODO] after having correct header, enable the next line
-            // dma_to_fpga(pcie_send_addr,
-            // base-pcie_send_addr);//base-pcie_send_addr is the total cumulated
-            // request size
-            //[YIZHOU][TODO] check receiving here. I am not sure how to check
+            //[TODO] after having correct header, enable the next line
+            // dma_to_fpga(pcie_send_addr, base-pcie_send_addr);
+            // base-pcie_send_addr is the total cumulated request size
+            //[TODO] check receiving here. I am not sure how to check
             //receiving
             clock_gettime(CLOCK_MONOTONIC, &end);
             time_diff[each_line] = diff_ns(&start, &end);
