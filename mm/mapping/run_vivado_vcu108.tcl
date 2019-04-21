@@ -558,7 +558,7 @@ proc create_hier_cell_Buffer_ToBeRemoved { parentCell nameHier } {
   set ddr4_sdram_c1 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 ddr4_sdram_c1 ]
   set in_read_0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 in_read_0 ]
   set_property -dict [ list \
-   CONFIG.FREQ_HZ {300000000} \
+   CONFIG.FREQ_HZ {250000000} \
    CONFIG.HAS_TKEEP {0} \
    CONFIG.HAS_TLAST {0} \
    CONFIG.HAS_TREADY {1} \
@@ -572,7 +572,7 @@ proc create_hier_cell_Buffer_ToBeRemoved { parentCell nameHier } {
    ] $in_read_0
   set in_write_0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 in_write_0 ]
   set_property -dict [ list \
-   CONFIG.FREQ_HZ {300000000} \
+   CONFIG.FREQ_HZ {250000000} \
    CONFIG.HAS_TKEEP {0} \
    CONFIG.HAS_TLAST {0} \
    CONFIG.HAS_TREADY {1} \
@@ -586,12 +586,12 @@ proc create_hier_cell_Buffer_ToBeRemoved { parentCell nameHier } {
    ] $in_write_0
   set out_read_0 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 out_read_0 ]
   set_property -dict [ list \
-   CONFIG.FREQ_HZ {300000000} \
+   CONFIG.FREQ_HZ {250000000} \
    CONFIG.PHASE {0.00} \
    ] $out_read_0
   set out_write_0 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 out_write_0 ]
   set_property -dict [ list \
-   CONFIG.FREQ_HZ {300000000} \
+   CONFIG.FREQ_HZ {250000000} \
    CONFIG.PHASE {0.00} \
    ] $out_write_0
 
@@ -937,7 +937,7 @@ proc create_hier_cell_Buffer_ToBeRemoved { parentCell nameHier } {
   set_property -dict [ list \
    CONFIG.ADDR_WIDTH {32} \
    CONFIG.DATA_WIDTH {512} \
-   CONFIG.FREQ_HZ {300000000} \
+   CONFIG.FREQ_HZ {250000000} \
    CONFIG.HAS_CACHE {0} \
    CONFIG.HAS_LOCK {0} \
    CONFIG.HAS_QOS {0} \
@@ -948,7 +948,7 @@ proc create_hier_cell_Buffer_ToBeRemoved { parentCell nameHier } {
    ] $M00_AXI_0
   set in_read_0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 in_read_0 ]
   set_property -dict [ list \
-   CONFIG.FREQ_HZ {300000000} \
+   CONFIG.FREQ_HZ {250000000} \
    CONFIG.HAS_TKEEP {0} \
    CONFIG.HAS_TLAST {0} \
    CONFIG.HAS_TREADY {1} \
@@ -961,7 +961,7 @@ proc create_hier_cell_Buffer_ToBeRemoved { parentCell nameHier } {
    ] $in_read_0
   set in_write_0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 in_write_0 ]
   set_property -dict [ list \
-   CONFIG.FREQ_HZ {300000000} \
+   CONFIG.FREQ_HZ {250000000} \
    CONFIG.HAS_TKEEP {0} \
    CONFIG.HAS_TLAST {0} \
    CONFIG.HAS_TREADY {1} \
@@ -974,18 +974,18 @@ proc create_hier_cell_Buffer_ToBeRemoved { parentCell nameHier } {
    ] $in_write_0
   set out_read_0 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 out_read_0 ]
   set_property -dict [ list \
-   CONFIG.FREQ_HZ {300000000} \
+   CONFIG.FREQ_HZ {250000000} \
    ] $out_read_0
   set out_write_0 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 out_write_0 ]
   set_property -dict [ list \
-   CONFIG.FREQ_HZ {300000000} \
+   CONFIG.FREQ_HZ {250000000} \
    ] $out_write_0
 
   # Create ports
   set ap_clk [ create_bd_port -dir I -type clk ap_clk ]
   set_property -dict [ list \
    CONFIG.ASSOCIATED_RESET {ap_rstn} \
-   CONFIG.FREQ_HZ {300000000} \
+   CONFIG.FREQ_HZ {250000000} \
  ] $ap_clk
   set ap_rstn [ create_bd_port -dir I -type rst ap_rstn ]
 

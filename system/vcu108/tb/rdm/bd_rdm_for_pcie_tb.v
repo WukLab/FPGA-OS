@@ -61,7 +61,7 @@ parameter TIMEOUT_THRESH = 100000000;
 
 	reg enable_send;
 
-	LegoFPGA_RDM_for_pcie_all	DUT (
+	LegoFPGA_RDM_for_pcie	DUT (
 		// DDR4 MC
 		.C0_SYS_CLK_0_clk_n		(default_sysclk_300_clk_n),
 		.C0_SYS_CLK_0_clk_p		(default_sysclk_300_clk_p),
@@ -69,18 +69,11 @@ parameter TIMEOUT_THRESH = 100000000;
 		.mc_ddr4_ui_clk_rst_n		(mc_ddr4_ui_clk_rst_n),
 		.mc_init_calib_complete		(mc_init_calib_complete),
 
-		.clk_150		(sysclk_150_clk_ref),
-		.clk_300		(sysclk_300_clk_ref),
-		.clk_300_rst_n		(sysclk_300_rst_n),
-
 		.sys_rst		(sys_reset),
-		.driver_ready		(1'b1),
 
 		.RX_clk			(sysclk_250_clk_ref),
 		.RX_rst_n		(sysclk_250_rst_n),
 
-		.TX_clk			(sysclk_250_clk_ref),
-		.TX_rst_n		(sysclk_250_rst_n),
 
 		.RX_tdata		(tx_tdata),
 		.RX_tkeep		(tx_tkeep),
@@ -189,7 +182,7 @@ parameter TIMEOUT_THRESH = 100000000;
 
 	// Counters for evaluation
 	reg [63:0] send_start, send_end, receive_start, receive_end;
-	reg [63:0] nr_requests_send, nr_requests_received;
+	reg [63:0] nr_requests_send, nr_requests_received, nr_rx_units;
 
 	integer infd, outfd, pktlen, finished_send;
 
@@ -278,6 +271,7 @@ parameter TIMEOUT_THRESH = 100000000;
 	initial begin
 	    rx_tready = 1;
 	    receive_start = 0;
+	    nr_rx_units = 0;
 
 	    outfd = $fopen(OUT_FILEPATH,"w");
 	    if (outfd == 0) begin
@@ -308,8 +302,9 @@ parameter TIMEOUT_THRESH = 100000000;
 		    	this_packet_end = $time;
 		    end
 
-		    //$display("%t: %h %h %d", $time, rx_tdata, rx_tkeep, rx_tlast);
-		    $fdisplay(outfd, "%h %h %d", rx_tdata, rx_tkeep, rx_tlast);
+		    $display("%t: %d %h %h %d", $time, nr_rx_units, rx_tdata, rx_tkeep, rx_tlast);
+		    nr_rx_units = nr_rx_units + 1;
+		    //$fdisplay(outfd, "%h %h %d", rx_tdata, rx_tkeep, rx_tlast);
 		    # CLK_PERIOD;
 		end
 		else begin
