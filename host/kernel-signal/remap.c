@@ -33,6 +33,9 @@ unsigned long virt_base = 0;
 
 #define RDM_COUNTER_OFFSET 81
 
+/* please disable this line when you want to run real test with FPGA */
+#define TEST_FUNCTION
+
 struct sock *nl_sk = NULL;
 
 void timespec_diff(struct timespec *start, struct timespec *stop,
@@ -55,12 +58,15 @@ static struct timespec *remap_get_ns(int nr_requests) {
     struct timespec ts, ts_f;
     // char *p1, p2;
     struct timespec *ret = kmalloc(sizeof(struct timespec), GFP_KERNEL);
+
+    #ifdef TEST_FUNCTION
     /* if you want to test functionality, enable this part, it would bypass your function*/
-    /*struct timespec *test = kmalloc(sizeof(struct timespec), GFP_KERNEL);
+    struct timespec *test = kmalloc(sizeof(struct timespec), GFP_KERNEL);
     test->tv_sec = nr_requests * 100;
     test->tv_nsec = nr_requests;
     return test;
-    */
+    #endif
+    
 
     virt_base = (unsigned long)ioremap_cache(phys_base, phys_size);
     if (!virt_base) {
@@ -118,15 +124,20 @@ static void remap_recv_msg(struct sk_buff *skb) {
     int *nr_requests_ptr;
     int res;
     struct timespec *ret_ptr;
-
+    
+    #ifdef TEST_FUNCTION
     printk(KERN_INFO "Entering: %s\n", __FUNCTION__);
+    #endif
 
     nlh = (struct nlmsghdr *)skb->data;
     // printk(KERN_INFO "Netlink received msg payload:%s\n", (char
     // *)nlmsg_data(nlh));
     nr_requests_ptr = (int *)nlmsg_data(nlh);
 
+    #ifdef TEST_FUNCTION
     printk(KERN_INFO "Netlink received msg payload:%d\n", *nr_requests_ptr);
+    #endif
+
     pid = nlh->nlmsg_pid; /*pid of sending process */
 
     ret_ptr = remap_get_ns(*nr_requests_ptr);
@@ -147,6 +158,7 @@ static void remap_recv_msg(struct sk_buff *skb) {
     res = nlmsg_unicast(nl_sk, skb_out, pid);
 
     if (res < 0) printk(KERN_INFO "Error while sending bak to user\n");
+    kfree(ret_ptr);
 }
 
 static int remap_init(void) {
