@@ -26,6 +26,8 @@
 #include "../../app/rdma/include/rdma.h"
 #include "../../app/rdma/include/host_helper.h"
 
+#include "../../host/kernel-signal/netlinkUser.h"
+
 #define ROUND_UP(N, S) ((((N) + (S) - 1) / (S)) * (S))
 #define LEGOFPGA_HEADER_SIZE 64
 
@@ -55,6 +57,7 @@ typedef struct osdi_mem_workload_header workload_header;
 
 static void printHelp(char *name);
 double diff_ns(struct timespec *start, struct timespec *end);
+double timespec_to_double(struct timespec *target);
 void myDump(char *desc, uint8_t *addr, int len);
 int getWorkload(size_t **size_array_ptr, uint8_t ***packet_array_ptr,
                 uint32_t **interarrival_array_ptr,
