@@ -7,7 +7,7 @@ struct iovec iov;
 // int sock_fd;
 struct msghdr msg;
 
-int send_request(int nr_requests) {
+int netlinkSendRequest(int nr_requests) {
     int sock_fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_USER);
     if (sock_fd < 0) return -1;
 
@@ -39,19 +39,18 @@ int send_request(int nr_requests) {
     msg.msg_iov = &iov;
     msg.msg_iovlen = 1;
 
-    printf("Sending message to kernel\n");
+    //printf("Sending message to kernel\n");
     sendmsg(sock_fd, &msg, 0);
     return sock_fd;
 }
 
-struct timespec *receive(int sock_fd) {
-    struct timespec *from_kernel, *ret;
+int netlinkReceive(int sock_fd, struct timespec *ret) {
+    struct timespec *from_kernel;
     /* Read message from kernel */
     recvmsg(sock_fd, &msg, 0);
     // printf("Received message payload: %s\n", (char *)NLMSG_DATA(nlh));
     from_kernel = (struct timespec *)NLMSG_DATA(nlh);
-    ret = malloc(sizeof(struct timespec));
     memcpy(ret, from_kernel, sizeof(struct timespec));
     close(sock_fd);
-    return ret;
+    return 0;
 }

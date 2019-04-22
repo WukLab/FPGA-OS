@@ -10,6 +10,6 @@
 #define NETLINK_USER 31
 
 #define MAX_PAYLOAD 1024 /* maximum payload size*/
-int send_request(int nr_requests);
-struct timespec *receive(int sock_fd);
+int netlinkSendRequest(int nr_requests);
+int netlinkReceive(int sock_fd, struct timespec *ret);
 #endif
