@@ -10,7 +10,7 @@ add_files	top.cpp -cflags -I../../../include/
 add_files -tb	tb.cpp  -cflags -I../../../include/
 
 # Specify the top-level function for synthesis
-set_top		app_rdm_virtual
+set_top		rdm_segment
 
 ###########################
 # Solution settings
@@ -24,7 +24,7 @@ open_solution -reset solution1
 # ArtyA7:	xc7a100tcsg324-1
 #
 set_part {xcvu095-ffva2104-2-e}
-create_clock -period 8 -name default
+create_clock -period 4.00 -name default
 set_clock_uncertainty 0.25
 
 # Simulate the C code 
@@ -34,7 +34,7 @@ csim_design
 csynth_design
 
 # Export IP block
-export_design -format ip_catalog -display_name "app_rdm_virtual" -description "App Virtual RDM" -vendor "wuklab" -version "1.0"
+export_design -format ip_catalog -display_name "app_rdm_mapping" -description "App RDM with Mapping version" -vendor "wuklab" -version "1.0"
 
 # Do not perform any other steps
 # - The basic project will be opened in the GUI 

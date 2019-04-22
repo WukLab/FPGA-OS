@@ -3,6 +3,7 @@
  */
 
 #include <fpga/axis_net.h>
+#include <fpga/axis_buddy.h>
 #include <uapi/net_header.h>
 #include <uapi/compiler.h>
 
@@ -15,18 +16,34 @@
 
 using namespace hls;
 
-/* must >= 2 */
-#define NR_UNITS_PER_PKT	(4)
-#define NR_PACKETS		(5)
+void rdm_segment(stream<struct net_axis_512> *from_net,
+	         stream<struct net_axis_512> *to_net,
+		 stream<struct buddy_alloc_if> *alloc_req,
+		 stream<struct buddy_alloc_ret_if> *alloc_ret,
+		 stream<struct dm_cmd> *DRAM_rd_cmd,
+		 stream<struct dm_cmd> *DRAM_wr_cmd,
+		 stream<struct axis_mem> *DRAM_rd_data,
+		 stream<struct axis_mem> *DRAM_wr_data,
+		 stream<ap_uint<8> > *DRAM_rd_status,
+		 stream<ap_uint<8> > *DRAM_wr_status);
+
+#define NR_UNITS_PER_PKT	(6)
+#define NR_PACKETS		(4)
 #define BUF_SIZE		(1024)
 
 int main(void)
 {
-	char *dram;
 	int i, j, k;
 	struct net_axis_512 tmp;
 	stream<struct net_axis_512> input, output;
-	struct app_rdma_stats stats = {0, 0};
+	char *dram;
+
+	stream<struct buddy_alloc_if> alloc_req;
+	stream<struct buddy_alloc_ret_if> alloc_ret;
+
+	stream<struct dm_cmd> DRAM_rd_cmd, DRAM_wr_cmd;
+	stream<ap_uint<8> > DRAM_rd_status, DRAM_wr_status;
+	stream<struct axis_mem> DRAM_rd_data, DRAM_wr_data;
 
 	dram = (char *)malloc(BUF_SIZE);
 	if (!dram) {
@@ -70,7 +87,7 @@ next_pkt:
 			}
 
 			/* The first packet: WRITE */
-			if (i != 1 && i != 2) {
+			if (i == 3) {
 				/* The first unit is eth/ip/udp/lego header */
 				if (j == 0) {
 					tmp.data(47, 0) = 0xAABBCCDDEEFF;
@@ -78,24 +95,41 @@ next_pkt:
 				/* The second unit is app header */
 				if (j == 1) {
 					tmp.data(7, 0) = APP_RDMA_OPCODE_WRITE;
-					tmp.data(71, 8) = i * 64 *2;
-					tmp.data(135, 72) = 6;
-					printf("write %llu\n", i * 64 *2);
+					tmp.data(71, 8) = 0x0;	// addr
+					tmp.data(135, 72) = 256; // len
 				}
 			}
+
 			/* The second packet: READ */
-			if (i == 1 || i == 2) {
+			if (i == 1 || i == 0) {
 				/* The first unit is eth/ip/udp/lego header */
 				if (j == 0) {
 					tmp.data(47, 0) = 0xAABBCCDDEEFF;
 				} else if (j == 1) {
 				/* The second unit is app header */
 					tmp.data(7, 0) = APP_RDMA_OPCODE_READ;
-					tmp.data(71, 8) = 0;
-					tmp.data(135, 72) = 128;
-					printf("read %llu\n", i * 64 *2);
+					tmp.data(71, 8) = 0;	//addr
+					tmp.data(135, 72) = 62; //len
 
 					/* Read should only have two units */
+					tmp.last = 1;
+					input.write(tmp);
+					break;
+				} else
+					exit(-1);
+			}
+
+			if (i == 2) {
+				/* The first unit is eth/ip/udp/lego header */
+				if (j == 0) {
+					tmp.data(47, 0) = 0xAABBCCDDEEFF;
+				} else if (j == 1) {
+				/* The second unit is app header */
+					tmp.data(7, 0) = APP_RDMA_OPCODE_ALLOC;
+					tmp.data(71, 8) = 0; //unused
+					tmp.data(135, 72) = 64; //len in bytes
+
+					/* alloc should only have two units */
 					tmp.last = 1;
 					input.write(tmp);
 					break;
@@ -112,22 +146,71 @@ next_pkt:
 		}
 	}
 
-	printf("before stat: %d %d %d %d\n", stats.nr_read, stats.nr_write,
-			stats.nr_read_units, stats.nr_write_units);
-	for (i = 0; i < NR_PACKETS * NR_UNITS_PER_PKT * 100; i++)
-		app_rdm_virtual(&input, &output, (ap_uint<512> *)dram, (ap_uint<512> *)dram,
-			 &stats);
+	for (i = 0; i < 500; i++) {
+		rdm_segment(&input, &output,
+			&alloc_req, &alloc_ret,
+			&DRAM_rd_cmd, &DRAM_wr_cmd,
+			&DRAM_rd_data, &DRAM_wr_data,
+			&DRAM_rd_status, &DRAM_wr_status);
+	
+		if (!alloc_req.empty()) {
+			struct buddy_alloc_if req;
+			struct buddy_alloc_ret_if ret;
 
-	printf("after stat: %d %d %d %d\n", stats.nr_read, stats.nr_write,
-			stats.nr_read_units, stats.nr_write_units);
+			req = alloc_req.read();
+			printf("Alloc Request: opcode: %d addr: %x order %d\n",
+				req.opcode.to_uint(), req.addr.to_uint(),
+				req.order.to_uint());
+
+			ret.stat = 0;
+			ret.addr = 0x101;
+			alloc_ret.write(ret);
+		}
+
+		if (!DRAM_rd_cmd.empty()) {
+			struct dm_cmd cmd = DRAM_rd_cmd.read();
+			unsigned int length, address;
+			unsigned int nr_units;
+
+			address = cmd.start_address.to_uint();
+			length = cmd.btt.to_uint();
+			nr_units = length/NR_BYTES_AXIS_512;
+			printf("DRAM rd cmd: address: %x length %x nr_Units: %d\n",
+				address, length, nr_units);
+
+#if 1
+			for (int k = 0; k < nr_units; k++) {
+				struct axis_mem in;
+				printf("asd\n");
+				in.data = k+1;
+				DRAM_rd_data.write(in);
+			}
+#endif
+		}
+
+		if (!DRAM_wr_cmd.empty()) {
+			struct dm_cmd cmd = DRAM_wr_cmd.read();
+			unsigned int length, address;
+
+			address = cmd.start_address.to_uint();
+			length = cmd.btt.to_uint();
+			printf("DRAM wr cmd: address: %x length %x\n",
+				address, length);
+		}
+
+		if (!DRAM_wr_data.empty()) {
+			DRAM_wr_data.read();
+			printf("DRAM wr data: got it\n");
+		}
+	}
 
 	/*
 	 * Verilog results
 	 * - Write: Check buf content
 	 * - Read: check output stream content
 	 */
-
 #define NR_BYTES_PER_LINE	(64)
+#if 1
 	printf("DRAM Content:\n");
 	for (i = 0; i < BUF_SIZE; i++) {
 		if (i % NR_BYTES_PER_LINE == 0)
@@ -136,7 +219,7 @@ next_pkt:
 		if ((i+1) % NR_BYTES_PER_LINE == 0 && i > 0)
 			printf("\n");
 	}
-
+#endif
 	printf("Read Content: \n");
 
 	i = j = 0;
