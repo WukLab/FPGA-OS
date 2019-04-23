@@ -1,9 +1,8 @@
-
 #include <ap_int.h>
 #include <hls_stream.h>
 
 
-#include "../../include/fpga/axis_mapping.h"
+#include "../../../include/fpga/axis_mapping.h"
 #include "mergesort.h"
 
 using namespace hls;
@@ -24,6 +23,9 @@ void mergesort (ap_uint<512> *dram,
 	#pragma HLS INTERFACE axis both port=map_ret
 	#pragma HLS INTERFACE m_axi depth=64 port=dram  offset=off
 	#pragma HLS INTERFACE ap_ctrl_none port=return
+
+#pragma HLS DATA_PACK variable=map_req
+#pragma HLS DATA_PACK variable=map_ret
 
 	static enum APP_STATE state = MAP_REQ;
 	static ap_uint<32> scratch_arr[SCRATCH_ARRAY_SIZE];
