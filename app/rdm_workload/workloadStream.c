@@ -41,6 +41,7 @@ static void printHelp(char *name) {
     printf(
         "\tfor RDMA: ./workloadStream.o -w rdm_test_input -p 64 -m rdma -n 1 "
         "-i 50000 -s 5 -v -I 0\n");
+    printf("remember to 'insmod remap.ko' under /host/kernel-signal");
     // make clean all ; ./workloadStream.o -w
     // graphlab/0-mem-ec2-54-197-111-1.compute-1.amazonaws.com.merged -p 14 -m
     // rdma -n 10000 -i 50000 -s 5 -I 0
@@ -53,6 +54,11 @@ double diff_ns(struct timespec *start, struct timespec *end) {
     time += (end->tv_nsec - start->tv_nsec);
 
     return time;
+}
+
+double timespec_to_double(struct timespec *target)
+{
+    return target->tv_sec * 1000 * 1000 * 1000 + target->tv_nsec;
 }
 
 void myDump(char *desc, uint8_t *addr, int len) {
@@ -354,7 +360,7 @@ int deliverRequestPCIe(int request_num, size_t *size_array,
     struct timespec start, end;
     double *time_diff, average_sum;
     int read_size = 128;
-    int start_time_flag = 0;
+    int start_time_flag = 0, accumulate_request = 0;
     int request_size;
     int each_line = 0;
 
@@ -364,7 +370,7 @@ int deliverRequestPCIe(int request_num, size_t *size_array,
     time_diff = malloc(sizeof(double) * request_num);
 
     // alloc big memory space on FPGA
-    app_rdm_hdr_alloc(pcie_send_addr, BUFF_SIZE, RDM_APP_ID);
+    app_rdm_hdr_alloc(pcie_send_addr, BUF_SIZE, RDM_APP_ID);
 
     /* Construct the LEGO header */
     for (each_request = 0; each_request < request_num; each_request++) {
@@ -401,27 +407,31 @@ int deliverRequestPCIe(int request_num, size_t *size_array,
                 header_array[each_request].mode,
                 (unsigned long long int)header_array[each_request].offset,
                 (unsigned long long int)(base - pcie_send_addr),
-                header_array[each_request].size, request_size);
+                (unsigned long long int)header_array[each_request].size, (unsigned long long int)request_size);
             myDump(NULL, pcie_send_addr, 128);
         }
-        if (start_time_flag && interarrival_array[each_request] ||
+        accumulate_request++;
+        if ((start_time_flag && interarrival_array[each_request]) ||
             each_request == request_num - 1)  // this is the last SMALL request
                                               // in a BIG batch request
             // for example, the last page inside a 200 page request
             // or this is the last ruquest in the log
         {
+            int sock_fd;
+            struct timespec ret;
             if (debug_mode)
-                printf("total request size: %#llx\n", base - pcie_send_addr);
-            clock_gettime(CLOCK_MONOTONIC, &start);
+                printf("total request size: %#llx\n", (unsigned long long int)(base - pcie_send_addr));
+            
+            sock_fd = netlinkSendRequest(accumulate_request);
             //[TODO] after having correct header, enable the next line
             // dma_to_fpga(pcie_send_addr, base-pcie_send_addr);
-            // base-pcie_send_addr is the total cumulated request size
-            //[TODO] check receiving here. I am not sure how to check
-            //receiving
-            clock_gettime(CLOCK_MONOTONIC, &end);
-            time_diff[each_line] = diff_ns(&start, &end);
+            netlinkReceive(sock_fd, &ret);
+            //timespec is setup by kernel module. please check kernel-signal/remap.c
+
+            time_diff[each_line] = timespec_to_double(&ret);
             usleep(interarrival_array[each_request]);
             start_time_flag = 0;
+            accumulate_request = 0;
         }
     }
 
@@ -450,6 +460,8 @@ void *getPCIeRecvAddr(void) {
         printf("generate recv addr error\n");
         exit(1);
     }
+
+
     return ret_addr;
 }
 
