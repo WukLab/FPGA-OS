@@ -2,10 +2,10 @@ CC=gcc
 
 all: kvs rdm
 
-kvs: dma_utils.o kvs.o
+kvs: kvs.o
 	$(CC) -pthread -lrt -o kvs.out $^ -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -D_LARGE_FILE_SOURCE -I../../include
 
-rdm: dma_utils.o rdm.o
+rdm: rdm.o
 	$(CC) -pthread -lrt -o rdm.out $^ -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -D_LARGE_FILE_SOURCE -I../../include
 
 %.o: %.c

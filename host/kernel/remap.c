@@ -32,11 +32,16 @@ unsigned long virt_base = 0;
 unsigned long nr_requests = 300;
 
 #define RDM_COUNTER_OFFSET	16
+#define OPCODE_OFFSET		1
+#define ERROR_CODE_OFFSET	24
 
 static int remap_init(void)
 {
 	unsigned long *counter;
-	unsigned long saved, expected;
+	unsigned long *retcode;
+	char *opcode;
+	unsigned long wr_err_counter = 0, rd_err_counter = 0;
+	unsigned long saved, expected, last_count;
 	struct timespec ts, ts_f;
 	//char *p1, p2;
 
@@ -52,13 +57,20 @@ static int remap_init(void)
 	pr_info("VA range: [%#18lx - %#18lx]\n",
 		virt_base, virt_base + phys_size);
 
-#define NR_BYTES_TO_DUMP	(2048)
+#define NR_BYTES_TO_DUMP	(128)
 	//memset((void *)virt_base, 0, 1024*1024*16+128);
 	print_hex_dump(KERN_INFO, "RDM: ", DUMP_PREFIX_OFFSET,
 		       32, 1, (const void *)virt_base, NR_BYTES_TO_DUMP, false);
 
 	counter = (unsigned long *)(virt_base + RDM_COUNTER_OFFSET);
+
+#if 1
+	retcode = (unsigned long *)(virt_base + ERROR_CODE_OFFSET);
+	opcode = (char *)(virt_base + OPCODE_OFFSET);
+#endif
+
 	saved = *counter;
+	last_count = *counter;
 	expected = saved + nr_requests;
 
 	getnstimeofday(&ts);
@@ -67,13 +79,25 @@ static int remap_init(void)
 
 #if 1
 	while (1) {
-		//if (*counter <= (saved+2))
-		//	getnstimeofday(&ts_f);
+		if (*counter <= (saved+2))
+			getnstimeofday(&ts_f);
 
 		if (*counter == expected) {
 			getnstimeofday(&ts);
 			break;
 		}
+
+#if 1
+		if (*retcode == 0x313020524F525245) {
+			if (last_count != *counter) {
+				if (*opcode == 0)
+					rd_err_counter++;
+				if (*opcode == 1)
+					wr_err_counter++;
+				last_count = *counter;
+			}
+		}
+#endif
 		if (signal_pending(current)) {
 			pr_info("signal pending. Killed.");
 			break;
@@ -85,6 +109,8 @@ static int remap_init(void)
 	printk("expected: %lu actual: %lu\n", expected, *counter);
 	printk("First packet time: %ld.%ld\n", ts_f.tv_sec, ts_f.tv_nsec);
 	printk("End time:          %ld.%ld\n", ts.tv_sec, ts.tv_nsec);
+	printk("Read Error:           %lu\n", rd_err_counter);
+	printk("Write Error:          %lu\n", wr_err_counter);
 
 	return 0;
 }

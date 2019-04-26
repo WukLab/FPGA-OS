@@ -28,7 +28,7 @@
 #define KEY_SIZE		22
 #define READ_SIZE		ALIGN_UP((KEY_SIZE + 24), 8)
 /* make value size larger than 8 */
-#define VALUE_SIZE		2048
+#define VALUE_SIZE		64
 #define WRITE_SIZE		ALIGN_UP((VALUE_SIZE + KEY_SIZE + 24), 8)
 
 struct to_pthread {
@@ -101,7 +101,7 @@ static void prepare_multiple_kvs_read(char *buf, char *key, int size)
 {
 	int i;
 	for (i = 0; i < size; i++) {
-		prepare_kvs_read(buf + READ_SIZE*i, const_key);
+		prepare_kvs_read(buf + READ_SIZE*i, key);
 	}
 }
 
@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
 	ssize_t rc;
 	void *pthread_ret;
 	pthread_t pcie_read_thread;
-	int read_count = TOTAL_READ_COUNT;
+	int read_count = READ_COUNT;
 	int i, j;
 
 	posix_memalign((void **)&sendbuf, 4096 /*alignment */ , BUF_SIZ);
@@ -155,13 +155,17 @@ int main(int argc, char *argv[])
 	//app_rdm_hdr_alloc(sendbuf, 4096, APP_ID);
 
 
-#if 0
-	prepare_kvs_write(sendbuf, const_key);
-	for (i = 0; i < 128; i++)
-		printf("buf[%d] = %x\n", i, sendbuf[i] & 0xff);
-	dma_to_fpga(sendbuf, WRITE_SIZE);
-#endif
 #if 1
+	prepare_kvs_write(sendbuf, const_key);
+	for (i = 0; i < 128; i++) {
+		printf("%02X", sendbuf[i] & 0xff);
+		//printf("buf[%d] = %x\n", i, sendbuf[i] & 0xff);
+		if (i % 8 == 7)
+			printf("\n");
+	}
+	//dma_to_fpga(sendbuf, WRITE_SIZE);
+#endif
+#if 0
 	for (i = 0; i < READ_COUNT; i++) {
 		prepare_kvs_read(sendbuf + READ_SIZE*i, const_key);
 	}
@@ -172,7 +176,7 @@ int main(int argc, char *argv[])
 		printf("buf[%d] = %x\n", i, sendbuf[i] & 0xff);
 
 	//dma_to_fpga(sendbuf, READ_SIZE * READ_COUNT + WRITE_SIZE);
-	dma_to_fpga(sendbuf, READ_SIZE * READ_COUNT);
+	//dma_to_fpga(sendbuf, READ_SIZE * READ_COUNT);
 #endif
 
 	//pthread_join(pcie_read_thread, &pthread_ret);
