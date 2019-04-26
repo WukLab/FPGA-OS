@@ -1,6 +1,6 @@
 CC=gcc
 
-all: dma_utils.o rdm.o
+all: rdm.o
 	$(CC) -pthread -lrt -o rdm.out $^ -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -D_LARGE_FILE_SOURCE -I../../include
 
 %.o: %.c
