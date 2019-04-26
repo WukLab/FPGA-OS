@@ -36,8 +36,6 @@
  */
 #define RW_MAX_SIZE	0x7ffff000
 
-static int verbose = 0;
-
 static inline uint64_t getopt_integer(char *optarg)
 {
 	int rc;

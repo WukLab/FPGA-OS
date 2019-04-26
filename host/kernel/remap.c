@@ -31,9 +31,12 @@ unsigned long virt_base = 0;
 //unsigned long nr_requests = 1000000;
 unsigned long nr_requests = 300;
 
-#define RDM_COUNTER_OFFSET	16
-#define OPCODE_OFFSET		1
-#define ERROR_CODE_OFFSET	24
+// KVS
+#define KVS_COUNTER_OFFSET	16
+#define KVS_OPCODE_OFFSET	1
+#define KVS_ERROR_CODE_OFFSET	24
+
+#define RDM_COUNTER_OFFSET	81
 
 static int remap_init(void)
 {
@@ -65,8 +68,8 @@ static int remap_init(void)
 	counter = (unsigned long *)(virt_base + RDM_COUNTER_OFFSET);
 
 #if 1
-	retcode = (unsigned long *)(virt_base + ERROR_CODE_OFFSET);
-	opcode = (char *)(virt_base + OPCODE_OFFSET);
+	retcode = (unsigned long *)(virt_base + KVS_ERROR_CODE_OFFSET);
+	opcode = (char *)(virt_base + KVS_OPCODE_OFFSET);
 #endif
 
 	saved = *counter;

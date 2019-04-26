@@ -2,7 +2,7 @@ CC=gcc
 
 all: kvs
 
-kvs: dma_utils.o packetStream.o
+kvs: packetStream.o
 	$(CC) -pthread -lrt -o kvs.out $^ -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE -D_LARGE_FILE_SOURCE -I../../../include
 
 %.o: %.c
