@@ -6,7 +6,7 @@ import copy
 
 # Config
 numofcharinkey = 14 # Don't change this one
-valuelength = 10     # length should not be larger than 256*256 and no less than 9
+valuelength = 2048     # length should not be larger than 256*256 and no less than 9
 
 # global variable
 out_dir = ''
@@ -208,5 +208,7 @@ def main(argv):
 
 if __name__ == "__main__":
     main(sys.argv[1:])
-    combine_to_keylogs('ycsb_load.log', 'ycsb_run.log', 'ycsb_workload_keys.txt')
-    keylogs_to_packets('ycsb_workload_keys.txt', 'ycsb_workload_packets.txt')
+    # combine_to_keylogs('ycsb_load.log', 'ycsb_run.log', 'ycsb_workload_keys.txt')
+    # keylogs_to_packets('ycsb_workload_keys.txt', 'ycsb_workload_packets.txt')
+    keylogs_to_packets('ycsb_load.log', 'load_packets.txt')
+    keylogs_to_packets('ycsb_run.log', 'run_packets.txt')

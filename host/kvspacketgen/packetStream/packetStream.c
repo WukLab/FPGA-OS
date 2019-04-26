@@ -1,7 +1,12 @@
 #include "packetStream.h"
 
+#define DISABLE_PRINT
+#define ENABLE_DMA
+//#define ENABLE_LEGO_HEADER
+
 uint64_t MAX_REQUEST = 0xffffffffffffffff;
 uint64_t PCIE_SEND_ALLOC_SIZE = 0;
+uint64_t MAX_PACKET_ONCE = 500;
 
 int debug_mode = 0;
 
@@ -128,7 +133,9 @@ int getWorkload(size_t **size_array_ptr, uint8_t ***packet_array_ptr,
         }
     }
     fclose(fp);
+#ifndef DISABLE_PRINT
     printf("total request num %d\n", num_of_reqs);
+#endif
 
     size_array = malloc(sizeof(size_t) * num_of_reqs);
     packet_array = malloc(sizeof(char *) * num_of_reqs);
@@ -144,7 +151,7 @@ int getWorkload(size_t **size_array_ptr, uint8_t ***packet_array_ptr,
         } else {
             available_line--;
             sscanf(str_line, "%s %s", content_line, size_line);
-            size_array[current_packet] += sizeLineToSize(size_line);
+            size_array[current_packet] += ROUND_UP(sizeLineToSize(size_line), 8);
             // printf("%d:%d\n", current_packet, size_array[current_packet]);
             if (available_line == 0) current_packet++;
         }
@@ -194,13 +201,33 @@ int deliverRequestPCIe(int request_num, size_t *size_array,
     void *base = pcie_send_addr;
     struct timespec start, end;
     double time_diff;
+    int total_size = 0;
+    int req_left = request_num;
+    int req_cur_run;
+    int round;
+    int max_round = (request_num % MAX_PACKET_ONCE == 0) ? 
+	    	(request_num / MAX_PACKET_ONCE) : 
+		(request_num / MAX_PACKET_ONCE + 1);
 
     memset(reply, 0, DEFAULT_REPLY_SIZE);
 
+#ifndef DISABLE_PRINT
+    printf("# of round: %d\n", max_round);
+#endif
+    for (round = 0; round < max_round; round++) {
+
+    req_cur_run = (req_left >= MAX_PACKET_ONCE) ? MAX_PACKET_ONCE : req_left;
+    // this statement maybe underflow, but doesn't matter, after last run, we don't need it
+    req_left -= MAX_PACKET_ONCE;
+    total_size = 0;
+    base = pcie_send_addr;
+
     // alloc big memory space on FPGA
+    /* currently no header */
+#ifdef ENABLE_LEGO_HEADER
     app_rdm_hdr_alloc(pcie_send_addr, BUF_SIZE, KVS_APP_ID);
 
-    for (each_packet = 0; each_packet < request_num; each_packet++) {
+    for (each_packet = 0; each_packet < req_cur_run; each_packet++) {
 
         // set LEGOFPGA header here
         // the HEADER is provided by Yutong's workload
@@ -209,39 +236,52 @@ int deliverRequestPCIe(int request_num, size_t *size_array,
         /* dump network frame */
         if (debug_mode) {
             printf("===== %d =====\n", each_packet);
-            myDump(NULL, packet_array[each_packet], size_array[each_packet]);
+            myDump(NULL, packet_array[each_packet], size_array[each_packet + round * MAX_PACKET_ONCE]);
         }
     }
+#endif
 
     /* Setup packet */
     // memcpy all request content to the registered space
-    for (each_packet = 0; each_packet < request_num; each_packet++) {
-        memcpy(base, packet_array[each_packet], size_array[each_packet]);
-        base = base + size_array[each_packet];
+    for (each_packet = 0; each_packet < req_cur_run; each_packet++) {
+        memcpy(base, packet_array[each_packet + round * MAX_PACKET_ONCE], size_array[each_packet + round * MAX_PACKET_ONCE]);
+	total_size += size_array[each_packet + round * MAX_PACKET_ONCE];
+        base = base + size_array[each_packet + round * MAX_PACKET_ONCE];
     }
 
     /* this part is for debugging */
     if (debug_mode) {
         base = pcie_send_addr;
-        for (each_packet = 0; each_packet < request_num; each_packet++) {
-            myDump(NULL, base, size_array[each_packet]);
-            base = base + size_array[each_packet];
+        for (each_packet = 0; each_packet < req_cur_run; each_packet++) {
+            myDump(NULL, base, size_array[each_packet + round * MAX_PACKET_ONCE]);
+            base = base + size_array[each_packet + round * MAX_PACKET_ONCE];
         }
+
+	/* dump whole */
+        //myDump(NULL, pcie_send_addr, total_size); //this `base` should be the end of send
     }
     clock_gettime(CLOCK_MONOTONIC, &start);
     //[TODO] after having correct header, enable the next line
-    // dma_to_fpga(pcie_send_addr, base-pcie_send_addr);
+#ifdef ENABLE_DMA
+    printf("%#lx %#lx\n", pcie_send_addr, total_size);
+    dma_to_fpga(pcie_send_addr, total_size);
+#endif
     // base-pcie_send_addr is the total cumulated request size
 
     //[TODO] check receiving here. I am not sure how to check receiving
+#ifndef DISABLE_PRINT
     printf(
         "[WARNING] remember to disable this line and enable send and recv "
         "functionalities\n");
+#endif
 
     clock_gettime(CLOCK_MONOTONIC, &end);
     time_diff = diff_ns(&start, &end);
 
+#ifndef DISABLE_PRINT
     printf("finish %d request in %f ns \n", each_packet, time_diff);
+#endif
+    }
     return 0;
 }
 
@@ -452,11 +492,14 @@ int main(int argc, char *argv[]) {
         printf("check help\n");
         exit(1);
     }
+
+#ifdef ENABLE_LEGO_HEADER
     if (pad_size < LEGOFPGA_HEADER_SIZE) {
         printf("pad_size: %d should at least %d\n", pad_size,
                LEGOFPGA_HEADER_SIZE);
         exit(1);
     }
+#endif
 
     printf("workload_file_name is %s\n", workload_file_name);
     printf("pad_size is %d B\n", pad_size);

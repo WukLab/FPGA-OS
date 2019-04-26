@@ -79,9 +79,9 @@ int main(int argc, char *argv[])
 	dma_to_fpga(sendbuf, write_size);
 #endif
 
-	read_size = 128;
-	app_rdm_hdr_read(sendbuf, addr, read_size, APP_ID);
-	dma_to_fpga(sendbuf, 128);
+	//read_size = 128;
+	//app_rdm_hdr_read(sendbuf, addr, read_size, APP_ID);
+	//dma_to_fpga(sendbuf, 128);
 
 	//pthread_join(pcie_read_thread, &pthread_ret);
 	//free(sendbuf);

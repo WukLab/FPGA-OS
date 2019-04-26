@@ -17,18 +17,6 @@
 #include <errno.h>
 #include <sys/types.h>
 
-/*
- * man 2 write:
- * On Linux, write() (and similar system calls) will transfer at most
- * 	0x7ffff000 (2,147,479,552) bytes, returning the number of bytes
- *	actually transferred.  (This is true on both 32-bit and 64-bit
- *	systems.)
- */
-
-#define RW_MAX_SIZE	0x7ffff000
-
-int verbose = 0;
-
 uint64_t getopt_integer(char *optarg)
 {
 	int rc;
@@ -170,4 +158,3 @@ void timespec_sub(struct timespec *t1, struct timespec *t2)
 		t1->tv_nsec += 1000000000;
 	}
 }
-

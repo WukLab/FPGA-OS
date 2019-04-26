@@ -26,10 +26,10 @@
 #define MY_DEST_MAC4 0x00
 #define MY_DEST_MAC5 0x00
 
-#include "../../../../include/uapi/net_header.h"
-#include "../../../../include/uapi/pcie.h"
-#include "../../../../app/rdma/include/rdma.h"
-#include "../../../../app/rdma/include/host_helper.h"
+#include "../../../include/uapi/net_header.h"
+#include "../../../include/uapi/pcie.h"
+#include "../../../app/rdma/include/rdma.h"
+#include "../../../app/rdma/include/host_helper.h"
 
 #define ROUND_UP(N, S) ((((N) + (S) - 1) / (S)) * (S))
 #define LEGOFPGA_HEADER_SIZE 64
