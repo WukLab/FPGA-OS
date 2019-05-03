@@ -96,7 +96,7 @@ module top_pcie_c2h_RDM #
 	wire clk_100, clk_125, clk_150, clk_300, clk_locked, clk_300_locked;
 	wire pcie_clk, pcie_clk_gt;
 
-	clock_mac_qsfp u_clock_gen (
+	clock_sysclk u_clock_gen (
 		/* Input: Board Clock */
 		.default_sysclk_125_clk_n    (default_sysclk_125_clk_n),
 		.default_sysclk_125_clk_p    (default_sysclk_125_clk_p),
@@ -225,7 +225,8 @@ module top_pcie_c2h_RDM #
 		.user_lnk_up     (user_lnk_up)
 	);
 
-	LegoFPGA_RDM_for_pcie_all u_LegoFPGA (
+	LegoFPGA_RDM_for_pcie_raw
+	u_LegoFPGA (
 		// MC clock
 		.C0_SYS_CLK_0_clk_n     (default_sysclk_300_clk_n),
 		.C0_SYS_CLK_0_clk_p     (default_sysclk_300_clk_p),

@@ -10,7 +10,8 @@ all:
 	@echo    '**'
 	@echo -e '**\033[0m'
 	@sleep 2
-	$(VIVADO) -mode tcl -source run_vivado.tcl
+	#$(VIVADO) -mode tcl -source run_vivado.tcl
+	$(VIVADO) -mode tcl -source run_vivado_pcie.tcl
 
 clean:
 	find ./ -name "generated_vivado_project" | xargs rm -rf

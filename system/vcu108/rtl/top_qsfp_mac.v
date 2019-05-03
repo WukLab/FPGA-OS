@@ -303,7 +303,7 @@ module top_qsfp_mac
 		.signal_out          (sys_reset)
 	);
 
-	clock_mac_qsfp	u_clock_gen (
+	clock_sysclk u_clock_gen (
 		/* Input: Board Clock */
 		.default_sysclk_125_clk_n	(default_sysclk_125_clk_n),
 		.default_sysclk_125_clk_p	(default_sysclk_125_clk_p),

@@ -37,7 +37,7 @@ HOSTCXXFLAGS = -O2
 export CONFIG_SHELL HOSTCC HOSTCXX HOSTCFLAGS HOSTCXXFLAGS
 
 # Configure Board
-DEFAULT_BOARD = arty_a7
+DEFAULT_BOARD = vcu108
 ifeq ("$(origin board)", "command line")
   TARGET_BOARD = $(board)
 endif
