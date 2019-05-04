@@ -17,7 +17,7 @@ if { [info exists ::user_project_name] } {
 }
 
 variable script_file
-set script_file "run_vivado.tcl"
+set script_file "run_vivado_pcie.tcl"
 
 # Help information for this script
 proc help {} {
@@ -116,17 +116,15 @@ set_property -name "webtalk.xsim_export_sim" -value "6" -objects $obj
 set_property -name "webtalk.xsim_launch_sim" -value "60" -objects $obj
 set_property -name "xpm_libraries" -value "XPM_CDC XPM_MEMORY" -objects $obj
 
+# Add IP repository paths
+set obj [get_filesets sources_1]
+set_property "ip_repo_paths" "[file normalize "$origin_dir/../../generated_ip"]" $obj
+update_ip_catalog -rebuild
+
 # Create 'sources_1' fileset (if not found)
 if {[string equal [get_filesets -quiet sources_1] ""]} {
   create_fileset -srcset sources_1
 }
-
-# Set IP repository paths
-set obj [get_filesets sources_1]
-set_property "ip_repo_paths" "[file normalize "$origin_dir/../../generated_ip"]" $obj
-
-# Rebuild user ip_repo's index before adding any source files
-update_ip_catalog -rebuild
 
 # Set 'sources_1' fileset object
 set obj [get_filesets sources_1]

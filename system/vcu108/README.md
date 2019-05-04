@@ -1,28 +1,29 @@
 # VCU108
 
-The board only use one type of memory controller, but it has two MACs
-- AXI Ethernet Subsystem
-- QSPF
+## TODO
 
-Our system, essentially is `LegoFPGA.bd`. We put everything within
-the BD design, which is easy to generate and easy to build.
+- For C2H: having circular buffers. We need to get the length of each DMA transfer.
+  The descriptor itself now is using a very large length. Actual DMA length can be
+  smaller than the number we wrote on verilog file, once a tlast is encounted.
 
-The `LegoFPGA.bd` essentially has three major interfaces
-- AXI-Stream from MAC
-- AXI-Stream to MAC
-- DDR to DRAM
+- Combine RDM/KVS testing
 
-Keep in mind.
+- AddrMap extension
 
+## Checklist
 
-## Issues
+- Top file
+- BD included in the top
+- Synthesis and Implementation Strategies
 
-Having AXI Ethernet Subsystem within the example design, the whole thing can NOT be
-exported a Block Diagram IP, which is annoying.
+## About the codebase
 
-One possible way to do it is extract the SM/clock as a standlone RTL IP, and
-then merge it with a MAC IP in a BD design. Doable. Later.
+Those `rtl/top_*.v` files are top-level module that being synthesised and implemented.
+Those `top_pcie_c2h_*.v` files are different in that they have C2H bypass enabled XDMA.
 
+For RDM or KVS BDs, there are two versions of each: raw and all. Those raw ones are the ones
+that only include RDM/KVS itself. Those all ones are the ones that come with LibNet and SysMem.
+Make sure raw ones work before moving on to those all ones.
 
 ## Cheatsheet
 
