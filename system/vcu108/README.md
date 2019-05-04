@@ -10,6 +10,9 @@
 
 - AddrMap extension
 
+- SysMem should be able to test without chunk allocator.
+  There shouldn't be a dependency.
+
 ## Checklist
 
 - Top file
