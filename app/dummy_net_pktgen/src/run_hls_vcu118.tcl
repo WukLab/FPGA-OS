@@ -10,7 +10,7 @@ add_files	top.cpp -cflags -I../../../include/
 add_files -tb	tb.cpp  -cflags -I../../../include/
 
 # Specify the top-level function for synthesis
-set_top		dummy_net_blackhole
+set_top		dummy_net_pktgen
 
 ###########################
 # Solution settings
@@ -35,7 +35,7 @@ csim_design
 csynth_design
 
 # Export IP block
-export_design -format ip_catalog -display_name "dummy_net_blackhole" -description "Dummy network black hole" -vendor "Wuklab.UCSD" -version "1.0"
+export_design -format ip_catalog -display_name "dummy_net_pktgen" -description "Dummy network packet generator" -vendor "Wuklab.UCSD" -version "1.0"
 
 # Do not perform any other steps
 # - The basic project will be opened in the GUI 

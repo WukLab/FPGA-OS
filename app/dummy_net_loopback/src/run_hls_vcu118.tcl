@@ -10,7 +10,7 @@ add_files	top.cpp -cflags -I../../../include/
 add_files -tb	tb.cpp  -cflags -I../../../include/
 
 # Specify the top-level function for synthesis
-set_top		dummy_net_blackhole
+set_top		net_loopback
 
 ###########################
 # Solution settings
@@ -29,13 +29,13 @@ create_clock -period 8 -name default
 set_clock_uncertainty 1.25
 
 # Simulate the C code 
-csim_design
+#csim_design
 
 # Synthesis the C code
 csynth_design
 
 # Export IP block
-export_design -format ip_catalog -display_name "dummy_net_blackhole" -description "Dummy network black hole" -vendor "Wuklab.UCSD" -version "1.0"
+export_design -format ip_catalog -display_name "net_loopback" -description "Network Loopback IP" -vendor "Wuklab.UCSD" -version "1.0"
 
 # Do not perform any other steps
 # - The basic project will be opened in the GUI 
