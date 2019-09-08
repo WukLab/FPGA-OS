@@ -48,7 +48,7 @@ set_clock_uncertainty 0.25
 csynth_design
 
 # Export IP block
-export_design -format ip_catalog -display_name "BUDDY_ALLOCATOR" -description "Buddy Allocator as library for apps using on-demand memory allocation" -vendor "purdue.wuklab" -version "1.0"
+export_design -format ip_catalog -display_name "buddy allocator" -description "Buddy Allocator IP" -vendor "Wuklab.UCSD" -version "1.0"
 
 # Do not perform any other steps
 # - The basic project will be opened in the GUI 

@@ -1,4 +1,4 @@
-# Copyright (c) 2019, Wuklab, Purdue University.
+# Copyright (c) 2019, Wuklab, UCSD.
 #
 # Template script for generating a Vivado HLS project.
 # 1) generated_hls_project/ will be created.
@@ -18,11 +18,11 @@ open_project	-reset generated_hls_project
 
 # The source file and test bench
 add_files	core.cpp	-cflags "-I../../include"
-add_files	chunk_alloc.cpp	-cflags "-I../../include"
+add_files	buddy.cpp	-cflags "-I../../include"
 add_files -tb	core_tb.cpp	-cflags "-I../../include"
 
 # Specify the top-level function for synthesis
-set_top		chunk_alloc
+set_top		buddy_allocator
 
 ###########################
 # Solution settings
@@ -32,13 +32,15 @@ open_solution -reset solution1
 
 # Specify a Xilinx device and clock period
 #
+# VCU118:	xcvu9p-flga2104-1-i
 # VCU108:	xcvu095-ffva2104-2-e
 # ArtyA7:	xc7a100tcsg324-1
 #
-set_part {xcvu095-ffva2104-2-e}
+set_part {xcvu9p-flga2104-1-i}
 create_clock -period 3.33 -name default
-config_rtl  -encoding onehot -reset all -reset_level low -vivado_impl_strategy default -vivado_phys_opt place -vivado_synth_design_args {-directive sdx_optimization_effort_high} -vivado_synth_strategy default
-set_clock_uncertainty 0.5
+
+config_rtl -encoding onehot -reset all -reset_level high -reset_async -vivado_impl_strategy default -vivado_phys_opt place -vivado_synth_design_args {-directive sdx_optimization_effort_high} -vivado_synth_strategy default
+set_clock_uncertainty 0.25
 
 # Simulate the C code 
 # csim_design
@@ -47,7 +49,7 @@ set_clock_uncertainty 0.5
 csynth_design
 
 # Export IP block
-export_design -format ip_catalog -display_name "chunk allocator" -description "Big chunk memory alloc" -vendor "Wuklab.UCSD" -version "1.0"
+export_design -format ip_catalog -display_name "buddy allocator" -description "Buddy Allocator IP" -vendor "Wuklab.UCSD" -version "1.0"
 
 # Do not perform any other steps
 # - The basic project will be opened in the GUI 

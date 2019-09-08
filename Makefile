@@ -46,7 +46,7 @@ ifndef TARGET_BOARD
   DEFAULT_BOARD_USED = 1
 endif
 
-VALID_TARGET_BOARD = arty_a7 vcu108
+VALID_TARGET_BOARD = arty_a7 vcu108 vcu118
 
 ifeq ($(findstring $(TARGET_BOARD), $(VALID_TARGET_BOARD)), )
   $(error Target board [$(TARGET_BOARD)] not found. Supported boards: $(VALID_TARGET_BOARD))

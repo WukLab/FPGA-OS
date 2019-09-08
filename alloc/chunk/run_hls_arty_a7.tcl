@@ -47,7 +47,7 @@ set_clock_uncertainty 1.25
 csynth_design
 
 # Export IP block
-export_design -format ip_catalog -display_name "CHUNK_ALLOCATOR" -description "Allocator for System Memory Chunk Unit" -vendor "purdue.wuklab" -version "1.0"
+export_design -format ip_catalog -display_name "chunk allocator" -description "Big chunk memory alloc" -vendor "Wuklab.UCSD" -version "1.0"
 
 # Do not perform any other steps
 # - The basic project will be opened in the GUI 
