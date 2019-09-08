@@ -1,5 +1,7 @@
 # List of IPs
 
+Last Updated: Apr 30, 2019
+
 | IP  | Location| Description| Configurations|Status|
 |:--|:--|:--|:--|:--|
 |mergesort|`app/mergesort`|HLS Mergesort|N/A|N/A|
