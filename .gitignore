@@ -24,4 +24,7 @@ generated_ip/
 *.order
 *.mod.c
 
+# AWS Specific
+awsver.txt
+
 !.gitignore
