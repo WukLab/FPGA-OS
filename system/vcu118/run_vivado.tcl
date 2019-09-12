@@ -277,7 +277,7 @@ set_property -name "top_lib" -value "xil_defaultlib" -objects $obj
 # (On-demand, enable blocks you need.)
 #
 source scripts/bd_sysclk.tcl
-#source scripts/bd_sysclk_300.tcl
+source scripts/bd_sysclk_300.tcl
 #source scripts/bd_xdma_raw.tcl
 #source scripts/bd_xdma_c2h_bypass.tcl
 

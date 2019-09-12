@@ -67,10 +67,10 @@ proc cr_bd_sys_clock_300 { parentCell } {
 
 
   # Create interface ports
-  set default_sysclk2_300 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 default_sysclk2_300 ]
+  set default_sysclk1_300 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 default_sysclk1_300 ]
   set_property -dict [ list \
    CONFIG.FREQ_HZ {300000000} \
-   ] $default_sysclk2_300
+   ] $default_sysclk1_300
 
   # Create ports
   set clk_300 [ create_bd_port -dir O -type clk clk_300 ]
@@ -85,7 +85,7 @@ proc cr_bd_sys_clock_300 { parentCell } {
    CONFIG.CLKOUT1_JITTER {80.386} \
    CONFIG.CLKOUT1_PHASE_ERROR {79.387} \
    CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {300.000} \
-   CONFIG.CLK_IN1_BOARD_INTERFACE {default_sysclk2_300} \
+   CONFIG.CLK_IN1_BOARD_INTERFACE {default_sysclk1_300} \
    CONFIG.MMCM_CLKFBOUT_MULT_F {3.375} \
    CONFIG.MMCM_CLKOUT0_DIVIDE_F {3.375} \
    CONFIG.MMCM_DIVCLK_DIVIDE {1} \
@@ -94,7 +94,7 @@ proc cr_bd_sys_clock_300 { parentCell } {
  ] $clk_wiz_0
 
   # Create interface connections
-  connect_bd_intf_net -intf_net default_sysclk2_300_1 [get_bd_intf_ports default_sysclk2_300] [get_bd_intf_pins clk_wiz_0/CLK_IN1_D]
+  connect_bd_intf_net -intf_net default_sysclk1_300_1 [get_bd_intf_ports default_sysclk1_300] [get_bd_intf_pins clk_wiz_0/CLK_IN1_D]
 
   # Create port connections
   connect_bd_net -net clk_wiz_0_clk_out1 [get_bd_ports clk_300] [get_bd_pins clk_wiz_0/clk_out1]
