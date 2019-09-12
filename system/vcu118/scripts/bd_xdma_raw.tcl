@@ -12,6 +12,10 @@ proc cr_bd_pcie { parentCell } {
   # CHECK IPs
   ##################################################################
   set bCheckIPs 1
+
+  #
+  # Both 2018.2 and 2018.3 are using xdma 4.1
+  #
   if { $bCheckIPs == 1 } {
      set list_check_ips "\
   xilinx.com:ip:xdma:4.1\
@@ -80,7 +84,7 @@ proc cr_bd_pcie { parentCell } {
    CONFIG.TID_WIDTH {0} \
    CONFIG.TUSER_WIDTH {0} \
    ] $S_AXIS_C2H
-  set pcie3_us_int_shared_logic [ create_bd_intf_port -mode Master -vlnv xilinx.com:display_xdma:int_shared_logic_rtl:1.0 pcie3_us_int_shared_logic ]
+
   set pcie_mgt [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:pcie_7x_mgt_rtl:1.0 pcie_mgt ]
 
   # Create ports
@@ -127,7 +131,6 @@ proc cr_bd_pcie { parentCell } {
   # Create interface connections
   connect_bd_intf_net -intf_net S_AXIS_C2H_0_0_1 [get_bd_intf_ports S_AXIS_C2H] [get_bd_intf_pins xdma_0/S_AXIS_C2H_0]
   connect_bd_intf_net -intf_net xdma_0_M_AXIS_H2C_0 [get_bd_intf_ports M_AXIS_H2C] [get_bd_intf_pins xdma_0/M_AXIS_H2C_0]
-  connect_bd_intf_net -intf_net xdma_0_pcie3_us_int_shared_logic [get_bd_intf_ports pcie3_us_int_shared_logic] [get_bd_intf_pins xdma_0/pcie3_us_int_shared_logic]
   connect_bd_intf_net -intf_net xdma_0_pcie_mgt [get_bd_intf_ports pcie_mgt] [get_bd_intf_pins xdma_0/pcie_mgt]
 
   # Create port connections

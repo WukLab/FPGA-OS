@@ -81,7 +81,6 @@ proc cr_bd_pcie_c2h_bypass { parentCell } {
    CONFIG.TUSER_WIDTH {0} \
    ] $S_AXIS_C2H
   set dsc_bypass_c2h [ create_bd_intf_port -mode Slave -vlnv xilinx.com:display_xdma:dsc_bypass_rtl:1.0 dsc_bypass_c2h ]
-  set pcie3_us_int_shared_logic [ create_bd_intf_port -mode Master -vlnv xilinx.com:display_xdma:int_shared_logic_rtl:1.0 pcie3_us_int_shared_logic ]
   set pcie_mgt [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:pcie_7x_mgt_rtl:1.0 pcie_mgt ]
 
   # Create ports
@@ -131,7 +130,6 @@ proc cr_bd_pcie_c2h_bypass { parentCell } {
   connect_bd_intf_net -intf_net S_AXIS_C2H_0_0_1 [get_bd_intf_ports S_AXIS_C2H] [get_bd_intf_pins xdma_0/S_AXIS_C2H_0]
   connect_bd_intf_net -intf_net dsc_bypass_c2h_0_0_1 [get_bd_intf_ports dsc_bypass_c2h] [get_bd_intf_pins xdma_0/dsc_bypass_c2h_0]
   connect_bd_intf_net -intf_net xdma_0_M_AXIS_H2C_0 [get_bd_intf_ports M_AXIS_H2C] [get_bd_intf_pins xdma_0/M_AXIS_H2C_0]
-  connect_bd_intf_net -intf_net xdma_0_pcie3_us_int_shared_logic [get_bd_intf_ports pcie3_us_int_shared_logic] [get_bd_intf_pins xdma_0/pcie3_us_int_shared_logic]
   connect_bd_intf_net -intf_net xdma_0_pcie_mgt [get_bd_intf_ports pcie_mgt] [get_bd_intf_pins xdma_0/pcie_mgt]
 
   # Create port connections
