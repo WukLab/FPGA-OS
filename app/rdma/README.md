@@ -1,5 +1,7 @@
 # Remote Memory Access
 
+Last Updated: Sep 12, 2019
+
 ## Packet Format
 
 Host to FPGA Packet Format
@@ -43,3 +45,19 @@ struct header for alloc is:
 
 Write does not have reply for now.
 Read and Alloc will have reply.
+
+
+## About the source code
+
+TODO: Better documentation and rename folders.
+
+FPGA Side:
+
+- `fpga/`: our first version of RDM. The performance is limited.
+- `rdm_mapping/`: our second version of RDM. This implementation will do address translation via a mappint table, thus `rdm_mapping`. The translation is done by another IP.
+- `rdm_segment/`: our second version of RDM. The only difference with `rdm_mapping` is that this IP use a simple segment table to do address translation. Check `map()` function.
+- `fpga_test/`: An on-chip test IP, used to test `fpga/`.
+
+Host Side:
+
+- `host/`: a test program runs on CPU
