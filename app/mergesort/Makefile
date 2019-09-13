@@ -1,7 +1,7 @@
 VIVADO        = vivado
 
 ifeq ($(TARGET_BOARD), )
-  TARGET_BOARD = vcu108
+  TARGET_BOARD = vcu118
 endif
 
 all:
@@ -25,3 +25,4 @@ clean:
 	find ./ -name "*.jou" | xargs rm -rf
 	find ./ -name "*.str" | xargs rm -rf
 	find ./ -name ".Xil" | xargs rm -rf
+	find ./ -name "awsver.txt" | xargs rm -rf
