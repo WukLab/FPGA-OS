@@ -8,17 +8,14 @@ VIVADO_TB_PRJ = $(TB_DIR)/$(TB_PROJ_NAME)
 VIVADO        = vivado
 
 ifeq ($(TARGET_BOARD), )
-  TARGET_BOARD = vcu108
+  TARGET_BOARD = vcu118
 endif
 
-all: ip
-.PHONY: ip
+all:
+	$(VIVADO) -mode tcl -source run_vivado_sysmmu_$(TARGET_BOARD).tcl
 
 simple_ip:
 	$(VIVADO) -mode tcl -source run_vivado_$(TARGET_BOARD).tcl
-
-ip:
-	$(VIVADO) -mode tcl -source run_vivado_sysmmu_$(TARGET_BOARD).tcl
 
 g:
 	$(VIVADO) $(VIVADO_PRJ)

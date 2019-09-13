@@ -1,11 +1,11 @@
 # Change the absolute path to your own one.
-VIVADO_HLS=/opt/Xilinx/Vivado/2018.2/bin/vivado_hls
+VIVADO_HLS=vivado_hls
 
 # DO NOT CHANGE THIS. This is coded through the repo
 project_path=generated_hls_project
 
 ifeq ($(TARGET_BOARD), )
-  TARGET_BOARD = vcu108
+  TARGET_BOARD = vcu118
 endif
 
 all:

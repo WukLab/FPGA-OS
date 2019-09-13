@@ -182,7 +182,7 @@ proc cr_bd_sysmmu_segment { parentCell } {
   if { $bCheckIPs == 1 } {
      set list_check_ips "\ 
   wuklab:user:axi_mmu_wrapper_sync:1.0\
-  purdue.wuklab:hls:mm_segment_top:1.0\
+  Wuklab.UCSD:hls:mm_segment_top:1.0\
   "
 
    set list_ips_missing ""
@@ -256,7 +256,7 @@ proc create_hier_cell_ip_sysmmu_segment { parentCell nameHier } {
   set dummy_axi_wrapper [ create_bd_cell -type ip -vlnv wuklab:user:axi_wrapper:1.0 dummy_axi_wrapper ]
 
   # Create instance: mm_segment_top_0, and set properties
-  set mm_segment_top_0 [ create_bd_cell -type ip -vlnv purdue.wuklab:hls:mm_segment_top:1.0 mm_segment_top_0 ]
+  set mm_segment_top_0 [ create_bd_cell -type ip -vlnv Wuklab.UCSD:hls:mm_segment_top:1.0 mm_segment_top_0 ]
 
   # Create interface connections
   connect_bd_intf_net -intf_net Conn1 [get_bd_intf_pins m_axi_0] [get_bd_intf_pins dummy_axi_wrapper/m_axi]

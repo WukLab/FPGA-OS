@@ -1,9 +1,9 @@
 #
-# Copyright (c) 2019, Wuklab, Purdue University.
+# Copyright (c) 2019, Wuklab, UCSD.
 #
 
 ifeq ($(TARGET_BOARD), )
-  TARGET_BOARD = vcu108
+  TARGET_BOARD = vcu118
   export TARGET_BOARD
 endif
 

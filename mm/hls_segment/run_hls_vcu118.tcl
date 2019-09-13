@@ -32,15 +32,16 @@ open_solution -reset solution1
 
 # Specify a Xilinx device and clock period
 #
+# VCU118:	xcvu9p-flga2104-1-i
 # VCU108:	xcvu095-ffva2104-2-e
 # ArtyA7:	xc7a100tcsg324-1
 #
-set_part {xcvu095-ffva2104-2-e}
+set_part {xcvu9p-flga2104-1-i}
 
 # 125MHZ
 create_clock -period 3.00 -name default
 
-config_rtl -encoding onehot -reset all -reset_level low -vivado_impl_strategy default -vivado_phys_opt place -vivado_synth_design_args {-directive sdx_optimization_effort_high} -vivado_synth_strategy default
+#config_rtl -encoding onehot -reset all -reset_level low -vivado_impl_strategy default -vivado_phys_opt place -vivado_synth_design_args {-directive sdx_optimization_effort_high} -vivado_synth_strategy default
 set_clock_uncertainty 0.5
 
 # Simulate the C code
