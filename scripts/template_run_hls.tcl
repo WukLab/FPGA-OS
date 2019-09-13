@@ -1,4 +1,6 @@
-# Copyright (c) 2019, Wuklab, Purdue University.
+#
+# Copyright (c) 2019, Wuklab, UCSD.
+# Last Updated: Sep 13, 2019
 #
 # Template script for generating a Vivado HLS project.
 # 1) generated_hls_project/ will be created.
@@ -32,9 +34,11 @@ open_solution -reset solution1
 
 # Specify a Xilinx device and clock period
 #
+# VCU118:	xcvu9p-flga2104-1-i
 # VCU108:	xcvu095-ffva2104-2-e
 # ArtyA7:	xc7a100tcsg324-1
 #
+set_part {xcvu9p-flga2104-1-i}
 set_part {xcvu095-ffva2104-2-e}
 create_clock -period 10 -name default
 set_clock_uncertainty 1.25

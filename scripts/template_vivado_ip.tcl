@@ -1,11 +1,16 @@
 #
-# Copyright (c) 2019, Wuklab, Purdue University.
+# Copyright (c) 2019, Wuklab, UCSD.
 #
 # Some simple Vivado scripts used throughout the project.
 # This script file is NOT supposed to run AS IS.
 # You SHOULD customize the various parameters within each command.
 # When in doubt, use Vivado console to read help manual.
 #
+
+# VCU108
+create_project ${_xil_proj_name_} "./generated_vivado_project" -part xcvu095-ffva2104-2-e
+# VCU118
+create_project ${_xil_proj_name_} "./generated_vivado_project" -part xcvu9p-flga2104-2L-e
 
 #
 # Script to save current project into a script file

@@ -4,7 +4,7 @@ project_path=generated_hls_project
 VIVADO_HLS = vivado_hls
 
 ifeq ($(TARGET_BOARD), )
-  TARGET_BOARD = vcu108
+  TARGET_BOARD = vcu118
 endif
 
 all:

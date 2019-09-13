@@ -1,10 +1,10 @@
 ifeq ($(TARGET_BOARD), )
-  TARGET_BOARD = vcu108
+  TARGET_BOARD = vcu118
 endif
 
 all:
 	$(Q)./generate_hls.sh $(TARGET_BOARD)
-	#$(Q)make -C ip_libnet
+	$(Q)make -C ip_libnet
 
 clean:
 	$(Q)make -C hls_rx clean

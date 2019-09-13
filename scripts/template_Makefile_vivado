@@ -2,7 +2,7 @@ VIVADO = vivado
 VIVADO_PRJ = generated_vivado_project/generated_vivado_project.xpr
 
 ifeq ($(TARGET_BOARD), )
-  TARGET_BOARD = arty_a7
+  TARGET_BOARD = vcu118
 endif
 
 all:
