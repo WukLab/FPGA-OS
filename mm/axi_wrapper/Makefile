@@ -3,7 +3,7 @@ VIVADO_PRJ_DIR = generated_vivado_project
 VIVADO_PRJ     = $(VIVADO_PRJ_DIR)/generated_vivado_project.xpr
 
 ifeq ($(TARGET_BOARD), )
-  TARGET_BOARD = vcu108
+  TARGET_BOARD = vcu118
 endif
 
 all:
