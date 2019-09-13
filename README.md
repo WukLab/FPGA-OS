@@ -1,5 +1,9 @@
 # FPGA
 
+Copyright (c) 2019, Wuklab, UCSD.
+
+Last Updated: Sep 12, 2019
+
 Codebase Organization Principles:
 - Make each subfolder be an IP on its own. This means it should have its own
   scripts, rtl or hls code, and testbench.
@@ -133,6 +137,18 @@ Caveats:
 	  files essentially equals a chicken-and-egg issue.
 
 For now, you can find example scripts at the `mm/axi_wrapper/run_vivado.tcl`, and `mm/sys/run_vivado.tcl`.
+
+## HOWTO handle IP version
+
+Vivado only supports one IP version in each version. It's super annonying
+if we use generated script. Luckily, there is one way to workaround it.
+The following code replace the IP string with a variable. However, be careful
+if the updated IP has different ports.
+
+```
+set axis_data_fifo [get_ipdefs -filter NAME==axis_data_fifo]
+Replace all `xilinx.com:ip:axis_data_fifo:1.1` with `$axis_data_fifo
+```
 
 ## HOWTO use the Vivado HLS script
 

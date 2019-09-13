@@ -1,11 +1,11 @@
 #
-# Copyright (c) 2019, Wuklab, Purdue University.
+# Copyright (c) 2019, Wuklab, UCSD.
 #
 
-VIVADO        = vivado
+VIVADO=vivado
 
 ifeq ($(TARGET_BOARD), )
-  TARGET_BOARD = vcu108
+  TARGET_BOARD = vcu118
   export TARGET_BOARD
 endif
 
@@ -23,3 +23,4 @@ clean:
 	find ./ -name "*.jou" | xargs rm -rf
 	find ./ -name "*.str" | xargs rm -rf
 	find ./ -name ".Xil" | xargs rm -rf
+	find ./ -name "awsver.txt" | xargs rm -rf

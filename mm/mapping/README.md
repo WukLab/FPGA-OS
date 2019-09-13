@@ -1,8 +1,10 @@
 # Mapping Translation IP
 
+Last Updated: Sep 12, 2019
+
 ## Introduction
 
-This hash is intended to translate from an input `X` to output `Y`.
+This hashtable IP can translate an input `X` to output `Y`.
 This IP is not just a single HLS IP or a Vivado IP, it consists of
 three major parts:
 

@@ -2,7 +2,7 @@
 project_path=generated_hls_project
 
 ifeq ($(TARGET_BOARD), )
-  TARGET_BOARD = vcu108
+  TARGET_BOARD = vcu118
 endif
 
 VIVADO_HLS=vivado_hls

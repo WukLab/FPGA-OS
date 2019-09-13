@@ -1,10 +1,10 @@
 # DO NOT CHANGE THIS. This is coded through the repo
 project_path=generated_hls_project
 
-VIVADO_HLS=/opt/Xilinx/Vivado/2018.2/bin/vivado_hls
+VIVADO_HLS=vivado_hls
 
 ifeq ($(TARGET_BOARD), )
-  TARGET_BOARD = vcu108
+  TARGET_BOARD = vcu118
 endif
 
 all:

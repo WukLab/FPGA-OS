@@ -55,6 +55,7 @@ FPGA Side:
 
 - `fpga/`: our first version of RDM. The performance is limited.
 - `rdm_mapping/`: our second version of RDM. This implementation will do address translation via a mappint table, thus `rdm_mapping`. The translation is done by another IP.
+    - The mapping translation IP is `mm/mapping`.
 - `rdm_segment/`: our second version of RDM. The only difference with `rdm_mapping` is that this IP use a simple segment table to do address translation. Check `map()` function.
 - `fpga_test/`: An on-chip test IP, used to test `fpga/`.
 
