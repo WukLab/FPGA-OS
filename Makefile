@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2019, Wuklab, Purdue University.
+# Copyright (c) 2019, Wuklab, UCSD.
 #
 
 # o Do not use make's built-in rules and variables
@@ -37,7 +37,8 @@ HOSTCXXFLAGS = -O2
 export CONFIG_SHELL HOSTCC HOSTCXX HOSTCFLAGS HOSTCXXFLAGS
 
 # Configure Board
-DEFAULT_BOARD = vcu108
+DEFAULT_BOARD = vcu118
+
 ifeq ("$(origin board)", "command line")
   TARGET_BOARD = $(board)
 endif
@@ -84,6 +85,7 @@ clean:
 	find ./ -name "*.jou" | xargs rm -rf
 	find ./ -name "*.str" | xargs rm -rf
 	find ./ -name ".Xil" | xargs rm -rf
+	find ./ -name "awsver.txt" | xargs rm -rf
 	find ./ -name "ipshared" | xargs rm -rf
 	find ./ -name "generated" | xargs rm -rf
 	find ./ -name "generated_project" | xargs rm -rf
