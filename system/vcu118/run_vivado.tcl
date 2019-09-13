@@ -284,8 +284,8 @@ source scripts/bd_xdma_c2h_bypass.tcl
 #source scripts/bd_KVS_pcie_all.tcl
 #source scripts/bd_KVS_pcie_raw.tcl
 
-#source scripts/bd_RDM_pcie_all.tcl
-#source scripts/bd_RDM_pcie_raw.tcl
+source scripts/bd_RDM_pcie_all.tcl
+source scripts/bd_RDM_pcie_raw.tcl
 
 #source scripts/bd_RDM_seg_pcie_raw.tcl
 #source scripts/bd_RDM_KVS_pcie_raw.tcl

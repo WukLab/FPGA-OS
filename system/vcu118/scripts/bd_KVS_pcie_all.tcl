@@ -15,7 +15,7 @@ proc cr_bd_LegoFPGA_KVS_for_pcie_all { parentCell } {
   if { $bCheckIPs == 1 } {
      set list_check_ips "\
   wuklab:user:memcached_top_for_buddy:1.0\
-  purdue.wuklab:hls:buddy_allocator:1.0\
+  Wuklab.UCSD:hls:buddy_allocator:1.0\
   xilinx.com:ip:xlconstant:1.1\
   xilinx.com:ip:ddr4:2.2\
   xilinx.com:ip:util_vector_logic:2.0\
@@ -404,7 +404,7 @@ proc create_hier_cell_MC { parentCell nameHier } {
   # Create instance: mc_ddr4_core, and set properties
   set mc_ddr4_core [ create_bd_cell -type ip -vlnv xilinx.com:ip:ddr4:2.2 mc_ddr4_core ]
   set_property -dict [ list \
-   CONFIG.C0_CLOCK_BOARD_INTERFACE {default_sysclk1_300} \
+   CONFIG.C0_CLOCK_BOARD_INTERFACE {default_250mhz_clk1} \
    CONFIG.C0_DDR4_BOARD_INTERFACE {ddr4_sdram_c1} \
    CONFIG.System_Clock {Differential} \
  ] $mc_ddr4_core

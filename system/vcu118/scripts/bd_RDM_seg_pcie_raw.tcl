@@ -17,7 +17,7 @@ proc cr_bd_LegoFPGA_RDM_seg_for_pcie_raw { parentCell } {
   xilinx.com:ip:axi_datamover:5.1\
   xilinx.com:ip:axis_data_fifo:1.1\
   xilinx.com:ip:axis_dwidth_converter:1.1\
-  purdue.wuklab:hls:buddy_allocator:1.0\
+  Wuklab.UCSD:hls:buddy_allocator:1.0\
   wuklab:hls:rdm_segment:1.0\
   xilinx.com:ip:xlconstant:1.1\
   xilinx.com:ip:ddr4:2.2\

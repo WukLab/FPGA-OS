@@ -19,6 +19,7 @@ clean:
 	find ./ -name "*.jou" | xargs rm -rf
 	find ./ -name "*.str" | xargs rm -rf
 	find ./ -name ".Xil" | xargs rm -rf
+	find ./ -name "awsver.txt" | xargs rm -rf
 
 g:
 	$(VIVADO) $(VIVADO_PRJ)

@@ -7,6 +7,8 @@ proc cr_bd_LegoFPGA_RDM_for_pcie_all { parentCell } {
 
   create_bd_design $design_name
 
+  set axis_data_fifo [get_ipdefs -filter NAME==axis_data_fifo]
+
   set bCheckIPsPassed 1
   ##################################################################
   # CHECK IPs
@@ -15,11 +17,11 @@ proc cr_bd_LegoFPGA_RDM_for_pcie_all { parentCell } {
   if { $bCheckIPs == 1 } {
      set list_check_ips "\ 
   wuklab:user:mapping_ip_top:1.0\
-  wuklab:hls:rdm_mapping:1.0\
+  Wuklab.UCSD:hls:rdm_mapping:1.0\
   xilinx.com:ip:axi_datamover:5.1\
-  xilinx.com:ip:axis_data_fifo:1.1\
+  $axis_data_fifo\
   xilinx.com:ip:axis_dwidth_converter:1.1\
-  purdue.wuklab:hls:buddy_allocator:1.0\
+  Wuklab.UCSD:hls:buddy_allocator:1.0\
   wuklab:user:sys_mm_wrapper:1.0\
   xilinx.com:ip:xlconstant:1.1\
   xilinx.com:ip:ddr4:2.2\
@@ -97,7 +99,7 @@ proc create_hier_cell_MC { parentCell nameHier } {
   # Create instance: mc_ddr4_core, and set properties
   set mc_ddr4_core [ create_bd_cell -type ip -vlnv xilinx.com:ip:ddr4:2.2 mc_ddr4_core ]
   set_property -dict [ list \
-   CONFIG.C0_CLOCK_BOARD_INTERFACE {default_sysclk1_300} \
+   CONFIG.C0_CLOCK_BOARD_INTERFACE {default_250mhz_clk1} \
    CONFIG.C0_DDR4_BOARD_INTERFACE {ddr4_sdram_c1} \
    CONFIG.System_Clock {Differential} \
  ] $mc_ddr4_core
@@ -198,7 +200,7 @@ proc create_hier_cell_MC { parentCell nameHier } {
   create_hier_cell_MC [current_bd_instance .] MC
 
   # Create instance: RDM_Mapping, and set properties
-  set RDM_Mapping [ create_bd_cell -type ip -vlnv wuklab:hls:rdm_mapping:1.0 RDM_Mapping ]
+  set RDM_Mapping [ create_bd_cell -type ip -vlnv Wuklab.UCSD:hls:rdm_mapping:1.0 RDM_Mapping ]
 
   # Create instance: axi_datamover_0, and set properties
   set axi_datamover_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_datamover:5.1 axi_datamover_0 ]
@@ -237,13 +239,13 @@ proc create_hier_cell_MC { parentCell nameHier } {
  ] $axi_interconnect_0
 
   # Create instance: axis_data_fifo_0, and set properties
-  set axis_data_fifo_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_data_fifo:1.1 axis_data_fifo_0 ]
+  set axis_data_fifo_0 [ create_bd_cell -type ip -vlnv $axis_data_fifo axis_data_fifo_0 ]
   set_property -dict [ list \
    CONFIG.FIFO_DEPTH {8192} \
  ] $axis_data_fifo_0
 
   # Create instance: axis_data_fifo_1, and set properties
-  set axis_data_fifo_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_data_fifo:1.1 axis_data_fifo_1 ]
+  set axis_data_fifo_1 [ create_bd_cell -type ip -vlnv $axis_data_fifo axis_data_fifo_1 ]
   set_property -dict [ list \
    CONFIG.FIFO_DEPTH {8192} \
  ] $axis_data_fifo_1
@@ -263,7 +265,7 @@ proc create_hier_cell_MC { parentCell nameHier } {
  ] $axis_dwidth_converter_1
 
   # Create instance: buddy_allocator_0, and set properties
-  set buddy_allocator_0 [ create_bd_cell -type ip -vlnv purdue.wuklab:hls:buddy_allocator:1.0 buddy_allocator_0 ]
+  set buddy_allocator_0 [ create_bd_cell -type ip -vlnv Wuklab.UCSD:hls:buddy_allocator:1.0 buddy_allocator_0 ]
 
   # Create instance: sys_mm_wrapper_0, and set properties
   set sys_mm_wrapper_0 [ create_bd_cell -type ip -vlnv wuklab:user:sys_mm_wrapper:1.0 sys_mm_wrapper_0 ]
