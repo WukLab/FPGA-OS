@@ -1,3 +1,6 @@
+ifeq ($(TARGET_BOARD), )
+  TARGET_BOARD = vcu118
+endif
+
 all:
-	$(Q)make -C arty_a7
-	$(Q)make -C vcu108
+	$(Q)make -C $(TARGET_BOARD)

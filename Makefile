@@ -68,7 +68,7 @@ all:
 	$(Q)make -C net
 	$(Q)make -C mm
 	$(Q)make -C app
-	#$(Q)make -C system
+	$(Q)make -C system
 
 #
 # This cleans up everything.
