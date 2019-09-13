@@ -1,6 +1,6 @@
 # List of IPs
 
-Last Updated: Apr 30, 2019
+Last Updated: Sep 12, 2019
 
 | IP  | Location| Description| Configurations|Status|
 |:--|:--|:--|:--|:--|
@@ -18,8 +18,10 @@ Last Updated: Apr 30, 2019
 |libnet|`net/libnet`|Reliable Libnet|`include/fpga/axis_net.h`|S|
 |sysnet|`net/sysnet`|Unreliable Sysnet|`include/fpga/axis_net.h`|C|
 |System|`system/vcu108`|Everything|N/A|C|
+|System|`system/vcu118`|Everything|N/A|WIP|
 
 
 Status:
 - C: on-chip verification
 - S: Simulation
+- WIP: Work-In-Progress
