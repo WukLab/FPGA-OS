@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019，Wuklab, Purdue University.
+ * Copyright (c) 2019，Wuklab, UCSD.
  */
 
 /* System-level headers */
@@ -36,7 +36,7 @@ void dummy_net_dram(hls::stream<struct net_axis_512> *from_net,
 #endif
 
 void dummy_net_dram(hls::stream<struct net_axis_64> *from_net,
-	      hls::stream<struct net_axis_64> *to_net, ap_uint<512> *dram)
+		    hls::stream<struct net_axis_64> *to_net, ap_uint<512> *dram)
 {
 #pragma HLS PIPELINE
 #pragma HLS INTERFACE ap_ctrl_none port=return

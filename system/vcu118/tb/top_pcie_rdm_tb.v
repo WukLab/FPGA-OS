@@ -2,29 +2,27 @@
 
 `timescale 1fs/1fs
 
-module board
-(
-);
-    localparam   [2:0] PF0_DEV_CAP_MAX_PAYLOAD_SIZE = 3'b010;
+module board ();
+	localparam   [2:0] PF0_DEV_CAP_MAX_PAYLOAD_SIZE = 3'b010;
 
-    wire [7:0] h2c_pci_exp_txp;
-wire [7:0] h2c_pci_exp_txn;
-    wire [7:0] c2h_pci_exp_txp;
-wire [7:0] c2h_pci_exp_txn;
-wire       user_lnk_up;
+	wire [7:0] h2c_pci_exp_txp;
+	wire [7:0] h2c_pci_exp_txn;
+	wire [7:0] c2h_pci_exp_txp;
+	wire [7:0] c2h_pci_exp_txn;
+	wire	user_lnk_up;
 
-    reg       sys_rst_n;
+	reg	sys_rst_n;
 
-wire       pcie_dedicated_100_clk_p;
-wire       pcie_dedicated_100_clk_n;
-wire       sysclk_125_clk_p;
-wire       sysclk_125_clk_n;
-wire       default_sysclk_300_clk_p;
-wire       default_sysclk_300_clk_n;
+	wire	pcie_dedicated_100_clk_p;
+	wire	pcie_dedicated_100_clk_n;
+	wire	sysclk_125_clk_p;
+	wire	sysclk_125_clk_n;
+	wire	default_sysclk_300_clk_p;
+	wire	default_sysclk_300_clk_n;
 
-reg        pcie_dedicated_100_clk_ref;
-reg        sysclk_125_clk_ref;
-reg        sysclk_300_clk_ref;
+	reg	pcie_dedicated_100_clk_ref;
+	reg	sysclk_125_clk_ref;
+	reg	sysclk_300_clk_ref;
 
 	wire        ddr4_act_n;
 	wire [16:0] ddr4_adr;

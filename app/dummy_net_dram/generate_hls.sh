@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (c) 2019, Wuklab, Purdue University
+# Copyright (c) 2019, Wuklab, UCSD.
 #
 # This script automate the process of creating multiple HLS projects.
 # It should be a level higher than run_hls.tcl. This is used to run
