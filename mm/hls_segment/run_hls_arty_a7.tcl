@@ -1,4 +1,4 @@
-# Copyright (c) 2019, Wuklab, Purdue University.
+# Copyright (c) 2019, Wuklab, UCSD.
 #
 # Template script for generating a Vivado HLS project.
 # 1) generated_hls_project/ will be created.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Wuklab, Purdue University. All rights reserved.
+ * Copyright (c) 2019, Wuklab, UCSD. All rights reserved.
  * Target board: Xilinx VCU108.
  */
 

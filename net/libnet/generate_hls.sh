@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (c) 2019, Wuklab, Purdue University
+# Copyright (c) 2019, Wuklab, UCSD
 #
 
 TARGET_BOARD=$1

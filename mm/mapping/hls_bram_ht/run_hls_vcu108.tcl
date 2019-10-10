@@ -1,4 +1,4 @@
-# Copyright (c) 2019, Wuklab, Purdue University.
+# Copyright (c) 2019, Wuklab, UCSD.
 
 # Create a project
 open_project	-reset generated_hls_project

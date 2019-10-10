@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019，Wuklab, Purdue University.
+ * Copyright (c) 2019，Wuklab, UCSD.
  */
 
 #ifndef _MM_HLS_MAPPING_TOP_H_

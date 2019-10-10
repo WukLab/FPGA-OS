@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Wuklab, Purdue University. All rights reserved.
+ * Copyright (c) 2019 Wuklab, UCSD. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -128,4 +128,4 @@ static void remap_exit(void)
 module_init(remap_init);
 module_exit(remap_exit);
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Wuklab@Purdue");
+MODULE_AUTHOR("Wuklab@UCSD");

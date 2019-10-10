@@ -1,6 +1,6 @@
 #
 # Makefile for Hotpot
-# Copyright (C) 2016-2017 Wuklab, Purdue. All rights reserved.
+# Copyright (C) 2016-2017 Wuklab, UCSD. All rights reserved.
 #
 
 obj-m := remap.o

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019，Wuklab, Purdue University.
+ * Copyright (c) 2019，Wuklab, UCSD.
  */
 
 #ifndef _LOG2_H_

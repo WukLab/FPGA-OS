@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, WukLab, Purdue University.
+ * Copyright (c) 2019, WukLab, UCSD.
  */
 
 #include <ctime>
