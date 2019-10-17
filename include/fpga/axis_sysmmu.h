@@ -24,13 +24,13 @@ enum {
 	WRITE = 1,
 };
 
-struct sysmmu_entry{
+struct sysmmu_entry {
 	ap_uint<1>		valid;
 	ap_uint<1>		rw;
 	ap_uint<PID_WIDTH>	pid;
 };
 
-struct sysmmu_indata{
+struct sysmmu_indata {
 	/*
 	 * physical memory datapath input interface, only for permission check
 	 *

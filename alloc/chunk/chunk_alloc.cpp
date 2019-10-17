@@ -1,6 +1,5 @@
 #include "chunk_alloc.h"
 
-
 static ap_uint<TABLE_SIZE> chunk_bitmap = 0;
 
 void handler(hls::stream<sysmmu_alloc_if>& alloc,
