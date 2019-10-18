@@ -17,7 +17,12 @@
 /*
  * The total managed DRAM size in bytes.
  * The default is the whole on-board DRAM space.
- * Users can customize
+ * For fixed-size segment allocator, this parameter determines the metadata size.
+ *
+ * TODO:
+ * The "best" way to have the metadata is to
+ * allocate it during runtime. But for now I don't really know
+ * how to properly do that. Let's just assume the max.
  */
 #ifndef CONFIG_SEGFIX_MANAGED_SIZE_SHIFT
 # define CONFIG_SEGFIX_MANAGED_SIZE_SHIFT	(CONFIG_DRAM_SIZE_SHIFT)

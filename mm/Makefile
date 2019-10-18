@@ -13,7 +13,7 @@ endif
 all:
 	# Standalone IPs
 	$(Q)./generate_hls.sh $(TARGET_BOARD)
-	$(Q)make -C axi_wrapper
+	$(Q)make -C axi_rab
 	$(Q)make -C mapping
 
 	# Integrated IPs
