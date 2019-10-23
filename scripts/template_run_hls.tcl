@@ -1,6 +1,6 @@
 #
 # Copyright (c) 2019, Wuklab, UCSD.
-# Last Updated: Sep 13, 2019
+# Last Updated: Oct 22, 2019
 #
 # Template script for generating a Vivado HLS project.
 # 1) generated_hls_project/ will be created.
@@ -14,6 +14,10 @@
 # 2) Change added file name
 # 3) Change top-level function name
 # 4) Change exported IP parameters
+
+# If the script is run in this way:
+#   vivado_hls -f run_hls.tcl -tclargs $(TARGET_BOARD)
+set board "[lindex $argv 2]"
 
 # Create a project
 open_project	-reset generated_hls_project 
@@ -38,8 +42,18 @@ open_solution -reset solution1
 # VCU108:	xcvu095-ffva2104-2-e
 # ArtyA7:	xc7a100tcsg324-1
 #
-set_part {xcvu9p-flga2104-1-i}
-set_part {xcvu095-ffva2104-2-e}
+switch $board {
+	vcu118 {
+		set_part {xcvu9p-flga2104-1-i}
+	}
+	vcu108 {
+		set_part {xcvu095-ffva2104-2-e}
+	}
+	default {
+		puts "Unknown board: $board"
+		exit
+	}
+}
 create_clock -period 10 -name default
 set_clock_uncertainty 1.25
 

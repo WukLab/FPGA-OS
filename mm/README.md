@@ -6,6 +6,8 @@ and OS Fault Handling. Please check the design document for design details.
 Building Blocks:
 - `axi_rab/`: AXI Remapping Address Block
 - `segfix/`: Fixed-size Segment Memory Management
+	- The memory is divided into fixed-size chunks.
+	- User allocation requests are rounded up.
 - `segvar/`: Variable-size Segment Memory Management
 - `paging/`: Paging Memory Management
 

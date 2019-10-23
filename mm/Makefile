@@ -4,15 +4,16 @@
 
 ifeq ($(TARGET_BOARD), )
   TARGET_BOARD = vcu118
-  export TARGET_BOARD
 endif
+
+IP_NAME_PREFIX	:= mm
+HLS_IP_CORES	:= segfix,segvar
 
 #
 # sys must be the last one in the list
 #
 all:
-	# Standalone IPs
-	$(Q)./generate_hls.sh $(TARGET_BOARD)
+	$(Q)./generate_hls.sh $(TARGET_BOARD) $(HLS_IP_CORES) $(IP_NAME_PREFIX)
 	$(Q)make -C axi_rab
 	$(Q)make -C mapping
 

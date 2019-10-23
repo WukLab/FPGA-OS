@@ -12,19 +12,10 @@ ifeq ($(TARGET_BOARD), )
 endif
 
 all:
-	$(VIVADO) -mode tcl -source run_vivado_sysmmu_$(TARGET_BOARD).tcl
-
-simple_ip:
 	$(VIVADO) -mode tcl -source run_vivado_$(TARGET_BOARD).tcl
 
 g:
 	$(VIVADO) $(VIVADO_PRJ)
-
-simple_testbench:
-	$(VIVADO) -mode tcl -source run_vivado_$(TARGET_BOARD)_tb.tcl
-
-testbench:
-	$(VIVADO) -mode tcl -source run_vivado_sysmmu_$(TARGET_BOARD)_tb.tcl
 
 gtb:
 	$(VIVADO) $(VIVADO_TB_PRJ)
@@ -50,4 +41,3 @@ help:
 	@echo "  # make all              <- make both the ip and the testbench"
 	@echo "  # make g                <- Open GUI for the sys mm IP"
 	@echo "  # make gtb              <- Open GUI for the sys mm sub-unit TB"
-

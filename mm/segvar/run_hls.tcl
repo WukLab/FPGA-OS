@@ -1,5 +1,9 @@
 # Copyright (c) 2019, Wuklab, UCSD.
 
+# If the script is run in this way:
+#   vivado_hls -f run_hls.tcl -tclargs $(TARGET_BOARD)
+set board "[lindex $argv 2]"
+
 # Create a project
 open_project	-reset generated_hls_project
 
@@ -8,7 +12,7 @@ add_files	top.cpp			-cflags -I../../include/
 add_files -tb	tb.cpp			-cflags -I../../include/
 
 # Specify the top-level function for synthesis
-set_top		mm_segfix_hls
+set_top		mm_segvar_hls
 
 ###########################
 # Solution settings
@@ -22,7 +26,18 @@ open_solution -reset solution1
 # VCU108:	xcvu095-ffva2104-2-e
 # ArtyA7:	xc7a100tcsg324-1
 #
-set_part {xcvu9p-flga2104-1-i}
+switch $board {
+	vcu118 {
+		set_part {xcvu9p-flga2104-1-i}
+	}
+	vcu108 {
+		set_part {xcvu095-ffva2104-2-e}
+	}
+	default {
+		puts "Unknown board: $board"
+		exit
+	}
+}
 create_clock -period 3.33 -name default
 set_clock_uncertainty 0.25
 
@@ -32,13 +47,13 @@ set_clock_uncertainty 0.25
 config_rtl -reset all -reset_async
 
 # Simulate the C code
-#csim_design
+csim_design
 
 # Synthesis the C code
 csynth_design
 
 # Export IP block
-export_design -format ip_catalog -display_name "Fixed-size Segment MM" -description "MM_SEGFIX_HLS" -vendor "wuklab" -version "1.0"
+export_design -format ip_catalog -display_name "Variable-size Segment MM" -description "MM_SEGVAR_HLS" -vendor "wuklab" -version "1.0"
 
 # Do not perform any other steps
 # - The basic project will be opened in the GUI

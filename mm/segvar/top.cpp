@@ -4,14 +4,13 @@
 
 /*
  * This file describes the segment table in the SysMM IP.
- * There is one unified table that is used to do both allocation
- * and permission checking.
- *
  * Note that this is NOT the complete SysMM IP.
  * We still need the AXI RAB sitting on the AXI-MM path.
+ *
+ * This IP share most of the infrastructure code with the fixed-size segment.
+ * The difference lies in the parser() function.
  */
 
-#include <fpga/config/alloc_segfix.h>
 #include <fpga/config/process.h>
 #include <fpga/config/memory.h>
 #include <fpga/channel/alloc_seg.h>
@@ -20,12 +19,7 @@
 
 using namespace hls;
 
-/*
- * TODO
- * Can we allocate the table after deployment?
- * The table size should based on the physical DRAM size.
- */
-struct segfix_entry table[NR_SEGFIX_ENTRIES];
+struct segvar_entry table[NR_MAX_SEGVAR_ENTRIES];
 
 /*
  * This is the base physical address of the managed DRAM.
@@ -92,6 +86,8 @@ static void aggregate_input(stream<struct alloc_seg_in> *ctl_in,
 
 /*
  * TODO
+ * Variable-size segment table is conceptually easy to implement.
+ * But its hard to have an efficient version maybe.
  */
 static void parser(stream<struct pipeline_info> *input,
 		   stream<struct pipeline_info> *output)
@@ -100,7 +96,7 @@ static void parser(stream<struct pipeline_info> *input,
 #pragma HLS PIPELINE II=1
 
 	struct pipeline_info pi;
-	struct segfix_entry entry;
+	struct segvar_entry entry;
 
 	if (input->empty())
 		return;
@@ -161,7 +157,7 @@ disaggregate_output(stream<struct pipeline_info> *input,
  * rd/wr_in/out are for permission checking. Since AXI-MM suppoert concurrent
  * Read and Write, thus our AXI RAB could send rd_in and wr_in at the same time.
  */
-void mm_segfix_hls(stream<struct alloc_seg_in> *ctl_in, stream<struct alloc_seg_out> *ctl_out,
+void mm_segvar_hls(stream<struct alloc_seg_in> *ctl_in, stream<struct alloc_seg_out> *ctl_out,
 		   stream<struct rab_request> *rd_in, stream<struct rab_reply> *rd_out,
 		   stream<struct rab_request> *wr_in, stream<struct rab_reply> *wr_out)
 {

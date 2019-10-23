@@ -11,7 +11,7 @@
 
 using namespace hls;
 
-void mm_segfix_hls(stream<struct alloc_seg_in> *ctl_in, stream<struct alloc_seg_out> *ctl_out,
+void mm_segvar_hls(stream<struct alloc_seg_in> *ctl_in, stream<struct alloc_seg_out> *ctl_out,
 		   stream<struct rab_request> *rd_in, stream<struct rab_reply> *rd_out,
 		   stream<struct rab_request> *wr_in, stream<struct rab_reply> *wr_out);
 
@@ -48,7 +48,7 @@ int main(void)
 
 	nr_cycles = 500;
 	for (i = 0; i < nr_cycles; i++) {
-		mm_segfix_hls(&ctl_in, &ctl_out, &rd_in, &rd_out, &wr_in, &wr_out);
+		mm_segvar_hls(&ctl_in, &ctl_out, &rd_in, &rd_out, &wr_in, &wr_out);
 
 		if (!ctl_out.empty()) {
 			d_ctl_out = ctl_out.read();
