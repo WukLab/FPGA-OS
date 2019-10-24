@@ -1,8 +1,5 @@
 /*------------------------------------------------------------------------------
- * Title      : AXI based MMU IP
- * Project    : LegoFPGA
- *------------------------------------------------------------------------------
- * File       : axi_mmu_wrapper
+ * Title      : AXI-MM Remapping Address Block (rab)
  * -----------------------------------------------------------------------------
  * Description: This is the top level for the MMU IP. It acts as slave to a master
  *              AXI and sends virtual address to translation unit and on successful
