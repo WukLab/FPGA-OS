@@ -10,10 +10,9 @@
 # 3) simulation, synthesis, and IP export will be executed.
 #
 # To customize:
-# 1) Change part and clock
-# 2) Change added file name
-# 3) Change top-level function name
-# 4) Change exported IP parameters
+# - Change added file name
+# - Change top-level function name
+# - Change exported IP parameters
 
 # If the script is run in this way:
 #   vivado_hls -f run_hls.tcl -tclargs $(TARGET_BOARD)
@@ -48,6 +47,9 @@ switch $board {
 	}
 	vcu108 {
 		set_part {xcvu095-ffva2104-2-e}
+	}
+	arty_a7 {
+		set_part {xc7a100tcsg324-1}
 	}
 	default {
 		puts "Unknown board: $board"

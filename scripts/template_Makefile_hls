@@ -8,8 +8,13 @@ ifeq ($(TARGET_BOARD), )
   TARGET_BOARD = vcu118
 endif
 
+# Use the top directory name
+# For example, mm kernel alloc
+IP_NAME_PREFIX	:= XXXXX
+HLS_IP_CORES	:= hls1,hls2
+
 all:
-	$(VIVADO_HLS) -f run_hls_$(TARGET_BOARD).tcl
+	$(Q)./generate_hls.sh $(TARGET_BOARD) $(HLS_IP_CORES) $(IP_NAME_PREFIX)
 
 g:
 	$(VIVADO_HLS) -p $(project_path)
