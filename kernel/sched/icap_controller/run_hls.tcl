@@ -2,6 +2,10 @@
 # Copyright (c) 2019, Wuklab, UCSD.
 #
 
+# If the script is run in this way:
+#   vivado_hls -f run_hls.tcl -tclargs $(TARGET_BOARD)
+set board "[lindex $argv 2]"
+
 # Create a project
 open_project	-reset generated_hls_project 
 
@@ -23,10 +27,25 @@ open_solution -reset solution1
 # VCU118:	xcvu9p-flga2104-1-i
 # VCU108:	xcvu095-ffva2104-2-e
 # ArtyA7:	xc7a100tcsg324-1
-#
-set_part {xcvu9p-flga2104-1-i}
+switch $board {
+	vcu118 {
+		set_part {xcvu9p-flga2104-1-i}
+	}
+	vcu108 {
+		set_part {xcvu095-ffva2104-2-e}
+	}
+	default {
+		puts "Unknown board: $board"
+		exit
+	}
+}
 create_clock -period 4.00 -name default
 set_clock_uncertainty 0.25
+
+# UG902: Resets all registers and memories in the design.
+# Any static or global variable variables initialized in the C
+# code is reset to its initialized value.
+config_rtl -reset all -reset_async
 
 # Simulate the C code 
 #csim_design

@@ -8,10 +8,10 @@ ifeq ($(TARGET_BOARD), )
 endif
 
 all:
-	$(VIVADO_HLS) -f run_hls_$(TARGET_BOARD).tcl
+	$(VIVADO_HLS) -f run_hls.tcl -tclargs $(TARGET_BOARD)
 
 g:
-	$(VIVADO_HLS) -p $(project_path)
+	$(VIVADO_HLS) -p $(project_path) &
 
 clean:
 	rm -rf $(project_path)

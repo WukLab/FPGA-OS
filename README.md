@@ -2,9 +2,10 @@
 
 Copyright (c) 2019, Wuklab, UCSD.
 
-Last Updated: Sep 12, 2019
+Last Updated: Oct 24, 2019
 
-Codebase Organization Principles:
+## Codebase Organization Principles
+
 - Make each subfolder be an IP on its own. This means it should have its own
   scripts, rtl or hls code, and testbench.
 - Hierarchy IPs will have dependency. We need to express the order explicitly
@@ -15,7 +16,8 @@ Codebase Organization Principles:
   internally to build large ones. Our goal is to be able to reuse IPs as much as
   possible, and be able to construct new IPs easily.
 
-Codebase Directories:
+## Codebase Directories
+
 - Host Side:
 	- `host/`: Host side network stack
 - FPGA Side:
@@ -49,6 +51,8 @@ Format:
 	- Name IP consistenly. Use subsystem name as prefix.
 	  E.g., `mm_axi_wrapper` is the AXI wrapper IP under MM subsystem.
 
+### Tutorials
+
 ## HOWTO Build
 
 - Type `make help` to see detailed explanation.
@@ -63,7 +67,7 @@ can focus on the IPs you are building. Changes will be reflected automatically w
 
 Also, pay attention to which board you are targeting.
 
-## HOWTO use the Vivado script
+### HOWTO use the Vivado script
 
 The goal of using scripts are two-fold
 - Make the building process easier
@@ -141,7 +145,7 @@ Caveats:
 
 For now, you can find example scripts at the `mm/axi_wrapper/run_vivado.tcl`, and `mm/sys/run_vivado.tcl`.
 
-## HOWTO handle IP version
+### HOWTO handle IP version
 
 Vivado only supports one IP version in each version. It's super annonying
 if we use generated script. Luckily, there is one way to workaround it.
@@ -153,7 +157,7 @@ set axis_data_fifo [get_ipdefs -filter NAME==axis_data_fifo]
 Replace all `xilinx.com:ip:axis_data_fifo:1.1` with `$axis_data_fifo
 ```
 
-## HOWTO use the Vivado HLS script
+### HOWTO use the Vivado HLS script
 
 The Vivado HLS script is relatively easier than Vivado script.
 You can find the template script in `scripts/template_run_hls.tcl`.

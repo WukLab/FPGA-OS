@@ -1,26 +1,21 @@
-#
-# Copyright (c) 2019, Wuklab, UCSD.
-#
-
 ifeq ($(TARGET_BOARD), )
   TARGET_BOARD = vcu118
 endif
 
-IP_NAME_PREFIX	:= sched
-HLS_IP_CORES	:= icap_controller
+VIVADO = vivado
+VIVADO_PRJ = generated_vivado_project/generated_vivado_project.xpr
 
-#
-# sys must be the last one in the list
-#
 all:
-	$(Q)./generate_hls.sh $(TARGET_BOARD) $(HLS_IP_CORES) $(IP_NAME_PREFIX)
-	$(Q)make -C ip_sched
+	$(VIVADO) -mode tcl -source run_vivado_$(TARGET_BOARD).tcl
 
 clean:
-	find ./ -name "generated_hls_project" | xargs rm -rf
 	find ./ -name "generated_vivado_project" | xargs rm -rf
+	find ./ -name "ipshared" | xargs rm -rf
 	find ./ -name "*.log" | xargs rm -rf
 	find ./ -name "*.jou" | xargs rm -rf
 	find ./ -name "*.str" | xargs rm -rf
 	find ./ -name ".Xil" | xargs rm -rf
 	find ./ -name "awsver.txt" | xargs rm -rf
+
+g:
+	$(VIVADO) $(VIVADO_PRJ) &
