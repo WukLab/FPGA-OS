@@ -8,7 +8,7 @@ add_files	top.cpp			-cflags -I../../include/
 add_files -tb	tb.cpp			-cflags -I../../include/
 
 # Specify the top-level function for synthesis
-set_top		allocator_segfix
+set_top		allocator_chunk_fix
 
 ###########################
 # Solution settings
@@ -38,7 +38,7 @@ config_rtl -reset all -reset_async
 csynth_design
 
 # Export IP block
-export_design -format ip_catalog -display_name "Fixed-size Segment Allocator" -description "ALLOC_SEGFIX" -vendor "wuklab" -version "1.0"
+export_design -format ip_catalog -display_name "Fixed-size Chunk Allocator" -description "ALLOC_CHUNKFIX" -vendor "wuklab" -version "1.0"
 
 # Do not perform any other steps
 # - The basic project will be opened in the GUI
