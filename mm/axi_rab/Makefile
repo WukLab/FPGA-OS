@@ -10,7 +10,7 @@ all:
 	$(VIVADO) -mode tcl -source run_vivado_$(TARGET_BOARD).tcl
 
 g:
-	$(VIVADO) $(VIVADO_PRJ)
+	$(VIVADO) $(VIVADO_PRJ) &
 
 clean:
 	rm -rf $(VIVADO_PRJ_DIR)
@@ -19,4 +19,5 @@ clean:
 	find ./ -name "*.log" | xargs rm -rf
 	find ./ -name "*.jou" | xargs rm -rf
 	find ./ -name "*.str" | xargs rm -rf
-	find ./ -name ".Xil" | xargs rm -rf
+	find ./ -name "*.Xil" | xargs rm -rf
+	find ./ -name "vivado*.debug" | xargs rm -rf

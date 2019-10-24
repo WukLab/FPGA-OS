@@ -1,3 +1,10 @@
+# AXI Remapping Address Block
+
+This is the AXI RAB module.
+This was originally developed by Shushan.
+
+## Description
+
 RTL TOP 
     axi_mmu_wrapper
 

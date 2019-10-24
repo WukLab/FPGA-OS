@@ -1,9 +1,4 @@
 /* ------------------------------------------------------------------------------
- * Title      : AXI based MMU IP
- * Project    : LegoFPGA 
- * ------------------------------------------------------------------------------
- * File       : axi_addr_ch_tx 
- * -----------------------------------------------------------------------------
  * Description: This is the address channel transitter that sends the 
  *              translated address to the slave which can be memory system or
  *              some intermediate module.

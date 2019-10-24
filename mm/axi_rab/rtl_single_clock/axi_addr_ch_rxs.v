@@ -1,9 +1,4 @@
 /* ------------------------------------------------------------------------------
- * Title      : AXI based MMU IP 
- * Project    : LegoFPGA 
- * ------------------------------------------------------------------------------
- * File       : axi_addr_ch_rx 
- * -----------------------------------------------------------------------------
  * Description: This is the address channel receiver with RX_BUF instantiated that
  *              sends the address out to be consumed by translator. Used for
  *              both read and write address channel

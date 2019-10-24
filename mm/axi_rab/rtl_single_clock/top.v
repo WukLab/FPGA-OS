@@ -10,7 +10,7 @@
 
 `timescale 1ns / 1ps
 
-module axi_mmu_wrapper_sync #(
+module axi_rab_top #(
     parameter AW_BUF_SZ        = 32,
     parameter AR_BUF_SZ        = 32,
     parameter W_BUF_SZ         = 256,
@@ -37,7 +37,7 @@ module axi_mmu_wrapper_sync #(
     input         s_axi_clk,
     input         s_aresetn,
 
-/*WRITE ADDRESS CHANNEL*/
+/* WRITE ADDRESS CHANNEL*/
 /* slave write address channel of MMU sharing interface with master app/interconnect AXI */
     input     [AXI_ID_WIDTH-1:0] s_axi_AWID,
     input   [AXI_ADDR_WIDTH-1:0] s_axi_AWADDR,

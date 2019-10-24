@@ -15,10 +15,10 @@ all:
 	$(VIVADO) -mode tcl -source run_vivado_$(TARGET_BOARD).tcl
 
 g:
-	$(VIVADO) $(VIVADO_PRJ)
+	$(VIVADO) $(VIVADO_PRJ) &
 
 gtb:
-	$(VIVADO) $(VIVADO_TB_PRJ)
+	$(VIVADO) $(VIVADO_TB_PRJ) &
 
 clean:
 	rm -rf $(PROJ_DIR)

@@ -109,6 +109,9 @@ Hack:
 	  few lines at the end of the script. Note that you need to specify the destination location,
 	  the name of the IP, and so on. All our generated IPs are in `generated_ip/`. For example,
 	  `ipx::package_project -root_dir ../../generated_ip/mm_axi_wrapper -vendor wuklab -library user -taxonomy UserIP -import_files -set_current false -force`
+	- Package a BD as an IP:
+	  `ipx::package_project -root_dir ../../generated_ip/mm_axi_rab_vcu118 -vendor wuklab -library user -taxonomy UserIP -module THE_BD_NAME -import_files`
+
 - Add more source/xdc/simulation files:
 	- First solution, manually change the generated script. Try to find out how those
 	  existing files are added, then you can modify the script in a similar way. Tips:
