@@ -15,12 +15,12 @@ HLS_IP_CORES	:= segfix,segvar
 all:
 	$(Q)./generate_hls.sh $(TARGET_BOARD) $(HLS_IP_CORES) $(IP_NAME_PREFIX)
 	$(Q)make -C axi_rab
-	$(Q)make -C mapping
+	$(Q)make -C paging_hashed 
 
 	# Integrated IPs
-	$(Q)make -C ip_libmmu_paging
-	$(Q)make -C ip_libmmu_segment
-	$(Q)make -C ip_sysmmu_segment
+	$(Q)make -C ip_libmm_paging
+	$(Q)make -C ip_libmm_segfix
+	$(Q)make -C ip_sysmm_segfix
 
 clean:
 	$(Q)make -C axi_wrapper clean
