@@ -14,7 +14,7 @@ add_files	top.cpp -cflags -I../../../include/
 add_files -tb	tb.cpp  -cflags -I../../../include/
 
 # Specify the top-level function for synthesis
-set_top		icap_controller
+set_top		icap_controller_hls
 
 ###########################
 # Solution settings
@@ -54,7 +54,7 @@ config_rtl -reset all -reset_async
 csynth_design
 
 # Export IP block
-export_design -format ip_catalog -display_name "icap_controller" -description "ICAP Controller" -vendor "Wuklab.UCSD" -version "1.0"
+export_design -format ip_catalog -display_name "icap_controller_hls" -description "ICAP Controller HLS" -vendor "Wuklab.UCSD" -version "1.0"
 
 # Do not perform any other steps
 # - The basic project will be opened in the GUI 
