@@ -65,6 +65,7 @@ PHONY :=
 all:
 	$(Q)mkdir -p $(GENERATED_IP)
 	$(Q)make -C alloc
+	$(Q)make -C lib 
 	$(Q)make -C net
 	$(Q)make -C mm
 	$(Q)make -C app
