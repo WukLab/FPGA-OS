@@ -10,4 +10,4 @@ all:
 	$(Q)make -C dummy_net_loopback
 	$(Q)make -C rdma
 	$(Q)make -C timestamp
-	$(Q)make -C memcached
+	#$(Q)make -C memcached

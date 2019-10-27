@@ -15,7 +15,7 @@ if { [info exists ::user_project_name] } {
 }
 
 variable script_file
-set script_file "run_vivado_vcu118.tcl"
+set script_file "run_vivado_vcu108.tcl"
 
 # Help information for this script
 proc help {} {
@@ -66,7 +66,7 @@ if { $::argc > 0 } {
 set orig_proj_dir "[file normalize "$origin_dir/generated_vivado_project"]"
 
 # Create project
-create_project -f ${_xil_proj_name_} "./generated_vivado_project" -part xcvu9p-flga2104-2L-e
+create_project -f ${_xil_proj_name_} "./generated_vivado_project" -part xcvu095-ffva2104-2-e
 
 # Set the directory path for the new project
 set proj_dir [get_property directory [current_project]]
@@ -76,11 +76,11 @@ set proj_dir [get_property directory [current_project]]
 
 # Set project properties
 set obj [current_project]
-set_property -name "board_part" -value "xilinx.com:vcu118:part0:2.0" -objects $obj
+set_property -name "board_part" -value "xilinx.com:vcu108:part0:1.4" -objects $obj
 set_property -name "default_lib" -value "xil_defaultlib" -objects $obj
 set_property -name "dsa.accelerator_binary_content" -value "bitstream" -objects $obj
 set_property -name "dsa.accelerator_binary_format" -value "xclbin2" -objects $obj
-set_property -name "dsa.board_id" -value "vcu118" -objects $obj
+set_property -name "dsa.board_id" -value "vcu108" -objects $obj
 set_property -name "dsa.description" -value "Vivado generated DSA" -objects $obj
 set_property -name "dsa.dr_bd_base_address" -value "0" -objects $obj
 set_property -name "dsa.emu_dir" -value "emu" -objects $obj
@@ -152,7 +152,7 @@ source "bd_icap_controller.tcl"
 make_wrapper -files [get_files ${origin_dir}/generated_vivado_project/generated_vivado_project.srcs/sources_1/bd/icap_controller/icap_controller.bd] -top
 add_files -norecurse ${origin_dir}/generated_vivado_project/generated_vivado_project.srcs/sources_1/bd/icap_controller/hdl/icap_controller_wrapper.v
 
-ipx::package_project -root_dir ../../../generated_ip/sched_ip_icap_controller_vcu118 -vendor wuklab -library user -taxonomy UserIP -module icap_controller -import_files
+ipx::package_project -root_dir ../../../generated_ip/sched_ip_icap_controller_vcu108 -vendor wuklab -library user -taxonomy UserIP -module icap_controller -import_files
 
 update_ip_catalog -rebuild
 
