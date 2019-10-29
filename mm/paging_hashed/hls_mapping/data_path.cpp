@@ -205,7 +205,7 @@ static inline int find_empty_slot(ap_uint<NR_SLOTS_PER_BUCKET> in)
 #pragma HLS INLINE
 	int i = 0, slot = 0;
 	for (i = 0; i < NR_SLOTS_PER_BUCKET; i++) {
-		if (in(i+1, i) == 0) {
+		if (in[i] == 0) {
 			slot = i;
 			break;
 		}
