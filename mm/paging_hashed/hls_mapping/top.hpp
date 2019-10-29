@@ -8,6 +8,7 @@
 #include <ap_axi_sdata.h>
 #include <ap_int.h>
 #include <fpga/axis_mapping.h>
+#include <fpga/axis_buddy.h>
 
 #include "hash.hpp"
 
@@ -48,10 +49,12 @@ struct pipeline_info {
 
 	/*
 	 * @hash: the computed hash value, used to index array.
+	 * @addr: address of bucket in the hash chain
 	 * @slot: matched slot number in the BRAM hash bucket
 	 * @slot: matched slot number in the DRAM hash bucket
 	 */
 	ap_uint<NR_BITS_HASH>			hash;
+	ap_uint<NR_BITS_CHAIN_ADDR> 		hb_dram_addr;
 	ap_uint<NR_BITS_BUCKET>			hb_bram;
 	ap_uint<NR_BITS_BUCKET>			hb_dram;
 	int					slot;
@@ -78,7 +81,10 @@ void paging_top(hls::stream<struct mapping_request>	*in_read,
 		hls::stream<struct dm_cmd>		*BRAM_rd_cmd,
 		hls::stream<struct dm_cmd>		*BRAM_wr_cmd,
 		hls::stream<struct axis_mem>		*BRAM_rd_data,
-		hls::stream<struct axis_mem>		*BRAM_wr_data);
+		hls::stream<struct axis_mem>		*BRAM_wr_data,
+		
+		hls::stream<struct buddy_alloc_if>	*alloc,
+		hls::stream<struct buddy_alloc_ret_if>	*alloc_ret);
 
 void data_path(stream<struct mapping_request> *rd_request,
 	       stream<struct mapping_request> *wr_request,
@@ -93,7 +99,10 @@ void data_path(stream<struct mapping_request> *rd_request,
 	       stream<struct mem_cmd>		*BRAM_rd_cmd,
 	       stream<struct mem_cmd>		*BRAM_wr_cmd,
 	       stream<ap_uint<MEM_BUS_WIDTH> >	*BRAM_rd_data,
-	       stream<ap_uint<MEM_BUS_WIDTH> >	*BRAM_wr_data);
+	       stream<ap_uint<MEM_BUS_WIDTH> >	*BRAM_wr_data,
+	       
+	       stream<struct buddy_alloc_if>		*alloc,
+	       stream<struct buddy_alloc_ret_if>	*alloc_ret);
 
 void compute_hash(stream<struct pipeline_info> *in,
 		  stream<struct pipeline_info> *out);

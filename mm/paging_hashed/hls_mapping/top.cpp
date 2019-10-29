@@ -54,7 +54,10 @@ void paging_top(hls::stream<struct mapping_request>	*in_read,
 		hls::stream<struct dm_cmd>		*BRAM_rd_cmd,
 		hls::stream<struct dm_cmd>		*BRAM_wr_cmd,
 		hls::stream<struct axis_mem>		*BRAM_rd_data,
-		hls::stream<struct axis_mem>		*BRAM_wr_data)
+		hls::stream<struct axis_mem>		*BRAM_wr_data,
+		
+		hls::stream<struct buddy_alloc_if>	*alloc,
+		hls::stream<struct buddy_alloc_ret_if>	*alloc_ret)
 {
 #pragma HLS INTERFACE ap_ctrl_none port=return
 #pragma HLS DATAFLOW
@@ -76,6 +79,9 @@ void paging_top(hls::stream<struct mapping_request>	*in_read,
 #pragma HLS INTERFACE axis both port=BRAM_rd_data
 #pragma HLS INTERFACE axis both port=BRAM_wr_data
 
+#pragma HLS INTERFACE axis both port=alloc
+#pragma HLS INTERFACE axis both port=alloc_ret
+
 #pragma HLS DATA_PACK variable=in_read
 #pragma HLS DATA_PACK variable=in_write
 #pragma HLS DATA_PACK variable=out_read
@@ -84,6 +90,8 @@ void paging_top(hls::stream<struct mapping_request>	*in_read,
 #pragma HLS DATA_PACK variable=DRAM_wr_cmd
 #pragma HLS DATA_PACK variable=BRAM_rd_cmd
 #pragma HLS DATA_PACK variable=BRAM_wr_cmd
+#pragma HLS DATA_PACK variable=alloc
+#pragma HLS DATA_PACK variable=alloc_ret
 
 	static stream<struct mapping_request>	fifo_read_req;
 	static stream<struct mapping_request>	fifo_write_req;
@@ -132,7 +140,8 @@ void paging_top(hls::stream<struct mapping_request>	*in_read,
 		  &fifo_DRAM_rd_cmd,  &fifo_DRAM_wr_cmd,
 		  &fifo_DRAM_rd_data, &fifo_DRAM_wr_data,
 		  &fifo_BRAM_rd_cmd,  &fifo_BRAM_wr_cmd,
-		  &fifo_BRAM_rd_data, &fifo_BRAM_wr_data);
+		  &fifo_BRAM_rd_data, &fifo_BRAM_wr_data,
+		  alloc, alloc_ret);
 
 	/*
 	 * Memory access part.
