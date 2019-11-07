@@ -20,6 +20,7 @@ proc cr_bd_icap_controller { parentCell } {
   set bCheckIPs 1
   if { $bCheckIPs == 1 } {
      set list_check_ips "\ 
+  xilinx.com:ip:clk_wiz:6.0\
   Wuklab.UCSD:hls:icap_controller_hls:1.0\
   "
 
@@ -99,14 +100,20 @@ proc cr_bd_icap_controller { parentCell } {
 
 
   # Create interface ports
+  set sysclk_125 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 sysclk_125 ]
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {125000000} \
+   ] $sysclk_125
 
   # Create ports
-  set clk [ create_bd_port -dir I -type clk clk ]
+
+  # Create instance: clk_wiz_0, and set properties
+  set clk_wiz_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:clk_wiz:6.0 clk_wiz_0 ]
   set_property -dict [ list \
-   CONFIG.ASSOCIATED_RESET {rst_n} \
-   CONFIG.FREQ_HZ {100000000} \
- ] $clk
-  set rst_n [ create_bd_port -dir I -type rst rst_n ]
+   CONFIG.CLK_IN1_BOARD_INTERFACE {sysclk_125} \
+   CONFIG.USE_BOARD_FLOW {true} \
+   CONFIG.USE_RESET {false} \
+ ] $clk_wiz_0
 
   # Create instance: icap_controller_hls_0, and set properties
   set icap_controller_hls_0 [ create_bd_cell -type ip -vlnv Wuklab.UCSD:hls:icap_controller_hls:1.0 icap_controller_hls_0 ]
@@ -137,10 +144,11 @@ proc cr_bd_icap_controller { parentCell } {
   connect_bd_intf_net -intf_net icap_controller_hls_0_to_icap_V_V [get_bd_intf_pins icap_controller_hls_0/to_icap_V_V] [get_bd_intf_pins strip_0/data_from_hls]
   connect_bd_intf_net -intf_net strip_0_data_to_hls [get_bd_intf_pins icap_controller_hls_0/from_icap_V_V] [get_bd_intf_pins strip_0/data_to_hls]
   connect_bd_intf_net -intf_net strip_0_with_ICAP [get_bd_intf_pins icape3_wrapper_0/ICAP] [get_bd_intf_pins strip_0/with_ICAP]
+  connect_bd_intf_net -intf_net sysclk_125_1 [get_bd_intf_ports sysclk_125] [get_bd_intf_pins clk_wiz_0/CLK_IN1_D]
 
   # Create port connections
-  connect_bd_net -net ap_rst_n_0_1 [get_bd_ports rst_n] [get_bd_pins icap_controller_hls_0/ap_rst_n]
-  connect_bd_net -net clk_1 [get_bd_ports clk] [get_bd_pins icap_controller_hls_0/ap_clk] [get_bd_pins icape3_wrapper_0/clk] [get_bd_pins strip_0/clk]
+  connect_bd_net -net clk_1 [get_bd_pins clk_wiz_0/clk_out1] [get_bd_pins icap_controller_hls_0/ap_clk] [get_bd_pins icape3_wrapper_0/CLK] [get_bd_pins strip_0/clk]
+  connect_bd_net -net clk_wiz_0_locked [get_bd_pins clk_wiz_0/locked] [get_bd_pins icap_controller_hls_0/ap_rst_n]
   connect_bd_net -net icap_controller_hls_0_CSIB_to_icap_V [get_bd_pins icap_controller_hls_0/CSIB_to_icap_V] [get_bd_pins strip_0/CSIB_from_hls]
   connect_bd_net -net icap_controller_hls_0_CSIB_to_icap_V_ap_vld [get_bd_pins icap_controller_hls_0/CSIB_to_icap_V_ap_vld] [get_bd_pins strip_0/CSIB_from_hls_valid]
   connect_bd_net -net icap_controller_hls_0_RDWRB_to_icap_V [get_bd_pins icap_controller_hls_0/RDWRB_to_icap_V] [get_bd_pins strip_0/RDWRB_from_hls]
@@ -156,24 +164,25 @@ proc cr_bd_icap_controller { parentCell } {
    "ExpandedHierarchyInLayout":"",
    "guistr":"# # String gsaved with Nlview 6.8.11  2018-08-07 bk=1.4403 VDI=40 GEI=35 GUI=JA:9.0 TLS
 #  -string -flagsOSRD
-preplace port clk -pg 1 -y 100 -defaultsOSRD
-preplace port rst_n -pg 1 -y 130 -defaultsOSRD
-preplace inst strip_0 -pg 1 -lvl 1 -y 130 -defaultsOSRD
-preplace inst icap_controller_hls_0 -pg 1 -lvl 2 -y 140 -defaultsOSRD
-preplace inst icape3_wrapper_0 -pg 1 -lvl 2 -y 340 -defaultsOSRD
-preplace netloc icap_controller_hls_0_RDWRB_to_icap_V 1 0 3 60 240 470J 30 1000
-preplace netloc strip_0_AVAIL_to_hls 1 1 1 480
-preplace netloc icap_controller_hls_0_to_icap_V_V 1 0 3 30 10 NJ 10 1010
-preplace netloc strip_0_data_to_hls 1 1 1 480
-preplace netloc strip_0_with_ICAP 1 1 1 460
-preplace netloc icap_controller_hls_0_CSIB_to_icap_V 1 0 3 30 260 NJ 260 980
-preplace netloc strip_0_PRDONE_to_hls 1 1 1 450
-preplace netloc clk_1 1 0 2 10 280 490
-preplace netloc strip_0_PRERROR_to_hls 1 1 1 440
-preplace netloc icap_controller_hls_0_RDWRB_to_icap_V_ap_vld 1 0 3 50 270 NJ 270 1010
-preplace netloc ap_rst_n_0_1 1 0 2 20J 20 500J
-preplace netloc icap_controller_hls_0_CSIB_to_icap_V_ap_vld 1 0 3 40 250 NJ 250 990
-levelinfo -pg 1 -10 250 740 1040 -top 0 -bot 410
+preplace port sysclk_125 -pg 1 -y 240 -defaultsOSRD
+preplace inst strip_0 -pg 1 -lvl 2 -y 130 -defaultsOSRD
+preplace inst icape3_wrapper_0 -pg 1 -lvl 3 -y 350 -defaultsOSRD
+preplace inst icap_controller_hls_0 -pg 1 -lvl 3 -y 150 -defaultsOSRD
+preplace inst clk_wiz_0 -pg 1 -lvl 1 -y 240 -defaultsOSRD
+preplace netloc clk_wiz_0_locked 1 1 2 N 250 720J
+preplace netloc icap_controller_hls_0_RDWRB_to_icap_V 1 1 3 270 10 NJ 10 1240
+preplace netloc strip_0_AVAIL_to_hls 1 2 1 730
+preplace netloc icap_controller_hls_0_to_icap_V_V 1 1 3 300 20 NJ 20 1210
+preplace netloc strip_0_data_to_hls 1 2 1 690
+preplace netloc strip_0_with_ICAP 1 2 1 700
+preplace netloc icap_controller_hls_0_CSIB_to_icap_V 1 1 3 280 270 NJ 270 1210
+preplace netloc sysclk_125_1 1 0 1 N
+preplace netloc strip_0_PRDONE_to_hls 1 2 1 690
+preplace netloc clk_1 1 1 2 260 240 710
+preplace netloc strip_0_PRERROR_to_hls 1 2 1 680
+preplace netloc icap_controller_hls_0_RDWRB_to_icap_V_ap_vld 1 1 3 290 280 NJ 280 1230
+preplace netloc icap_controller_hls_0_CSIB_to_icap_V_ap_vld 1 1 3 300 260 NJ 260 1220
+levelinfo -pg 1 0 140 490 970 1260 -top 0 -bot 420
 "
 }
 
@@ -188,3 +197,4 @@ levelinfo -pg 1 -10 250 740 1040 -top 0 -bot 410
 cr_bd_icap_controller ""
 set_property REGISTERED_WITH_MANAGER "1" [get_files icap_controller.bd ] 
 set_property SYNTH_CHECKPOINT_MODE "Hierarchical" [get_files icap_controller.bd ] 
+

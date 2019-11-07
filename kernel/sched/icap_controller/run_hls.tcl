@@ -48,7 +48,7 @@ set_clock_uncertainty 0.25
 config_rtl -reset all -reset_async
 
 # Simulate the C code 
-#csim_design
+csim_design
 
 # Synthesis the C code
 csynth_design

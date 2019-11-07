@@ -142,6 +142,10 @@ if {[string equal [get_filesets -quiet sim_1] ""]} {
 # Set 'sim_1' fileset object
 set obj [get_filesets sim_1]
 # Empty (no sources present)
+set files [list \
+ [file normalize "${origin_dir}/tb/tb.v"] \
+]
+add_files -norecurse -fileset $obj $files
 
 # Set 'sim_1' fileset properties
 set obj [get_filesets sim_1]
