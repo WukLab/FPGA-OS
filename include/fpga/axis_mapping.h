@@ -10,6 +10,8 @@
 #define MAPPING_REQUEST_READ	(0)
 #define MAPPING_REQUEST_WRITE	(1)
 #define MAPPING_SET		(2)
+#define MAPPING_PERMISSION_R	(0x00)  // 0000 0000
+#define MAPPING_PERMISSION_RW	(0x80)  // 1000 0000
 
 /*
  * The width of a single hash bucket

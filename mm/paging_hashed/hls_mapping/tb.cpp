@@ -53,7 +53,7 @@ int main(void)
 		if (_cycle % 10 == 0 && k < NR_SET) {
 			_in_read.address =  0x400 * (k+1);
 			_in_read.length = 0x66666660 + k;
-			_in_read.opcode = MAPPING_SET;
+			_in_read.opcode = MAPPING_SET | MAPPING_PERMISSION_R;
 			in_read.write(_in_read);
 			k++;
 			printf("Send SET at cycle %d [%#x %#x]\n", _cycle,
@@ -68,7 +68,10 @@ int main(void)
 			if (j < NR_GET) {
 				_in_read.address =  0x400 * (j+1);
 				_in_read.length = 0;
-				_in_read.opcode = MAPPING_REQUEST_READ;
+				if (j%2)
+					_in_read.opcode = MAPPING_REQUEST_READ;
+				else
+					_in_read.opcode = MAPPING_REQUEST_WRITE;
 				in_read.write(_in_read);
 				j++;
 			}
@@ -114,15 +117,18 @@ int main(void)
 			}
 			hb = &ht_dram[index];
 
+			memcpy(&(in.data), hb, 64);
+
 			dp("[Cycle %3d] DRAM Read ht_index = %d\n",
 				_cycle, index);
 			printf("DRAM[%x]  key[0] = %x val[0] = %x %x\n",
 				index,
 				hb->key[0].to_uint(),
 				hb->val[0].to_uint(),
-				hb->bitmap.to_uint());
+			       	in.data(NR_BITS_BITMAP_OFF + NR_SLOTS_PER_BUCKET - 1,
+				       NR_BITS_BITMAP_OFF)
+				       .to_uint());
 
-			memcpy(&(in.data), hb, 64);
 			in.last = 1;
 			DRAM_rd_data.write(in);
 		}
@@ -162,6 +168,16 @@ int main(void)
 				exit(-1);
 			}
 			hb = &ht_bram[index];
+			/*
+			 * If the width in ap_int<> is not a multiple of 8,
+			 * the size of ap_int<> will be round to whole bytes.
+			 * Luckly, 512 is a multiple of 8, so ap_uint<512> just
+			 * take 64 bytes and there will be no information lost in
+			 * copying 64 bytes from struct hash_bucket to ap_uint<512>,
+			 * but the converse will result in broken information in
+			 * struct hash_bucket, only key and val is correctly
+			 * represented.
+			 */
 			memcpy(hb, &(out.data), 64);
 			dp("[Cycle %3d] BRAM Write ht_index = %d\n",
 				_cycle, index);
@@ -169,8 +185,9 @@ int main(void)
 				index,
 				hb->key[0].to_uint(),
 				hb->val[0].to_uint(),
-				hb->bitmap.to_uint());
-
+			       	out.data(NR_BITS_BITMAP_OFF + NR_SLOTS_PER_BUCKET - 1,
+					NR_BITS_BITMAP_OFF)
+				       .to_uint());
 		}
 
 		/* DRAM Write */
@@ -193,7 +210,9 @@ int main(void)
 			printf("  key[0] = %x val[0] = %x %x\n",
 				hb->key[0].to_uint(),
 				hb->val[0].to_uint(),
-				hb->bitmap.to_uint());
+			       	out.data(NR_BITS_BITMAP_OFF + NR_SLOTS_PER_BUCKET - 1,
+					NR_BITS_BITMAP_OFF)
+				       .to_uint());
 		}
 
 		/* dummy allocator */

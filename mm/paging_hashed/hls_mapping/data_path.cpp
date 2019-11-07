@@ -33,12 +33,15 @@ void remux(stream<struct mapping_request> *rd,
 
 		req = rd->read();
 
-		if (req.opcode == MAPPING_REQUEST_READ ||
-		    req.opcode == MAPPING_REQUEST_WRITE)
+		if (req.opcode == MAPPING_REQUEST_READ)
 			info.opcode = PI_OPCODE_GET;
-		else if (req.opcode == MAPPING_SET)
-			info.opcode = PI_OPCODE_SET;
-		else
+		else if (req.opcode == MAPPING_REQUEST_WRITE) {
+			info.opcode(PI_OPCODE_WIDTH - 1, 0) = PI_OPCODE_GET;
+			info.opcode[7] = PI_PERM_RW;
+		} else if (req.opcode(1, 0) == MAPPING_SET) {
+			info.opcode(PI_OPCODE_WIDTH - 1, 0) = PI_OPCODE_SET;
+			info.opcode[7] = req.opcode[7];
+		} else
 			info.opcode = PI_OPCODE_UNKNOWN;
 
 		info.input = req.address;
@@ -51,12 +54,15 @@ void remux(stream<struct mapping_request> *rd,
 
 		req = wr->read();
 
-		if (req.opcode == MAPPING_REQUEST_READ ||
-		    req.opcode == MAPPING_REQUEST_WRITE)
+		if (req.opcode == MAPPING_REQUEST_READ)
 			info.opcode = PI_OPCODE_GET;
-		else if (req.opcode == MAPPING_SET)
-			info.opcode = PI_OPCODE_SET;
-		else
+		else if (req.opcode == MAPPING_REQUEST_WRITE) {
+			info.opcode(PI_OPCODE_WIDTH - 1, 0) = PI_OPCODE_GET;
+			info.opcode[7] = PI_PERM_RW;
+		} else if (req.opcode(1, 0) == MAPPING_SET) {
+			info.opcode(PI_OPCODE_WIDTH - 1, 0) = PI_OPCODE_SET;
+			info.opcode[7] = req.opcode[7];
+		} else
 			info.opcode = PI_OPCODE_UNKNOWN;
 		info.input = req.address;
 		info.length = req.length;
@@ -143,10 +149,18 @@ void compare_bram(stream<struct pipeline_info> *pi_in,
 
 		if (hit) {
 			pi.pi_state = PI_STATE_HIT_BRAM;
-			pi.slot = i;
-			pi.output_status = PI_OUTPUT_SUCCEED;
-			pi.output = hb((i + 1) * NR_BITS_VAL - 1 + NR_BITS_VAL_OFF,
-					i * NR_BITS_VAL + NR_BITS_VAL_OFF);
+			if (pi.opcode(PI_OPCODE_WIDTH - 1, 0) == PI_OPCODE_GET &&
+			    (pi.opcode[7] & (!hb[NR_BITS_PERM_OFF + i]))) {
+				pi.pi_state = pi.pi_state | PI_STATE_NO_PERM;
+				pi.slot = 0;
+				pi.output_status = PI_OUTPUT_FAILURE;
+				pi.output = 0;
+			} else {
+				pi.slot = i;
+				pi.output_status = PI_OUTPUT_SUCCEED;
+				pi.output = hb((i + 1) * NR_BITS_VAL - 1 + NR_BITS_VAL_OFF,
+					       i * NR_BITS_VAL + NR_BITS_VAL_OFF);
+			}
 		} else {
 			pi.pi_state = PI_STATE_MISS_BRAM;
 			pi.slot = 0;
@@ -258,7 +272,7 @@ void fill_S2(stream<struct pipeline_info> *pi_in,
 	case ALLOC_IDLE:
 		if (!pi_in->empty()) {
 			pi = pi_in->read();
-			if (pi.opcode == PI_OPCODE_SET) {
+			if (pi.opcode(PI_OPCODE_WIDTH - 1, 0) == PI_OPCODE_SET) {
 				/*
 				* Write back to BRAM
 				*/
@@ -283,6 +297,7 @@ void fill_S2(stream<struct pipeline_info> *pi_in,
 				pi.hb_bram((slot_b + 1) * NR_BITS_KEY - 1, slot_b * NR_BITS_KEY) = pi.input;
 				pi.hb_bram((slot_b + 1) * NR_BITS_VAL - 1 + NR_BITS_VAL_OFF,
 					slot_b * NR_BITS_VAL + NR_BITS_VAL_OFF) = pi.length;
+				pi.hb_bram[NR_BITS_PERM_OFF + slot_b] = pi.opcode[7];
 				cmd_b.address = pi.hash(NR_HT_BUCKET_BRAM_SHIFT - 1, 0);
 				cmd_b.length = 1;
 				BRAM_wr_cmd->write(cmd_b);
@@ -293,16 +308,18 @@ void fill_S2(stream<struct pipeline_info> *pi_in,
 				*/
 				int slot_d = pi.slot_dram;
 
-				/* 
+				/*
 				 * slot_d == -1 means not hit and no empty slot.
 				 * slot_d >= 0 means hit or have empty slot
 				 */
 				if (slot_d == -1) {
+					/* generate content for new bucket */
 					new_hb_dram = 0;
 					new_hb_dram[NR_BITS_BITMAP_OFF] = 1;
 					new_hb_dram(NR_BITS_KEY - 1, 0) = pi.input;
 					new_hb_dram(NR_BITS_VAL - 1 + NR_BITS_VAL_OFF,
 						    NR_BITS_VAL_OFF) = pi.length;
+					new_hb_dram[NR_BITS_PERM_OFF] = pi.opcode[7];
 					PR("Need to allocate new bucket.\n");
 					struct buddy_alloc_if alloc_req = { 0 };
 					alloc_req.opcode = BUDDY_ALLOC;
@@ -317,15 +334,17 @@ void fill_S2(stream<struct pipeline_info> *pi_in,
 					pi.input;
 				pi.hb_dram((slot_d + 1) * NR_BITS_VAL - 1 + NR_BITS_VAL_OFF,
 					   slot_d * NR_BITS_VAL + NR_BITS_VAL_OFF) = pi.length;
+				pi.hb_dram[NR_BITS_PERM_OFF + slot_d] = pi.opcode[7];
 
 				state = ALLOC_WRITE_DATA;
 				break;
-			} else if (pi.opcode == PI_OPCODE_GET) {
+			} else if (pi.opcode(PI_OPCODE_WIDTH - 1, 0) == PI_OPCODE_GET) {
 				if (((pi.pi_state & PI_STATE_MISS_BRAM) == PI_STATE_MISS_BRAM) &&
-				(pi.pi_state & PI_STATE_HIT_DRAM) == PI_STATE_HIT_DRAM) {
+				    (pi.pi_state & PI_STATE_HIT_DRAM) == PI_STATE_HIT_DRAM) {
 					/*
 					* The case where we miss on BRAM but hit on
-					* DRAM. We need write the new pair into BRAM.
+					* DRAM. We need write the new pair into BRAM,
+					* even if permission check failed.
 					*/
 					int slot_b = 0;
 					struct mem_cmd cmd_b = { 0 };
@@ -369,11 +388,13 @@ void fill_S2(stream<struct pipeline_info> *pi_in,
 			state = ALLOC_WRITE_DATA;
 			ap_uint<PA_WIDTH> alloc_addr_trans =
 				(alloc_resp.addr - MAPPING_TABLE_ADDRESS_BASE) >>
-				(PA_WIDTH - NR_BITS_CHAIN_ADDR);
+				(PA_WIDTH - NR_BITS_CHAIN_ADDR);  // transform physical addr
 			pi.hb_dram[NR_BITS_CHAIN_FLAG_OFF] = 1;
 			pi.hb_dram(NR_BITS_CHAIN_ADDR_OFF + NR_BITS_CHAIN_ADDR - 1,
 				   NR_BITS_CHAIN_ADDR_OFF) =
-				alloc_addr_trans(NR_BITS_CHAIN_ADDR - 1, 0);
+				alloc_addr_trans(
+					NR_BITS_CHAIN_ADDR - 1,
+					0); // set chaining addr and flag on previous bucket
 			cmd_d.address = alloc_addr_trans;
 			cmd_d.length = 1;
 			DRAM_wr_cmd->write(cmd_d);
@@ -415,7 +436,7 @@ void fill_S1(stream<struct pipeline_info> *   pi_in,
 		if (pi_in->empty())
 			break;
 		pi = pi_in->read();
-		if (pi.opcode == PI_OPCODE_GET &&
+		if (pi.opcode(PI_OPCODE_WIDTH - 1, 0) == PI_OPCODE_GET &&
 		    pi.pi_state == PI_STATE_HIT_BRAM) {
 			pi_out->write(pi);
 			break;
@@ -426,6 +447,7 @@ void fill_S1(stream<struct pipeline_info> *   pi_in,
 		state = FILL_SEND_CMD;
 		break;
 	case FILL_SEND_CMD:
+		/* read chaining bucket */
 		DRAM_rd_cmd->write(cmd);
 		state = FILL_READ_DATA;
 		break;
@@ -447,12 +469,21 @@ void fill_S1(stream<struct pipeline_info> *   pi_in,
 		if (hit) {
 			state = FILL_IDLE;
 			pi.pi_state = pi.pi_state | PI_STATE_HIT_DRAM;
-			pi.slot_dram = i;
-			pi.hb_dram = hb;
-			pi.hb_dram_addr = cmd.address(NR_BITS_CHAIN_ADDR - 1, 0);
-			pi.output_status = PI_OUTPUT_SUCCEED;
-			pi.output = hb((i + 1) * NR_BITS_VAL - 1 + NR_BITS_VAL_OFF,
-				       i * NR_BITS_VAL + NR_BITS_VAL_OFF);
+			if (pi.opcode(PI_OPCODE_WIDTH - 1, 0) == PI_OPCODE_GET &&
+			    (pi.opcode[7] & (!hb[NR_BITS_PERM_OFF + i]))) {
+				/* if permission check failed, output status is failure */
+				pi.pi_state = pi.pi_state | PI_STATE_NO_PERM;
+				pi.slot_dram = 0;
+				pi.output_status = PI_OUTPUT_FAILURE;
+				pi.output = 0;
+			} else {
+				pi.slot_dram = i;
+				pi.hb_dram = hb;
+				pi.hb_dram_addr = cmd.address(NR_BITS_CHAIN_ADDR - 1, 0);
+				pi.output_status = PI_OUTPUT_SUCCEED;
+				pi.output = hb((i + 1) * NR_BITS_VAL - 1 + NR_BITS_VAL_OFF,
+					       i * NR_BITS_VAL + NR_BITS_VAL_OFF);
+			}
 			pi_out->write(pi);
 		} else {
 			/*
@@ -467,7 +498,8 @@ void fill_S1(stream<struct pipeline_info> *   pi_in,
 			 * If DRAM is empty, all requests other than 0
 			 * will come to here.
 			 */
-			if (pi.opcode == PI_OPCODE_SET && slot_dram_found == false) {
+			if (pi.opcode(PI_OPCODE_WIDTH - 1, 0) == PI_OPCODE_SET &&
+			    slot_dram_found == false) {
 				/*
 				 * while we read in a hash bucket and find the key,
 				 * we find the empty slot at the same time so we
@@ -488,6 +520,7 @@ void fill_S1(stream<struct pipeline_info> *   pi_in,
 			}
 
 			if (hb[NR_BITS_CHAIN_FLAG_OFF] == 0) {
+				/* there is no chaining bucket after this one */
 				state = FILL_IDLE;
 				pi.pi_state = pi.pi_state | PI_STATE_MISS_DRAM;
 				pi.output_status = PI_OUTPUT_FAILURE;
@@ -498,6 +531,7 @@ void fill_S1(stream<struct pipeline_info> *   pi_in,
 				pi.output = 0;
 				pi_out->write(pi);
 			} else {
+				/* there is a chaining bucket */
 				cmd.address = hb(NR_BITS_CHAIN_ADDR - 1 +
 							 NR_BITS_CHAIN_ADDR_OFF,
 						 NR_BITS_CHAIN_ADDR_OFF);
@@ -557,7 +591,7 @@ void data_path(stream<struct mapping_request> *rd_request,
 	       stream<struct mem_cmd>		*BRAM_wr_cmd,
 	       stream<ap_uint<MEM_BUS_WIDTH> >	*BRAM_rd_data,
 	       stream<ap_uint<MEM_BUS_WIDTH> >	*BRAM_wr_data,
-	       
+
 	       stream<struct buddy_alloc_if>		*alloc,
 	       stream<struct buddy_alloc_ret_if>	*alloc_ret)
 {

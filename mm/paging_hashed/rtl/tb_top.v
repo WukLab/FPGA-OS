@@ -28,23 +28,23 @@ parameter CLK_PERIOD = 3333333;
 	reg mc_enable_model;
 	reg enable_send;
 
-	reg [72:0] in_read_tdata;
+	reg [71:0] in_read_tdata;
 	reg in_read_tvalid;
 	wire in_read_tready;
 
-	reg [72:0] in_write_tdata;
+	reg [71:0] in_write_tdata;
 	reg in_write_tvalid;
 	wire in_write_tready;
 
-	reg [72:0] in_ctl_tdata;
+	reg [71:0] in_ctl_tdata;
 	reg in_ctl_tvalid;
 	wire in_ctl_tready;
 
-	wire [72:0] out_read_tdata, out_write_tdata;
+	wire [71:0] out_read_tdata, out_write_tdata;
 	wire out_read_tvalid, out_write_tvalid;
 	reg out_read_tready, out_write_tready;
 
-	wire [72:0] out_ctl_tdata;
+	wire [71:0] out_ctl_tdata;
 	wire out_ctl_tvalid;
 	reg out_ctl_tready;
 

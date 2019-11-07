@@ -29,10 +29,14 @@ using namespace hls;
 #define PI_STATE_HIT_DRAM	(0x0010)
 #define PI_STATE_MISS_BRAM	(0x0100)
 #define PI_STATE_MISS_DRAM	(0x1000)
+#define PI_STATE_NO_PERM	(0x8000)
 
 #define PI_OPCODE_GET		1
 #define PI_OPCODE_SET		2
 #define PI_OPCODE_UNKNOWN	3
+#define PI_PERM_R		0
+#define PI_PERM_RW		1
+#define PI_OPCODE_WIDTH		2
 
 #define PI_CHANNEL_READ		0
 #define PI_CHANNEL_WRITE	1
@@ -82,7 +86,7 @@ void paging_top(hls::stream<struct mapping_request>	*in_read,
 		hls::stream<struct dm_cmd>		*BRAM_wr_cmd,
 		hls::stream<struct axis_mem>		*BRAM_rd_data,
 		hls::stream<struct axis_mem>		*BRAM_wr_data,
-		
+
 		hls::stream<struct buddy_alloc_if>	*alloc,
 		hls::stream<struct buddy_alloc_ret_if>	*alloc_ret);
 
@@ -100,7 +104,7 @@ void data_path(stream<struct mapping_request> *rd_request,
 	       stream<struct mem_cmd>		*BRAM_wr_cmd,
 	       stream<ap_uint<MEM_BUS_WIDTH> >	*BRAM_rd_data,
 	       stream<ap_uint<MEM_BUS_WIDTH> >	*BRAM_wr_data,
-	       
+
 	       stream<struct buddy_alloc_if>		*alloc,
 	       stream<struct buddy_alloc_ret_if>	*alloc_ret);
 
