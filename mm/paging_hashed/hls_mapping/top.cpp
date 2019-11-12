@@ -8,6 +8,7 @@
 #include <fpga/kernel.h>
 #include "top.hpp"
 #include "dm.hpp"
+#include "resv_table.hpp"
 
 void buffer_req_read(stream<struct mapping_request> *in,
 		     stream<struct mapping_request> *out)

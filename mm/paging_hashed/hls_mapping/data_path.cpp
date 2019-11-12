@@ -12,6 +12,7 @@
 #include "top.hpp"
 #include "dm.hpp"
 #include "hash.hpp"
+#include "resv_table.hpp"
 
 using namespace hls;
 
@@ -34,14 +35,14 @@ void remux(stream<struct mapping_request> *rd,
 		req = rd->read();
 
 		if (req.opcode == MAPPING_REQUEST_READ)
-			info.opcode = PI_OPCODE_GET;
-		else if (req.opcode == MAPPING_REQUEST_WRITE) {
-			info.opcode(PI_OPCODE_WIDTH - 1, 0) = PI_OPCODE_GET;
-			info.opcode[7] = PI_PERM_RW;
-		} else if (req.opcode(1, 0) == MAPPING_SET) {
-			info.opcode(PI_OPCODE_WIDTH - 1, 0) = PI_OPCODE_SET;
-			info.opcode[7] = req.opcode[7];
-		} else
+			info.opcode = PI_OPCODE_GET | PI_PERM_R;
+		else if (req.opcode == MAPPING_REQUEST_WRITE)
+			info.opcode = PI_OPCODE_GET | PI_PERM_RW;
+		else if (req.opcode == (MAPPING_SET | MAPPING_PERMISSION_R))
+			info.opcode = PI_OPCODE_SET | PI_PERM_R;
+		else if (req.opcode == (MAPPING_SET | MAPPING_PERMISSION_RW))
+			info.opcode = PI_OPCODE_SET | PI_PERM_RW;
+		else
 			info.opcode = PI_OPCODE_UNKNOWN;
 
 		info.input = req.address;
@@ -55,14 +56,14 @@ void remux(stream<struct mapping_request> *rd,
 		req = wr->read();
 
 		if (req.opcode == MAPPING_REQUEST_READ)
-			info.opcode = PI_OPCODE_GET;
-		else if (req.opcode == MAPPING_REQUEST_WRITE) {
-			info.opcode(PI_OPCODE_WIDTH - 1, 0) = PI_OPCODE_GET;
-			info.opcode[7] = PI_PERM_RW;
-		} else if (req.opcode(1, 0) == MAPPING_SET) {
-			info.opcode(PI_OPCODE_WIDTH - 1, 0) = PI_OPCODE_SET;
-			info.opcode[7] = req.opcode[7];
-		} else
+			info.opcode = PI_OPCODE_GET | PI_PERM_R;
+		else if (req.opcode == MAPPING_REQUEST_WRITE)
+			info.opcode = PI_OPCODE_GET | PI_PERM_RW;
+		else if (req.opcode == (MAPPING_SET | MAPPING_PERMISSION_R))
+			info.opcode = PI_OPCODE_SET | PI_PERM_R;
+		else if (req.opcode == (MAPPING_SET | MAPPING_PERMISSION_RW))
+			info.opcode = PI_OPCODE_SET | PI_PERM_RW;
+		else
 			info.opcode = PI_OPCODE_UNKNOWN;
 		info.input = req.address;
 		info.length = req.length;
@@ -71,27 +72,58 @@ void remux(stream<struct mapping_request> *rd,
 	}
 }
 
+enum READ_BRAM_STATE {
+	READ_BRAM_IDLE,
+	READ_BRAM_ADDR_CHECK,
+	READ_BRAM_ADDR_RESP
+};
+
 /* This stage only sends command to read from BRAM. */
-void read_bram(stream<struct pipeline_info> *pi_in,
-	       stream<struct pipeline_info> *pi_out,
-	       stream<struct mem_cmd> *BRAM_rd_cmd)
+void read_bram(stream<struct pipeline_info>	*pi_in,
+	       stream<struct pipeline_info>	*pi_out,
+	       stream<struct mem_cmd>		*BRAM_rd_cmd,
+	       stream<struct table_request>	*addr_resv_req,
+	       stream<ap_uint<2> >		*addr_resv_res)
 {
 #pragma HLS PIPELINE
 #pragma HLS INLINE off
 #pragma HLS INTERFACE ap_ctrl_none port=return
 
-	if (!pi_in->empty()) {
-		struct pipeline_info pi = { 0 };
-		struct mem_cmd cmd = { 0 };
-		int index = 0;
+	static enum READ_BRAM_STATE state = READ_BRAM_IDLE;
+	static struct pipeline_info pi = { 0 };		
+	static ap_uint<NR_HT_BUCKET_BRAM_SHIFT> index = 0;
 
-		pi = pi_in->read();
-		pi_out->write(pi);
+	switch (state) {
+	case READ_BRAM_IDLE:
+		if (!pi_in->empty()) {
+			pi = pi_in->read();
+			pi_out->write(pi);
 
-		index = pi.hash(NR_HT_BUCKET_BRAM_SHIFT - 1, 0);
-		cmd.address = index;
-		cmd.length = 1;
-		BRAM_rd_cmd->write(cmd);
+			index = pi.hash(NR_HT_BUCKET_BRAM_SHIFT - 1, 0);
+			state = READ_BRAM_ADDR_CHECK;
+		}
+		break;
+	case READ_BRAM_ADDR_CHECK: {
+		struct table_request req = { RESV, index };
+		addr_resv_req->write(req);
+		state = READ_BRAM_ADDR_RESP;
+		break;
+	}
+	case READ_BRAM_ADDR_RESP:
+		if (!addr_resv_res->empty()) {
+			ap_uint<2> res = addr_resv_res->read();
+			if (res != RESV_SUCCESS) {
+				state = READ_BRAM_ADDR_CHECK;
+				break;
+			} else {
+				state = READ_BRAM_IDLE;
+				struct mem_cmd cmd = { 0 };
+				cmd.address = index;
+				cmd.length = 1;
+				BRAM_rd_cmd->write(cmd);
+			}
+		}
+		break;
 	}
 }
 
@@ -189,14 +221,16 @@ void compare_bram(stream<struct pipeline_info> *pi_in,
 void compare_bram_ht(stream<struct pipeline_info> *pi_in,
 		     stream<struct pipeline_info> *pi_out,
 		     stream<struct mem_cmd> *BRAM_rd_cmd,
-		     stream<ap_uint<MEM_BUS_WIDTH> > *BRAM_rd_data)
+		     stream<ap_uint<MEM_BUS_WIDTH> > *BRAM_rd_data,
+		     stream<struct table_request>	*addr_resv_req,
+		     stream<ap_uint<2> >		*addr_resv_res)
 {
 #pragma HLS INLINE
 
 	static stream<struct pipeline_info> PI_1;
 #pragma HLS STREAM variable=PI_1 depth=256	// Depends on BRAM latency
 
-	read_bram(pi_in, &PI_1, BRAM_rd_cmd);
+	read_bram(pi_in, &PI_1, BRAM_rd_cmd, addr_resv_req, addr_resv_res);
 	compare_bram(&PI_1, pi_out, BRAM_rd_data);
 }
 
@@ -283,12 +317,12 @@ void fill_S2(stream<struct pipeline_info> *pi_in,
 					slot_b = pi.slot;
 				} else {
 					/*
-					* Find a new slot if any.
-					* Otherwise it will override existing un-matched slot.
-					*
-					* Since BRAM HT is not using any chaining,
-					* it's OKAY to override by design.
-					*/
+					 * Find a new slot if any.
+					 * Otherwise it will override existing un-matched slot.
+					 *
+					 * Since BRAM HT is not using any chaining,
+					 * it's OKAY to override by design.
+					 */
 					slot_b = find_empty_slot(pi.hb_bram(NR_BITS_BITMAP_OFF + NR_SLOTS_PER_BUCKET - 1,
 									NR_BITS_BITMAP_OFF));
 					pi.hb_bram[NR_BITS_BITMAP_OFF + slot_b] = 1;
@@ -304,8 +338,8 @@ void fill_S2(stream<struct pipeline_info> *pi_in,
 				BRAM_wr_data->write(pi.hb_bram);
 
 				/*
-				* Write back to DRAM
-				*/
+				 * Write back to DRAM
+				 */
 				int slot_d = pi.slot_dram;
 
 				/*
@@ -342,10 +376,10 @@ void fill_S2(stream<struct pipeline_info> *pi_in,
 				if (((pi.pi_state & PI_STATE_MISS_BRAM) == PI_STATE_MISS_BRAM) &&
 				    (pi.pi_state & PI_STATE_HIT_DRAM) == PI_STATE_HIT_DRAM) {
 					/*
-					* The case where we miss on BRAM but hit on
-					* DRAM. We need write the new pair into BRAM,
-					* even if permission check failed.
-					*/
+					 * The case where we miss on BRAM but hit on
+					 * DRAM. We need write the new pair into BRAM,
+					 * even if permission check failed.
+					 */
 					int slot_b = 0;
 					struct mem_cmd cmd_b = { 0 };
 
@@ -417,10 +451,10 @@ void fill_S2(stream<struct pipeline_info> *pi_in,
 	}
 }
 
-void fill_S1(stream<struct pipeline_info> *   pi_in,
-	     stream<struct pipeline_info> *   pi_out,
-	     stream<struct mem_cmd> *	 DRAM_rd_cmd,
-	     stream<ap_uint<MEM_BUS_WIDTH> > *DRAM_rd_data)
+void fill_S1(stream<struct pipeline_info>	*pi_in,
+	     stream<struct pipeline_info>	*pi_out,
+	     stream<struct mem_cmd>		*DRAM_rd_cmd,
+	     stream<ap_uint<MEM_BUS_WIDTH> >	*DRAM_rd_data)
 {
 #pragma HLS PIPELINE
 #pragma HLS INLINE off
@@ -545,7 +579,8 @@ void fill_S1(stream<struct pipeline_info> *   pi_in,
 
 void demux(stream<struct pipeline_info> *pi_in,
 	   stream<struct mapping_reply> *rd_reply,
-	   stream<struct mapping_reply> *wr_reply)
+	   stream<struct mapping_reply> *wr_reply,
+	   stream<struct table_request>	*addr_pop_req)
 {
 #pragma HLS PIPELINE
 #pragma HLS INLINE off
@@ -556,6 +591,9 @@ void demux(stream<struct pipeline_info> *pi_in,
 		struct pipeline_info pi = { 0 };
 
 		pi = pi_in->read();
+
+		struct table_request req = { POP, 0 };
+		addr_pop_req->write(req);
 
 		reply.address = pi.output;
 		reply.status = pi.output_status;
@@ -576,6 +614,8 @@ void demux(stream<struct pipeline_info> *pi_in,
  * I @read_data: data of memory read.
  * O @write_cmd: commands to do memory write
  * O @write_data: data to write
+ * O @alloc: allocation request for new hash bucket
+ * I @alloc_ret: allocation response for new hash bucket
  */
 void data_path(stream<struct mapping_request> *rd_request,
 	       stream<struct mapping_request> *wr_request,
@@ -617,12 +657,24 @@ void data_path(stream<struct mapping_request> *rd_request,
 #pragma HLS DATA_PACK variable=PI_fillS1_to_fillS2
 #pragma HLS DATA_PACK variable=PI_fillS2_to_out
 #endif
+
+	static stream<struct table_request>	fifo_addr_resv_req("addr_table_req");
+	static stream<ap_uint<2> >		fifo_addr_resv_res("addr_table_res");
+	static stream<struct table_request>	fifo_addr_pop_req("addr_pop__req");
+#pragma HLS STREAM variable=fifo_addr_resv_req	depth=32
+#pragma HLS STREAM variable=fifo_addr_resv_res	depth=32
+#pragma HLS STREAM variable=fifo_addr_pop_req	depth=32
+
+#pragma HLS DATA_PACK variable=fifo_addr_resv_req
+#pragma HLS DATA_PACK variable=fifo_addr_pop_req
+
 	remux(rd_request, wr_request, &PI_pipeline_info);
 
 	compute_hash(&PI_pipeline_info, &PI_hash_to_compare);
 
 	compare_bram_ht(&PI_hash_to_compare, &PI_compare_to_fillS1,
-			BRAM_rd_cmd, BRAM_rd_data);
+			BRAM_rd_cmd, BRAM_rd_data,
+			&fifo_addr_resv_req, &fifo_addr_resv_res);
 
 	fill_S1(&PI_compare_to_fillS1, &PI_fillS1_to_fillS2, DRAM_rd_cmd,
 		DRAM_rd_data);
@@ -632,5 +684,7 @@ void data_path(stream<struct mapping_request> *rd_request,
 		BRAM_wr_cmd, BRAM_wr_data,
 		alloc, alloc_ret);
 
-	demux(&PI_fillS2_to_out, rd_reply, wr_reply);
+	demux(&PI_fillS2_to_out, rd_reply, wr_reply, &fifo_addr_pop_req);
+
+	address_reservation_table(&fifo_addr_resv_req, &fifo_addr_resv_res, &fifo_addr_pop_req);
 }

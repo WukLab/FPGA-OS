@@ -34,8 +34,8 @@ using namespace hls;
 #define PI_OPCODE_GET		1
 #define PI_OPCODE_SET		2
 #define PI_OPCODE_UNKNOWN	3
-#define PI_PERM_R		0
-#define PI_PERM_RW		1
+#define PI_PERM_R		(MAPPING_PERMISSION_R)
+#define PI_PERM_RW		(MAPPING_PERMISSION_RW)
 #define PI_OPCODE_WIDTH		2
 
 #define PI_CHANNEL_READ		0
@@ -48,6 +48,12 @@ struct pipeline_info {
 	/* From input */
 	ap_uint<MAPPING_VIRTUAL_WIDTH>		input;
 	ap_uint<MAPPING_VIRTUAL_WIDTH>		length;
+	/*
+	 * opcode bits def:
+	 * 0:1	-> operation code: GET(1)/SET(2)
+	 * 2:6	-> reserved
+	 *   7	-> permission: R(0)/RW(1)
+	 */
 	ap_uint<8>				opcode;
 	ap_uint<1>				channel;
 
@@ -90,10 +96,10 @@ void paging_top(hls::stream<struct mapping_request>	*in_read,
 		hls::stream<struct buddy_alloc_if>	*alloc,
 		hls::stream<struct buddy_alloc_ret_if>	*alloc_ret);
 
-void data_path(stream<struct mapping_request> *rd_request,
-	       stream<struct mapping_request> *wr_request,
-	       stream<struct mapping_reply> *rd_reply,
-	       stream<struct mapping_reply> *wr_reply,
+void data_path(stream<struct mapping_request>	*rd_request,
+	       stream<struct mapping_request>	*wr_request,
+	       stream<struct mapping_reply>	*rd_reply,
+	       stream<struct mapping_reply>	*wr_reply,
 
 	       stream<struct mem_cmd>		*DRAM_rd_cmd,
 	       stream<struct mem_cmd>		*DRAM_wr_cmd,
@@ -105,8 +111,9 @@ void data_path(stream<struct mapping_request> *rd_request,
 	       stream<ap_uint<MEM_BUS_WIDTH> >	*BRAM_rd_data,
 	       stream<ap_uint<MEM_BUS_WIDTH> >	*BRAM_wr_data,
 
-	       stream<struct buddy_alloc_if>		*alloc,
-	       stream<struct buddy_alloc_ret_if>	*alloc_ret);
+	       stream<struct buddy_alloc_if>	*alloc,
+	       stream<struct buddy_alloc_ret_if>*alloc_ret);
+	       
 
 void compute_hash(stream<struct pipeline_info> *in,
 		  stream<struct pipeline_info> *out);

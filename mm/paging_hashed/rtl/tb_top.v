@@ -40,7 +40,7 @@ parameter CLK_PERIOD = 3333333;
 	reg in_ctl_tvalid;
 	wire in_ctl_tready;
 
-	wire [71:0] out_read_tdata, out_write_tdata;
+	wire [47:0] out_read_tdata, out_write_tdata;
 	wire out_read_tvalid, out_write_tvalid;
 	reg out_read_tready, out_write_tready;
 
