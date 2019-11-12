@@ -22,6 +22,8 @@ proc cr_bd_icap_controller { parentCell } {
      set list_check_ips "\ 
   xilinx.com:ip:clk_wiz:6.0\
   Wuklab.UCSD:hls:icap_controller_hls:1.0\
+  xilinx.com:ip:ila:6.2\
+  xilinx.com:ip:vio:3.0\
   "
 
    set list_ips_missing ""
@@ -129,6 +131,30 @@ proc cr_bd_icap_controller { parentCell } {
      return 1
    }
   
+  # Create instance: ila_0, and set properties
+  set ila_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:ila:6.2 ila_0 ]
+  set_property -dict [ list \
+   CONFIG.C_NUM_OF_PROBES {9} \
+   CONFIG.C_SLOT_0_AXI_PROTOCOL {AXI4S} \
+ ] $ila_0
+
+  # Create instance: ila_1, and set properties
+  set ila_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:ila:6.2 ila_1 ]
+  set_property -dict [ list \
+   CONFIG.C_NUM_OF_PROBES {9} \
+   CONFIG.C_SLOT_0_AXI_PROTOCOL {AXI4S} \
+ ] $ila_1
+
+  # Create instance: ila_2, and set properties
+  set ila_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:ila:6.2 ila_2 ]
+  set_property -dict [ list \
+   CONFIG.C_ENABLE_ILA_AXI_MON {false} \
+   CONFIG.C_MONITOR_TYPE {Native} \
+   CONFIG.C_NUM_OF_PROBES {9} \
+   CONFIG.C_PROBE5_WIDTH {32} \
+   CONFIG.C_PROBE6_WIDTH {32} \
+ ] $ila_2
+
   # Create instance: strip_0, and set properties
   set block_name strip
   set block_cell_name strip_0
@@ -140,22 +166,39 @@ proc cr_bd_icap_controller { parentCell } {
      return 1
    }
   
+  # Create instance: vio_0, and set properties
+  set vio_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:vio:3.0 vio_0 ]
+  set_property -dict [ list \
+   CONFIG.C_EN_PROBE_IN_ACTIVITY {0} \
+   CONFIG.C_NUM_PROBE_IN {0} \
+   CONFIG.C_PROBE_OUT0_INIT_VAL {0x0} \
+ ] $vio_0
+
   # Create interface connections
+  connect_bd_intf_net -intf_net axis_data_fifo_0_M_AXIS [get_bd_intf_pins icap_controller_hls_0/from_icap_V_V] [get_bd_intf_pins strip_0/data_to_hls]
+connect_bd_intf_net -intf_net [get_bd_intf_nets axis_data_fifo_0_M_AXIS] [get_bd_intf_pins ila_1/SLOT_0_AXIS] [get_bd_intf_pins strip_0/data_to_hls]
   connect_bd_intf_net -intf_net icap_controller_hls_0_to_icap_V_V [get_bd_intf_pins icap_controller_hls_0/to_icap_V_V] [get_bd_intf_pins strip_0/data_from_hls]
-  connect_bd_intf_net -intf_net strip_0_data_to_hls [get_bd_intf_pins icap_controller_hls_0/from_icap_V_V] [get_bd_intf_pins strip_0/data_to_hls]
-  connect_bd_intf_net -intf_net strip_0_with_ICAP [get_bd_intf_pins icape3_wrapper_0/ICAP] [get_bd_intf_pins strip_0/with_ICAP]
+connect_bd_intf_net -intf_net [get_bd_intf_nets icap_controller_hls_0_to_icap_V_V] [get_bd_intf_pins ila_0/SLOT_0_AXIS] [get_bd_intf_pins strip_0/data_from_hls]
   connect_bd_intf_net -intf_net sysclk_125_1 [get_bd_intf_ports sysclk_125] [get_bd_intf_pins clk_wiz_0/CLK_IN1_D]
 
   # Create port connections
-  connect_bd_net -net clk_1 [get_bd_pins clk_wiz_0/clk_out1] [get_bd_pins icap_controller_hls_0/ap_clk] [get_bd_pins icape3_wrapper_0/CLK] [get_bd_pins strip_0/clk]
-  connect_bd_net -net clk_wiz_0_locked [get_bd_pins clk_wiz_0/locked] [get_bd_pins icap_controller_hls_0/ap_rst_n]
+  connect_bd_net -net clk_1 [get_bd_pins clk_wiz_0/clk_out1] [get_bd_pins icap_controller_hls_0/ap_clk] [get_bd_pins icape3_wrapper_0/CLK] [get_bd_pins ila_0/clk] [get_bd_pins ila_1/clk] [get_bd_pins ila_2/clk] [get_bd_pins strip_0/clk] [get_bd_pins vio_0/clk]
+  connect_bd_net -net clk_wiz_0_locked [get_bd_pins clk_wiz_0/locked] [get_bd_pins icap_controller_hls_0/ap_rst_n] [get_bd_pins ila_2/probe7]
   connect_bd_net -net icap_controller_hls_0_CSIB_to_icap_V [get_bd_pins icap_controller_hls_0/CSIB_to_icap_V] [get_bd_pins strip_0/CSIB_from_hls]
   connect_bd_net -net icap_controller_hls_0_CSIB_to_icap_V_ap_vld [get_bd_pins icap_controller_hls_0/CSIB_to_icap_V_ap_vld] [get_bd_pins strip_0/CSIB_from_hls_valid]
   connect_bd_net -net icap_controller_hls_0_RDWRB_to_icap_V [get_bd_pins icap_controller_hls_0/RDWRB_to_icap_V] [get_bd_pins strip_0/RDWRB_from_hls]
   connect_bd_net -net icap_controller_hls_0_RDWRB_to_icap_V_ap_vld [get_bd_pins icap_controller_hls_0/RDWRB_to_icap_V_ap_vld] [get_bd_pins strip_0/RDWRB_from_hls_valid]
+  connect_bd_net -net icape3_wrapper_0_AVAIL [get_bd_pins icape3_wrapper_0/AVAIL] [get_bd_pins ila_2/probe2] [get_bd_pins strip_0/AVAIL_from_icap]
+  connect_bd_net -net icape3_wrapper_0_O [get_bd_pins icape3_wrapper_0/O] [get_bd_pins ila_2/probe6] [get_bd_pins strip_0/data_from_icap]
+  connect_bd_net -net icape3_wrapper_0_PRDONE [get_bd_pins icape3_wrapper_0/PRDONE] [get_bd_pins ila_2/probe3] [get_bd_pins strip_0/PRDONE_from_icap]
+  connect_bd_net -net icape3_wrapper_0_PRERROR [get_bd_pins icape3_wrapper_0/PRERROR] [get_bd_pins ila_2/probe4] [get_bd_pins strip_0/PRERROR_from_icap]
   connect_bd_net -net strip_0_AVAIL_to_hls [get_bd_pins icap_controller_hls_0/AVAIL_from_icap_V] [get_bd_pins strip_0/AVAIL_to_hls]
+  connect_bd_net -net strip_0_CSIB_to_icap [get_bd_pins icape3_wrapper_0/CSIB] [get_bd_pins ila_2/probe0] [get_bd_pins strip_0/CSIB_to_icap]
   connect_bd_net -net strip_0_PRDONE_to_hls [get_bd_pins icap_controller_hls_0/PRDONE_from_icap_V] [get_bd_pins strip_0/PRDONE_to_hls]
   connect_bd_net -net strip_0_PRERROR_to_hls [get_bd_pins icap_controller_hls_0/PRERROR_from_icap_V] [get_bd_pins strip_0/PRERROR_to_hls]
+  connect_bd_net -net strip_0_RDWRB_to_icap [get_bd_pins icape3_wrapper_0/RDWRB] [get_bd_pins ila_2/probe1] [get_bd_pins strip_0/RDWRB_to_icap]
+  connect_bd_net -net strip_0_data_to_icap [get_bd_pins icape3_wrapper_0/I] [get_bd_pins ila_2/probe5] [get_bd_pins strip_0/data_to_icap]
+  connect_bd_net -net vio_0_probe_out0 [get_bd_pins icap_controller_hls_0/start_test_V] [get_bd_pins ila_2/probe8] [get_bd_pins vio_0/probe_out0]
 
   # Create address segments
 
@@ -164,25 +207,36 @@ proc cr_bd_icap_controller { parentCell } {
    "ExpandedHierarchyInLayout":"",
    "guistr":"# # String gsaved with Nlview 6.8.11  2018-08-07 bk=1.4403 VDI=40 GEI=35 GUI=JA:9.0 TLS
 #  -string -flagsOSRD
-preplace port sysclk_125 -pg 1 -y 240 -defaultsOSRD
-preplace inst strip_0 -pg 1 -lvl 2 -y 130 -defaultsOSRD
-preplace inst icape3_wrapper_0 -pg 1 -lvl 3 -y 350 -defaultsOSRD
-preplace inst icap_controller_hls_0 -pg 1 -lvl 3 -y 150 -defaultsOSRD
-preplace inst clk_wiz_0 -pg 1 -lvl 1 -y 240 -defaultsOSRD
-preplace netloc clk_wiz_0_locked 1 1 2 N 250 720J
-preplace netloc icap_controller_hls_0_RDWRB_to_icap_V 1 1 3 270 10 NJ 10 1240
-preplace netloc strip_0_AVAIL_to_hls 1 2 1 730
-preplace netloc icap_controller_hls_0_to_icap_V_V 1 1 3 300 20 NJ 20 1210
-preplace netloc strip_0_data_to_hls 1 2 1 690
-preplace netloc strip_0_with_ICAP 1 2 1 700
-preplace netloc icap_controller_hls_0_CSIB_to_icap_V 1 1 3 280 270 NJ 270 1210
+preplace port sysclk_125 -pg 1 -y 550 -defaultsOSRD
+preplace inst strip_0 -pg 1 -lvl 2 -y 370 -defaultsOSRD
+preplace inst vio_0 -pg 1 -lvl 2 -y 770 -defaultsOSRD
+preplace inst ila_0 -pg 1 -lvl 2 -y 640 -defaultsOSRD
+preplace inst icap_controller_hls_0 -pg 1 -lvl 3 -y 710 -defaultsOSRD
+preplace inst icape3_wrapper_0 -pg 1 -lvl 3 -y 140 -defaultsOSRD
+preplace inst ila_1 -pg 1 -lvl 3 -y 910 -defaultsOSRD
+preplace inst ila_2 -pg 1 -lvl 3 -y 410 -defaultsOSRD
+preplace inst clk_wiz_0 -pg 1 -lvl 1 -y 550 -defaultsOSRD
+preplace netloc clk_wiz_0_locked 1 1 2 N 560 790
+preplace netloc icap_controller_hls_0_RDWRB_to_icap_V 1 1 3 290 840 NJ 840 1330
+preplace netloc strip_0_AVAIL_to_hls 1 2 1 750
+preplace netloc icap_controller_hls_0_to_icap_V_V 1 1 3 270 570 NJ 570 1330
+preplace netloc icape3_wrapper_0_AVAIL 1 2 1 830
+preplace netloc icap_controller_hls_0_CSIB_to_icap_V 1 1 3 280 830 NJ 830 1340
+preplace netloc vio_0_probe_out0 1 2 1 840J
 preplace netloc sysclk_125_1 1 0 1 N
-preplace netloc strip_0_PRDONE_to_hls 1 2 1 690
-preplace netloc clk_1 1 1 2 260 240 710
-preplace netloc strip_0_PRERROR_to_hls 1 2 1 680
-preplace netloc icap_controller_hls_0_RDWRB_to_icap_V_ap_vld 1 1 3 290 280 NJ 280 1230
-preplace netloc icap_controller_hls_0_CSIB_to_icap_V_ap_vld 1 1 3 300 260 NJ 260 1220
-levelinfo -pg 1 0 140 490 970 1260 -top 0 -bot 420
+preplace netloc icape3_wrapper_0_PRDONE 1 2 1 820
+preplace netloc strip_0_PRDONE_to_hls 1 2 1 760
+preplace netloc clk_1 1 1 2 260 200 780
+preplace netloc strip_0_data_to_icap 1 2 1 760
+preplace netloc icape3_wrapper_0_PRERROR 1 2 1 810
+preplace netloc strip_0_PRERROR_to_hls 1 2 1 740
+preplace netloc axis_data_fifo_0_M_AXIS 1 2 1 770
+preplace netloc icape3_wrapper_0_O 1 2 1 790
+preplace netloc icap_controller_hls_0_RDWRB_to_icap_V_ap_vld 1 1 3 310 540 830J 580 1340
+preplace netloc strip_0_RDWRB_to_icap 1 2 1 840
+preplace netloc icap_controller_hls_0_CSIB_to_icap_V_ap_vld 1 1 3 300 550 810J 560 1350
+preplace netloc strip_0_CSIB_to_icap 1 2 1 800
+levelinfo -pg 1 0 140 530 1090 1380 -top 0 -bot 980
 "
 }
 
@@ -197,4 +251,3 @@ levelinfo -pg 1 0 140 490 970 1260 -top 0 -bot 420
 cr_bd_icap_controller ""
 set_property REGISTERED_WITH_MANAGER "1" [get_files icap_controller.bd ] 
 set_property SYNTH_CHECKPOINT_MODE "Hierarchical" [get_files icap_controller.bd ] 
-

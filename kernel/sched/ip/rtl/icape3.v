@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2019，Wuklab, UCSD.
- * Ultrascale+ ICAPE3 Wrapper. Reference: UG570.
+ * Ultrascale+ ICAPE3 Wrapper.
  */
 
 /*
@@ -27,37 +27,47 @@ module icape3_wrapper (
 	(* X_INTERFACE_INFO = "xilinx.com:interface:icap:1.0 ICAP rdwrb" *)	input         RDWRB
 );
 
-	/*
-	 * TODO
-	 * Add bitswapping for I and O.
-	 */
-
 	wire [31:0] I_Swapped;
+	wire [31:0] O_Swapped; 
 
-	/* This code is derived from the Vivado language template. */
+	/*
+	 * Both the Input and Output data need bitswap.
+	 * The bitswap happens within each byte.
+	 * Any sane soul would not have designed this.
+	 */
+	generate begin: swap_input
+		genvar j;
+		for (j = 0; j <= 3; j = j + 1) begin : mirror_j
+			genvar i;
+			for (i = 0; i <= 7; i = i + 1) begin : mirror_i
+				assign I_Swapped[j * 8 + i] = I[j * 8 + 7 - i];
+			end
+		end
+	end endgenerate
+
+	generate begin: swap_output
+		genvar j;
+		for (j = 0; j <= 3; j = j + 1) begin : mirror_j
+			genvar i;
+			for (i = 0; i <= 7; i = i + 1) begin : mirror_i
+				assign O[j * 8 + i] = O_Swapped[j * 8 + 7 - i];
+			end
+		end
+	end endgenerate
+
 	ICAPE3 #(
 		.DEVICE_ID(32'h03628093),	// Specifies the pre-programmed Device ID value to be used for simulation purposes.
 		.ICAP_AUTO_SWITCH("DISABLE"),	// Enable switch ICAP using sync word
 		.SIM_CFG_FILE_NAME("NONE")	// Specifies the Raw Bitstream (RBT) file to be parsed by the simulation model
 	) ICAPE3_inst (
 		.AVAIL(AVAIL),			// 1-bit output: Availability status of ICAP
-		.O(O),				// 32-bit output: Configuration data output bus
+		.O(O_Swapped),			// 32-bit output: Configuration data output bus
 		.PRDONE(PRDONE),		// 1-bit output: Indicates completion of Partial Reconfiguration
 		.PRERROR(PRERROR),		// 1-bit output: Indicates Error during Partial Reconfiguration
 		.CLK(CLK),			// 1-bit input: Clock input
 		.CSIB(CSIB),			// 1-bit input: Active-Low ICAP enable
-		.I(I),				// 32-bit input: Configuration data input bus
+		.I(I_Swapped),			// 32-bit input: Configuration data input bus
 		.RDWRB(RDWRB)			// 1-bit input: Read/Write Select input
 	);
-
-	generate begin: xhdl0
-		genvar j;
-		for (j = 0; j <= 3; j = j + 1) begin : mirror_j
-			genvar i;
-			for (i=0; i<=7; i=i+1) begin : mirror_i
-				assign I_Swapped[j * 8 + i] = I[j * 8 + 7 - i];
-			end
-		end
-	end endgenerate
 
 endmodule

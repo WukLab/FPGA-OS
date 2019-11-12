@@ -11,6 +11,8 @@ open_project	-reset generated_hls_project
 
 # The source file and test bench
 add_files	top.cpp -cflags -I../../../include/
+add_files	cmd_read_regs.cpp -cflags -I../../../include/
+add_files	cmd_read_bitstreams.cpp -cflags -I../../../include/
 add_files -tb	tb.cpp  -cflags -I../../../include/
 
 # Specify the top-level function for synthesis
@@ -48,7 +50,7 @@ set_clock_uncertainty 0.25
 config_rtl -reset all -reset_async
 
 # Simulate the C code 
-csim_design
+#csim_design
 
 # Synthesis the C code
 csynth_design

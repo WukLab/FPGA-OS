@@ -66,7 +66,7 @@ if { $::argc > 0 } {
 set orig_proj_dir "[file normalize "$origin_dir/generated_vivado_project"]"
 
 # Create project
-create_project -f ${_xil_proj_name_} "./generated_vivado_project" -part xcvu9p-flga2104-2L-e
+create_project ${_xil_proj_name_} "./generated_vivado_project" -part xcvu9p-flga2104-2L-e
 
 # Set the directory path for the new project
 set proj_dir [get_property directory [current_project]]

@@ -10,6 +10,12 @@
 *.prm
 *.bit
 
+# Bitstream Related
+*.bin
+*.bit
+*.ll
+*.ltx
+
 # Generated HLS project folder
 # Listed in template file as well
 generated_hls_project/

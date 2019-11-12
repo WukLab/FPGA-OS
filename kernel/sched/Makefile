@@ -14,7 +14,11 @@ HLS_IP_CORES	:= icap_controller
 #
 all:
 	$(Q)./generate_hls.sh $(TARGET_BOARD) $(HLS_IP_CORES) $(IP_NAME_PREFIX)
-	#$(Q)make -C ip
+	$(Q)make -C ip
+
+hls:
+	$(Q)./generate_hls.sh $(TARGET_BOARD) $(HLS_IP_CORES) $(IP_NAME_PREFIX)
+
 
 clean:
 	find ./ -name "generated_hls_project" | xargs rm -rf
