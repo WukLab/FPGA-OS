@@ -10,6 +10,8 @@
 #define MAPPING_REQUEST_READ	(0)
 #define MAPPING_REQUEST_WRITE	(1)
 #define MAPPING_SET		(2)
+#define MAPPING_PERMISSION_R	(0x00)  // 0000 0000
+#define MAPPING_PERMISSION_RW	(0x80)  // 1000 0000
 
 /*
  * The width of a single hash bucket
@@ -43,6 +45,12 @@
 struct mapping_request {
 	ap_uint<MAPPING_VIRTUAL_WIDTH>	address;
 	ap_uint<MAPPING_VIRTUAL_WIDTH>	length;
+	/*
+	 * opcode bits def:
+	 * 0:1	-> operation code: READ(0)/WRITE(1)/SET(2)
+	 * 2:6	-> reserved
+	 *   7	-> permission: R(0)/RW(1) (only used when operation is SET)
+	 */
 	ap_uint<8>			opcode;
 };
 

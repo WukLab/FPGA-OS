@@ -10,6 +10,8 @@
 
 using namespace hls;
 
+#define NR_MAX_BUCKET_ALLOC 50
+
 #define DEBUG
 
 #ifndef DEBUG
@@ -27,7 +29,9 @@ int main(void)
 	stream<struct axis_mem> DRAM_rd_data("DRAM_rd_data"), DRAM_wr_data("DRAM_wr_data");
 	stream<struct axis_mem> BRAM_rd_data("BRAM_rd_data"), BRAM_wr_data("BRAM_wr_data");
 	stream<ap_uint<8> > DRAM_rd_status("DRAM_rd_status"), DRAM_wr_status("DRAM_wr_status");
-	int _cycle, k, j;
+	stream<struct buddy_alloc_if> alloc("alloc_request");
+	stream<struct buddy_alloc_ret_if> alloc_ret("alloc_response");
+	int _cycle, k, j, l;
 
 	struct mapping_request _in_read, _in_write;
 
@@ -35,20 +39,21 @@ int main(void)
 	struct hash_bucket *ht_dram;
 
 	ht_bram = (struct hash_bucket *)malloc(sizeof(struct hash_bucket) * NR_HT_BUCKET_BRAM);
-	ht_dram = (struct hash_bucket *)malloc(sizeof(struct hash_bucket) * NR_HT_BUCKET_DRAM);
+	ht_dram = (struct hash_bucket *)malloc(sizeof(struct hash_bucket) *
+					       (NR_HT_BUCKET_DRAM + NR_MAX_BUCKET_ALLOC));
 
 	memset(ht_bram, 0, sizeof(struct hash_bucket) * NR_HT_BUCKET_BRAM);
 	memset(ht_dram, 0, sizeof(struct hash_bucket) * NR_HT_BUCKET_DRAM);
 
 #define NR_CYCLES_RUN	400
 
-	for (_cycle = 0, k = 0, j = 0; _cycle < NR_CYCLES_RUN; _cycle++) {
+	for (_cycle = 0, k = 0, j = 0, l = 0; _cycle < NR_CYCLES_RUN; _cycle++) {
 #if 1
-#define NR_SET	8
+#define NR_SET	12
 		if (_cycle % 10 == 0 && k < NR_SET) {
-			_in_read.address =  0x100 * (k+1);
+			_in_read.address =  0x400 * (k+1);
 			_in_read.length = 0x66666660 + k;
-			_in_read.opcode = MAPPING_SET;
+			_in_read.opcode = MAPPING_SET | MAPPING_PERMISSION_R;
 			in_read.write(_in_read);
 			k++;
 			printf("Send SET at cycle %d [%#x %#x]\n", _cycle,
@@ -58,12 +63,15 @@ int main(void)
 #endif
 
 #if 1
-		if (_cycle > 100) {
-#define NR_GET	1
+		if (_cycle > 200) {
+#define NR_GET	12
 			if (j < NR_GET) {
-				_in_read.address =  0x100 * (j+1);
+				_in_read.address =  0x400 * (j+1);
 				_in_read.length = 0;
-				_in_read.opcode = MAPPING_REQUEST_READ;
+				if (j%2)
+					_in_read.opcode = MAPPING_REQUEST_READ;
+				else
+					_in_read.opcode = MAPPING_REQUEST_WRITE;
 				in_read.write(_in_read);
 				j++;
 			}
@@ -76,7 +84,8 @@ int main(void)
 			   &DRAM_rd_data, &DRAM_wr_data,
 			   &DRAM_rd_status, &DRAM_wr_status,
 			   &BRAM_rd_cmd, &BRAM_wr_cmd,
-			   &BRAM_rd_data, &BRAM_wr_data);
+			   &BRAM_rd_data, &BRAM_wr_data,
+			   &alloc, &alloc_ret);
 
 		if (!out_read.empty()) {
 			struct mapping_reply out = { 0 };
@@ -102,20 +111,24 @@ int main(void)
 			unsigned int index;
 
 			index = (cmd.start_address.to_uint() - MAPPING_TABLE_ADDRESS_BASE)/NR_BYTES_MEM_BUS;
-			if (index >= NR_HT_BUCKET_DRAM) {
+			if (index >= NR_HT_BUCKET_DRAM + NR_MAX_BUCKET_ALLOC) {
 				printf("ERROR: index=%d\n", index);
 				exit(-1);
 			}
 			hb = &ht_dram[index];
 
+			memcpy(&(in.data), hb, 64);
+
 			dp("[Cycle %3d] DRAM Read ht_index = %d\n",
 				_cycle, index);
-			printf("  key[0] = %x val[0] = %x %x\n",
+			printf("DRAM[%x]  key[0] = %x val[0] = %x %x\n",
+				index,
 				hb->key[0].to_uint(),
 				hb->val[0].to_uint(),
-				hb->bitmap.to_uint());
+			       	in.data(NR_BITS_BITMAP_OFF + NR_SLOTS_PER_BUCKET - 1,
+				       NR_BITS_BITMAP_OFF)
+				       .to_uint());
 
-			memcpy(&(in.data), hb, 64);
 			in.last = 1;
 			DRAM_rd_data.write(in);
 		}
@@ -155,14 +168,26 @@ int main(void)
 				exit(-1);
 			}
 			hb = &ht_bram[index];
+			/*
+			 * If the width in ap_int<> is not a multiple of 8,
+			 * the size of ap_int<> will be round to whole bytes.
+			 * Luckly, 512 is a multiple of 8, so ap_uint<512> just
+			 * take 64 bytes and there will be no information lost in
+			 * copying 64 bytes from struct hash_bucket to ap_uint<512>,
+			 * but the converse will result in broken information in
+			 * struct hash_bucket, only key and val is correctly
+			 * represented.
+			 */
 			memcpy(hb, &(out.data), 64);
 			dp("[Cycle %3d] BRAM Write ht_index = %d\n",
 				_cycle, index);
-			printf("  key[0] = %x val[0] = %x %x\n",
+			printf("BRAM[%x]  key[0] = %x val[0] = %x %x\n",
+				index,
 				hb->key[0].to_uint(),
 				hb->val[0].to_uint(),
-				hb->bitmap.to_uint());
-
+			       	out.data(NR_BITS_BITMAP_OFF + NR_SLOTS_PER_BUCKET - 1,
+					NR_BITS_BITMAP_OFF)
+				       .to_uint());
 		}
 
 		/* DRAM Write */
@@ -173,7 +198,7 @@ int main(void)
 			unsigned int index;
 
 			index = (cmd.start_address.to_uint() - MAPPING_TABLE_ADDRESS_BASE)/NR_BYTES_MEM_BUS;
-			if (index >= NR_HT_BUCKET_DRAM) {
+			if (index >= NR_HT_BUCKET_DRAM + NR_MAX_BUCKET_ALLOC) {
 				printf("ERROR: index=%d\n", index);
 				exit(-1);
 			}
@@ -185,7 +210,25 @@ int main(void)
 			printf("  key[0] = %x val[0] = %x %x\n",
 				hb->key[0].to_uint(),
 				hb->val[0].to_uint(),
-				hb->bitmap.to_uint());
+			       	out.data(NR_BITS_BITMAP_OFF + NR_SLOTS_PER_BUCKET - 1,
+					NR_BITS_BITMAP_OFF)
+				       .to_uint());
+		}
+
+		/* dummy allocator */
+		if (!alloc.empty()) {
+			struct buddy_alloc_if req = alloc.read();
+			struct buddy_alloc_ret_if resp = { 0 };
+			if (l < NR_MAX_BUCKET_ALLOC) {
+				resp.addr = (NR_HT_BUCKET_DRAM + l) * NR_BYTES_MEM_BUS +
+					MAPPING_TABLE_ADDRESS_BASE;
+				resp.stat = 1;
+				l++;
+			} else {
+				resp.addr = 0;
+				resp.stat = 0;
+			}
+			alloc_ret.write(resp);
 		}
 	}
 }
