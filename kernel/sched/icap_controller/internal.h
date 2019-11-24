@@ -4,18 +4,35 @@
 #ifndef _KERNEL_SCHED_ICAP_HLS_H_
 #define _KERNEL_SCHED_ICAP_HLS_H_
 
-/*
- * This is for Ultrascale+ family.
- * Other series might be different.
- */
-#define ICAP_DATA_WIDTH	(32)
+#include <fpga/icap.h>
 
-/* Active-Low ICAP input Enable */
-#define ICAP_CSIB_ENABLE	(0)
-#define ICAP_CSIB_DISABLE	(1)
+enum COMMAND_FUNCTION_STATUS {
+	CMD_DONE,
+	CMD_WIP,
+};
 
-/* Read active high, Write active low */
-#define ICAP_RDWRB_READ		(1)
-#define ICAP_RDWRB_WRITE	(0)
+#define FSM_NEXT(_state, _next)	\
+	do {			\
+		_state = _next;	\
+	} while (0)
+
+extern struct icap_register_entry icap_register_table[];
+
+unsigned int cook_cmd(int reg_nr);
+void update_COMMAND_regs_1(unsigned int cmd);
+
+int cmd_read_regs(hls::stream<ap_uint<ICAP_DATA_WIDTH> > *from_icap,
+		  hls::stream<ap_uint<ICAP_DATA_WIDTH> > *to_icap,
+		  volatile ap_uint<1> *CSIB_to_icap,
+		  volatile ap_uint<1> *RDWRB_to_icap,
+		  int reg_nr,
+		  int *reg_data);
+
+int cmd_read_bitstreams(hls::stream<ap_uint<ICAP_DATA_WIDTH> > *from_icap,
+			hls::stream<ap_uint<ICAP_DATA_WIDTH> > *to_icap,
+			volatile ap_uint<1> *CSIB_to_icap,
+			volatile ap_uint<1> *RDWRB_to_icap,
+			volatile int *O_nr_bytes,
+			volatile int *frame_addr);
 
 #endif /* _KERNEL_SCHED_ICAP_HLS_H_ */

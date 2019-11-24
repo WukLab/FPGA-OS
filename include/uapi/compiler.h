@@ -21,8 +21,17 @@
 #define __packed		__attribute__((__packed__))
 #define __aligned(x)            __attribute__((aligned(x)))
 
-#define likely(x)		__builtin_expect(!!(x), 1)
-#define unlikely(x)		__builtin_expect(!!(x), 0)
+/*
+ * At the time of writing (yes, 2019), Xilinx HLS compiler
+ * does not support builtin_expect.
+ */
+#ifdef __SYNTHESIS__
+# define likely(x)		(x)
+# define unlikely(x)		(x)
+#else
+# define likely(x)		__builtin_expect(!!(x), 1)
+# define unlikely(x)		__builtin_expect(!!(x), 0)
+#endif
 
 #define __compiletime_error_fallback(condition)			\
 	do {							\
