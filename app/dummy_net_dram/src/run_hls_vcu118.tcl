@@ -25,7 +25,7 @@ open_solution -reset solution1
 # ArtyA7:	xc7a100tcsg324-1
 #
 set_part {xcvu9p-flga2104-1-i}
-create_clock -period 8 -name default
+create_clock -period 10 -name default
 set_clock_uncertainty 1.25
 
 # Simulate the C code 
