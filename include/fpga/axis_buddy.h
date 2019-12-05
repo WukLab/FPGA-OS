@@ -19,6 +19,11 @@ enum {
 	BUDDY_FREE = 1,
 };
 
+enum {
+	BUDDY_SUCCESS = 0,
+	BUDDY_FAILED = 1
+};
+
 struct buddy_alloc_if {
 	/*
 	 * library buddy allocator, to save the bandwidth,
@@ -49,6 +54,10 @@ struct buddy_alloc_ret_if {
 };
 
 void buddy_allocator(hls::stream<struct buddy_alloc_if>& alloc,
-		     hls::stream<struct buddy_alloc_ret_if>& alloc_ret, char *dram);
+		     hls::stream<struct buddy_alloc_ret_if>& alloc_ret,
+		     hls::stream<unsigned long>& buddy_init, char *dram);
 
+void virt_addr_allocator(hls::stream<struct buddy_alloc_if> &alloc,
+		    hls::stream<struct buddy_alloc_ret_if> &alloc_ret,
+		    hls::stream<unsigned long> &buddy_init, char *dram);
 #endif /* _LEGO_FPGA_AXIS_BUDDY_H_ */
