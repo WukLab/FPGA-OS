@@ -24,14 +24,14 @@ const int UNROLL_FACTOR = BUDDY_SET_SIZE >> 2;
  * put constructor on the top for modify hls pragma
  */
 Buddy::Buddy()
-{
-	const ap_uint<32> metadata_size = BUDDY_USER_OFF;
-	const ap_uint<32> metadata_order =order_base_2<32>(LENGTH_TO_ORDER(metadata_size));
+{	
+	// dram_addr = BUDDY_META_OFF;
+	const ap_uint<32> metadata_size = BUDDY_META_SIZE;
+	const ap_uint<32> metadata_order = order_base_2<32>(LENGTH_TO_ORDER(metadata_size));
 	const ap_uint<LEVEL_MAX> metadata_level = order_to_level(metadata_order);
 	const ap_uint<3> metadata_width = order_to_width(metadata_order);
 
-	dram_addr = BUDDY_META_OFF;
-	INIT_LOOP:
+INIT_LOOP:
 	for (int i = 0; i < LEVEL_MAX; i++) {
 		buddy_set[i].level = i;
 		buddy_set[i].size = (1<<3*i) < BUDDY_SET_SIZE ? (1<<3*i) : BUDDY_SET_SIZE;
@@ -59,6 +59,12 @@ Buddy::Buddy()
 		<< std::endl;
 #endif
 	dump_buddy_table();
+}
+
+void Buddy::init(hls::stream<unsigned long>& buddy_init)
+{
+#pragma HLS INLINE
+	dram_addr = buddy_init.read();
 }
 
 BuddyCacheSet::BuddyCacheSet()
@@ -89,16 +95,18 @@ void Buddy::handler(hls::stream<buddy_alloc_if>& alloc,
 	switch (req.opcode) {
 	case BUDDY_ALLOC:
 		ret.stat = Buddy::alloc(req.order, &ret.addr, dram);
+		ret.addr += dram_addr;  // add offset to return address
 		if (ret.stat == 1)
 			ret.addr = 0;
-		alloc_ret.write(ret);
 		break;
 	case BUDDY_FREE:
+		req.addr -= dram_addr;  // sub offset from request address
 		ret.stat = Buddy::free(req.order, req.addr, dram);
 		break;
 	default:
 		ret.stat = 1;
 	}
+	alloc_ret.write(ret);
 	/*
 	 * only active during simulation
 	 */
@@ -513,6 +521,29 @@ ap_uint<3> Buddy::get_free_1bit(struct BuddyCacheLine& line)
 		return 6;
 	else
 		return 7;
+}
+
+ap_uint<PA_WIDTH> Buddy::order_base_2_hls(ap_uint<PA_WIDTH> n)
+{
+#pragma HLS INLINE
+#pragma HLS PIPELINE
+#define WIDTH 32
+	if (n > 1) {
+		ap_uint<PA_WIDTH> num = WIDTH - 1;
+		ap_uint<PA_WIDTH> shift = WIDTH >> 1;
+		ap_uint<PA_WIDTH> word = n - 1;
+
+		while (shift) {
+			if (!(word & (ap_uint<WIDTH>(-1) << (WIDTH - shift)))) {
+				num -= shift;
+				word <<= shift;
+			}
+			shift >>= 1;
+		}
+		return num + 1;
+	} else
+		return 0;
+#undef WIDTH
 }
 
 ap_uint<LEVEL_MAX> Buddy::order_to_level(ap_uint<ORDER_MAX> order)

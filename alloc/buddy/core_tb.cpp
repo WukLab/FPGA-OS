@@ -9,8 +9,10 @@
 #include <utility>
 #include <fpga/log2.h>
 
-#define TEST_MACRO 0
-#define TEST_PRINT 0
+#define TEST_MACRO 1
+#define TEST_PRINT 1
+
+hls::stream<unsigned long> init_buddy_addr;
 
 static void test_log2()
 {
@@ -329,7 +331,7 @@ static int core_test(ap_uint<1> opcode, ap_uint<PA_WIDTH> addr, ap_uint<ORDER_MA
 	std::cout << "Address:" << std::hex << std::setw(10) << addr
 			<< " Order:" << std::setw(ORDER_MAX) << order << std::endl;
 
-	buddy_allocator(alloc, alloc_ret, dram);
+	buddy_allocator(alloc, alloc_ret, init_buddy_addr, dram);
 
 	if (req.opcode == BUDDY_ALLOC) {
 		ret = alloc_ret.read();
@@ -378,6 +380,8 @@ int main()
 	tag_to_drambuddy();
 	test_cache_line_operation();
 	test_cache_set_operation();
+
+	init_buddy_addr.write(BUDDY_START);
 
 	/* allocation test */
 	ret = core_test(BUDDY_ALLOC, 0, 0, dram, &addr);

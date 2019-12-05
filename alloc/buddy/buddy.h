@@ -45,6 +45,7 @@ class Buddy
 public:
 	Buddy();
 	~Buddy() {}
+	void init(hls::stream<unsigned long> &buddy_init);
 	void handler(hls::stream<buddy_alloc_if>& alloc,
 		     hls::stream<buddy_alloc_ret_if>& alloc_ret, char* dram);
 
@@ -89,6 +90,7 @@ public:
 	/*
 	 * some helper functions
 	 */
+	static ap_uint<PA_WIDTH> order_base_2_hls(ap_uint<PA_WIDTH> n);
 	static ap_uint<LEVEL_MAX> order_to_level(ap_uint<ORDER_MAX> order);
 	static ap_uint<3> order_to_width(ap_uint<ORDER_MAX> order);
 

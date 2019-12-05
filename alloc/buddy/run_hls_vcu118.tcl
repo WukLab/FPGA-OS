@@ -19,7 +19,7 @@ open_project	-reset generated_hls_project
 # The source file and test bench
 add_files	core.cpp	-cflags "-I../../include"
 add_files	buddy.cpp	-cflags "-I../../include"
-add_files -tb	core_tb.cpp	-cflags "-I../../include"
+add_files -tb	debug_tb.cpp	-cflags "-I../../include"
 
 # Specify the top-level function for synthesis
 set_top		buddy_allocator
@@ -43,13 +43,13 @@ config_rtl -encoding onehot -reset all -reset_level high -reset_async -vivado_im
 set_clock_uncertainty 0.25
 
 # Simulate the C code 
-# csim_design
+csim_design
 
 # Synthesis the C code
-csynth_design
+#csynth_design
 
 # Export IP block
-export_design -format ip_catalog -display_name "buddy allocator" -description "Buddy Allocator IP" -vendor "Wuklab.UCSD" -version "1.0"
+#export_design -format ip_catalog -display_name "buddy allocator" -description "Buddy Allocator IP" -vendor "Wuklab.UCSD" -version "1.0"
 
 # Do not perform any other steps
 # - The basic project will be opened in the GUI 

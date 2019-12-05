@@ -9,6 +9,7 @@ const int AXI_DEPTH = SIM_DRAM_SIZE;
 
 void buddy_allocator(hls::stream<struct buddy_alloc_if>& alloc,
 		     hls::stream<struct buddy_alloc_ret_if>& alloc_ret,
+		     hls::stream<unsigned long>& buddy_init,
 		     char *dram)
 {
 #pragma HLS DATA_PACK variable=alloc
@@ -16,8 +17,12 @@ void buddy_allocator(hls::stream<struct buddy_alloc_if>& alloc,
 
 #pragma HLS INTERFACE axis register port=alloc
 #pragma HLS INTERFACE axis register port=alloc_ret
+#pragma HLS INTERFACE axis register port=buddy_init
 #pragma HLS INTERFACE m_axi depth=AXI_DEPTH port=dram offset=off
+#pragma HLS INTERFACE ap_ctrl_none port=return
 
+	if (!buddy_init.empty())
+		buddy.init(buddy_init);
 	if (!alloc.empty())
 		buddy.handler(alloc, alloc_ret, dram);
 }
