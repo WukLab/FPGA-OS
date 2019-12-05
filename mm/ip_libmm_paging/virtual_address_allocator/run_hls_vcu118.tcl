@@ -43,13 +43,13 @@ config_rtl -encoding onehot -reset all -reset_level high -reset_async -vivado_im
 set_clock_uncertainty 0.25
 
 # Simulate the C code 
-csim_design
+#csim_design
 
 # Synthesis the C code
-#csynth_design
+csynth_design
 
 # Export IP block
-#export_design -format ip_catalog -display_name "heap buddy allocator" -description "Buddy Allocator for Heap" -vendor "Wuklab.UCSD" -version "1.0"
+export_design -format ip_catalog -display_name "heap buddy allocator" -description "Buddy Allocator for Heap" -vendor "Wuklab.UCSD" -version "1.0"
 
 # Do not perform any other steps
 # - The basic project will be opened in the GUI 
