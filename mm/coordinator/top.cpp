@@ -50,7 +50,7 @@ void coord_top(stream<struct mem_cmd_in>		*ctrl_in,
 
 	static COORD_STATUS state = COORD_IDLE;
 
-	enum FUNCTION_STATUS ret;
+	int ret;
 	enum mem_cmd_opcode opcode;
 
 	static struct mem_cmd_in command_req;

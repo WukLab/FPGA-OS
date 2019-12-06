@@ -32,7 +32,7 @@ enum FUNCTION_STATUS {
  * @init_tbl_addr: initiate page table start address
  * @init_hEAP_addr: initiate start address for heap allocator
  */
-FUNCTION_STATUS init(stream<struct buddy_alloc_if>	*buddy_alloc_req,
+int init(stream<struct buddy_alloc_if>	*buddy_alloc_req,
 		     stream<struct buddy_alloc_ret_if>	*buddy_alloc_ret,
 		     stream<struct alloc_seg_in>	*seg_alloc_req,
 		     stream<struct alloc_seg_out>	*seg_alloc_ret,

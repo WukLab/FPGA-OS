@@ -13,7 +13,7 @@ enum INIT_STATUS {
 	INIT_ALLOC_META_RET
 };
 
-FUNCTION_STATUS init(stream<struct buddy_alloc_if>	*buddy_alloc_req,
+int init(stream<struct buddy_alloc_if>	*buddy_alloc_req,
 		     stream<struct buddy_alloc_ret_if>	*buddy_alloc_ret,
 		     stream<struct alloc_seg_in>	*seg_alloc_req,
 		     stream<struct alloc_seg_out>	*seg_alloc_ret,
