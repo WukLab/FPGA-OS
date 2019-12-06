@@ -8,14 +8,14 @@
 #
 # To customize
 # - Modify GENERATED_IP_FOLDER to reflect the path
-
+set -x
 TARGET_BOARD=$1
 HLS_IP=$2
 IP_NAME_PREFIX=$3
 
 # Customize: relative path
 HLS_DIR="$PWD"
-GENERATED_IP_FOLDER="${HLS_DIR}/../generated_ip"
+GENERATED_IP_FOLDER="${HLS_DIR}/../../generated_ip"
 
 # Change the absolute path to your own one.
 VIVADO_HLS='vivado_hls'

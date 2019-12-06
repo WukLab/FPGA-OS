@@ -12,6 +12,9 @@ switch $ver {
 	2019.1 {
 		set_property -name "board_part" -value "xilinx.com:vcu118:part0:2.3" -objects $obj
 	}
+	2019.1.3 {
+		set_property -name "board_part" -value "xilinx.com:vcu118:part0:2.3" -objects $obj
+	}
 	default {
 		set_property -name "board_part" -value "xilinx.com:vcu118:part0:2.0" -objects $obj
 	}

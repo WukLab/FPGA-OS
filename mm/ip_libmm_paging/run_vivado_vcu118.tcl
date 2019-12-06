@@ -73,7 +73,20 @@ set proj_dir [get_property directory [current_project]]
 
 # Set project properties
 set obj [current_project]
-set_property -name "board_part" -value "xilinx.com:vcu118:part0:2.0" -objects $obj
+
+set ver [version -short]
+switch $ver {
+	2019.1 {
+		set_property -name "board_part" -value "xilinx.com:vcu118:part0:2.3" -objects $obj
+	}
+	2019.1.3 {
+		set_property -name "board_part" -value "xilinx.com:vcu118:part0:2.3" -objects $obj
+	}
+	default {
+		set_property -name "board_part" -value "xilinx.com:vcu118:part0:2.0" -objects $obj
+	}
+}
+
 set_property -name "default_lib" -value "xil_defaultlib" -objects $obj
 set_property -name "dsa.accelerator_binary_content" -value "bitstream" -objects $obj
 set_property -name "dsa.accelerator_binary_format" -value "xclbin2" -objects $obj
@@ -865,7 +878,7 @@ proc create_hier_cell_Buffer_ToBeRemoved { parentCell nameHier } {
   connect_bd_intf_net -intf_net coord_top_0_seg_alloc_req_V [get_bd_intf_pins coordinator/seg_alloc_req_V] [get_bd_intf_pins mm_segfix_hls_0/ctl_in_V]
   connect_bd_intf_net -intf_net coordinator_buddy_alloc_req_V [get_bd_intf_pins buddy_alloc_mux/buddy_alloc_req_1_V] [get_bd_intf_pins coordinator/buddy_alloc_req_V]
   connect_bd_intf_net -intf_net coordinator_ctrl_out_V [get_bd_intf_ports ctrl_out_0] [get_bd_intf_pins coordinator/ctrl_out_V]
-  connect_bd_intf_net -intf_net coordinator_init_buddy_addr_V [get_bd_intf_pins coordinator/init_buddy_addr_V] [get_bd_intf_pins phy_mem_allocator/buddy_init_V]
+  connect_bd_intf_net -intf_net coordinator_init_buddy_addr_V [get_bd_intf_pins coordinator/init_buddy_addr_V] [get_bd_intf_pins phy_mem_allocator/init_buddy_managed_base_V]
   connect_bd_intf_net -intf_net coordinator_init_heap_addr_V [get_bd_intf_pins coordinator/init_heap_addr_V] [get_bd_intf_pins virt_addr_allocator/buddy_init_V]
   connect_bd_intf_net -intf_net coordinator_init_tbl_addr_V_V [get_bd_intf_pins coordinator/init_tbl_addr_V_V] [get_bd_intf_pins mapping_hls_top/base_addr_V_V]
   connect_bd_intf_net -intf_net ctrl_in_V_0_1 [get_bd_intf_ports ctrl_in_0] [get_bd_intf_pins coordinator/ctrl_in_V]
@@ -912,313 +925,6 @@ proc create_hier_cell_Buffer_ToBeRemoved { parentCell nameHier } {
 cr_bd_libmm_ip_top_TB ""
 set_property REGISTERED_WITH_MANAGER "1" [get_files libmm_ip_top_TB.bd ] 
 set_property SYNTH_CHECKPOINT_MODE "Hierarchical" [get_files libmm_ip_top_TB.bd ] 
-
-# Create 'synth_1' run (if not found)
-if {[string equal [get_runs -quiet synth_1] ""]} {
-    create_run -name synth_1 -part xcvu9p-flga2104-2L-e -flow {Vivado Synthesis 2018} -strategy "Vivado Synthesis Defaults" -report_strategy {No Reports} -constrset constrs_1
-} else {
-  set_property strategy "Vivado Synthesis Defaults" [get_runs synth_1]
-  set_property flow "Vivado Synthesis 2018" [get_runs synth_1]
-}
-set obj [get_runs synth_1]
-set_property set_report_strategy_name 1 $obj
-set_property report_strategy {Vivado Synthesis Default Reports} $obj
-set_property set_report_strategy_name 0 $obj
-# Create 'synth_1_synth_report_utilization_0' report (if not found)
-if { [ string equal [get_report_configs -of_objects [get_runs synth_1] synth_1_synth_report_utilization_0] "" ] } {
-  create_report_config -report_name synth_1_synth_report_utilization_0 -report_type report_utilization:1.0 -steps synth_design -runs synth_1
-}
-set obj [get_report_configs -of_objects [get_runs synth_1] synth_1_synth_report_utilization_0]
-if { $obj != "" } {
-set_property -name "display_name" -value "synth_1_synth_report_utilization_0" -objects $obj
-
-}
-set obj [get_runs synth_1]
-set_property -name "strategy" -value "Vivado Synthesis Defaults" -objects $obj
-
-# set the current synth run
-current_run -synthesis [get_runs synth_1]
-
-# Create 'impl_1' run (if not found)
-if {[string equal [get_runs -quiet impl_1] ""]} {
-    create_run -name impl_1 -part xcvu9p-flga2104-2L-e -flow {Vivado Implementation 2018} -strategy "Vivado Implementation Defaults" -report_strategy {No Reports} -constrset constrs_1 -parent_run synth_1
-} else {
-  set_property strategy "Vivado Implementation Defaults" [get_runs impl_1]
-  set_property flow "Vivado Implementation 2018" [get_runs impl_1]
-}
-set obj [get_runs impl_1]
-set_property set_report_strategy_name 1 $obj
-set_property report_strategy {Vivado Implementation Default Reports} $obj
-set_property set_report_strategy_name 0 $obj
-# Create 'impl_1_init_report_timing_summary_0' report (if not found)
-if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_init_report_timing_summary_0] "" ] } {
-  create_report_config -report_name impl_1_init_report_timing_summary_0 -report_type report_timing_summary:1.0 -steps init_design -runs impl_1
-}
-set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_init_report_timing_summary_0]
-if { $obj != "" } {
-set_property -name "is_enabled" -value "0" -objects $obj
-set_property -name "display_name" -value "impl_1_init_report_timing_summary_0" -objects $obj
-
-}
-# Create 'impl_1_opt_report_drc_0' report (if not found)
-if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_opt_report_drc_0] "" ] } {
-  create_report_config -report_name impl_1_opt_report_drc_0 -report_type report_drc:1.0 -steps opt_design -runs impl_1
-}
-set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_opt_report_drc_0]
-if { $obj != "" } {
-set_property -name "display_name" -value "impl_1_opt_report_drc_0" -objects $obj
-
-}
-# Create 'impl_1_opt_report_timing_summary_0' report (if not found)
-if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_opt_report_timing_summary_0] "" ] } {
-  create_report_config -report_name impl_1_opt_report_timing_summary_0 -report_type report_timing_summary:1.0 -steps opt_design -runs impl_1
-}
-set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_opt_report_timing_summary_0]
-if { $obj != "" } {
-set_property -name "is_enabled" -value "0" -objects $obj
-set_property -name "display_name" -value "impl_1_opt_report_timing_summary_0" -objects $obj
-
-}
-# Create 'impl_1_power_opt_report_timing_summary_0' report (if not found)
-if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_power_opt_report_timing_summary_0] "" ] } {
-  create_report_config -report_name impl_1_power_opt_report_timing_summary_0 -report_type report_timing_summary:1.0 -steps power_opt_design -runs impl_1
-}
-set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_power_opt_report_timing_summary_0]
-if { $obj != "" } {
-set_property -name "is_enabled" -value "0" -objects $obj
-set_property -name "display_name" -value "impl_1_power_opt_report_timing_summary_0" -objects $obj
-
-}
-# Create 'impl_1_place_report_io_0' report (if not found)
-if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_place_report_io_0] "" ] } {
-  create_report_config -report_name impl_1_place_report_io_0 -report_type report_io:1.0 -steps place_design -runs impl_1
-}
-set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_place_report_io_0]
-if { $obj != "" } {
-set_property -name "display_name" -value "impl_1_place_report_io_0" -objects $obj
-
-}
-# Create 'impl_1_place_report_utilization_0' report (if not found)
-if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_place_report_utilization_0] "" ] } {
-  create_report_config -report_name impl_1_place_report_utilization_0 -report_type report_utilization:1.0 -steps place_design -runs impl_1
-}
-set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_place_report_utilization_0]
-if { $obj != "" } {
-set_property -name "display_name" -value "impl_1_place_report_utilization_0" -objects $obj
-
-}
-# Create 'impl_1_place_report_control_sets_0' report (if not found)
-if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_place_report_control_sets_0] "" ] } {
-  create_report_config -report_name impl_1_place_report_control_sets_0 -report_type report_control_sets:1.0 -steps place_design -runs impl_1
-}
-set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_place_report_control_sets_0]
-if { $obj != "" } {
-set_property -name "display_name" -value "impl_1_place_report_control_sets_0" -objects $obj
-
-}
-# Create 'impl_1_place_report_incremental_reuse_0' report (if not found)
-if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_place_report_incremental_reuse_0] "" ] } {
-  create_report_config -report_name impl_1_place_report_incremental_reuse_0 -report_type report_incremental_reuse:1.0 -steps place_design -runs impl_1
-}
-set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_place_report_incremental_reuse_0]
-if { $obj != "" } {
-set_property -name "is_enabled" -value "0" -objects $obj
-set_property -name "display_name" -value "impl_1_place_report_incremental_reuse_0" -objects $obj
-
-}
-# Create 'impl_1_place_report_incremental_reuse_1' report (if not found)
-if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_place_report_incremental_reuse_1] "" ] } {
-  create_report_config -report_name impl_1_place_report_incremental_reuse_1 -report_type report_incremental_reuse:1.0 -steps place_design -runs impl_1
-}
-set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_place_report_incremental_reuse_1]
-if { $obj != "" } {
-set_property -name "is_enabled" -value "0" -objects $obj
-set_property -name "display_name" -value "impl_1_place_report_incremental_reuse_1" -objects $obj
-
-}
-# Create 'impl_1_place_report_timing_summary_0' report (if not found)
-if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_place_report_timing_summary_0] "" ] } {
-  create_report_config -report_name impl_1_place_report_timing_summary_0 -report_type report_timing_summary:1.0 -steps place_design -runs impl_1
-}
-set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_place_report_timing_summary_0]
-if { $obj != "" } {
-set_property -name "is_enabled" -value "0" -objects $obj
-set_property -name "display_name" -value "impl_1_place_report_timing_summary_0" -objects $obj
-
-}
-# Create 'impl_1_post_place_power_opt_report_timing_summary_0' report (if not found)
-if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_post_place_power_opt_report_timing_summary_0] "" ] } {
-  create_report_config -report_name impl_1_post_place_power_opt_report_timing_summary_0 -report_type report_timing_summary:1.0 -steps post_place_power_opt_design -runs impl_1
-}
-set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_post_place_power_opt_report_timing_summary_0]
-if { $obj != "" } {
-set_property -name "is_enabled" -value "0" -objects $obj
-set_property -name "display_name" -value "impl_1_post_place_power_opt_report_timing_summary_0" -objects $obj
-
-}
-# Create 'impl_1_phys_opt_report_timing_summary_0' report (if not found)
-if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_phys_opt_report_timing_summary_0] "" ] } {
-  create_report_config -report_name impl_1_phys_opt_report_timing_summary_0 -report_type report_timing_summary:1.0 -steps phys_opt_design -runs impl_1
-}
-set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_phys_opt_report_timing_summary_0]
-if { $obj != "" } {
-set_property -name "is_enabled" -value "0" -objects $obj
-set_property -name "display_name" -value "impl_1_phys_opt_report_timing_summary_0" -objects $obj
-
-}
-# Create 'impl_1_route_report_drc_0' report (if not found)
-if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_route_report_drc_0] "" ] } {
-  create_report_config -report_name impl_1_route_report_drc_0 -report_type report_drc:1.0 -steps route_design -runs impl_1
-}
-set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_route_report_drc_0]
-if { $obj != "" } {
-set_property -name "display_name" -value "impl_1_route_report_drc_0" -objects $obj
-
-}
-# Create 'impl_1_route_report_methodology_0' report (if not found)
-if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_route_report_methodology_0] "" ] } {
-  create_report_config -report_name impl_1_route_report_methodology_0 -report_type report_methodology:1.0 -steps route_design -runs impl_1
-}
-set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_route_report_methodology_0]
-if { $obj != "" } {
-set_property -name "display_name" -value "impl_1_route_report_methodology_0" -objects $obj
-
-}
-# Create 'impl_1_route_report_power_0' report (if not found)
-if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_route_report_power_0] "" ] } {
-  create_report_config -report_name impl_1_route_report_power_0 -report_type report_power:1.0 -steps route_design -runs impl_1
-}
-set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_route_report_power_0]
-if { $obj != "" } {
-set_property -name "display_name" -value "impl_1_route_report_power_0" -objects $obj
-
-}
-# Create 'impl_1_route_report_route_status_0' report (if not found)
-if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_route_report_route_status_0] "" ] } {
-  create_report_config -report_name impl_1_route_report_route_status_0 -report_type report_route_status:1.0 -steps route_design -runs impl_1
-}
-set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_route_report_route_status_0]
-if { $obj != "" } {
-set_property -name "display_name" -value "impl_1_route_report_route_status_0" -objects $obj
-
-}
-# Create 'impl_1_route_report_timing_summary_0' report (if not found)
-if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_route_report_timing_summary_0] "" ] } {
-  create_report_config -report_name impl_1_route_report_timing_summary_0 -report_type report_timing_summary:1.0 -steps route_design -runs impl_1
-}
-set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_route_report_timing_summary_0]
-if { $obj != "" } {
-set_property -name "display_name" -value "impl_1_route_report_timing_summary_0" -objects $obj
-
-}
-# Create 'impl_1_route_report_incremental_reuse_0' report (if not found)
-if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_route_report_incremental_reuse_0] "" ] } {
-  create_report_config -report_name impl_1_route_report_incremental_reuse_0 -report_type report_incremental_reuse:1.0 -steps route_design -runs impl_1
-}
-set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_route_report_incremental_reuse_0]
-if { $obj != "" } {
-set_property -name "display_name" -value "impl_1_route_report_incremental_reuse_0" -objects $obj
-
-}
-# Create 'impl_1_route_report_clock_utilization_0' report (if not found)
-if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_route_report_clock_utilization_0] "" ] } {
-  create_report_config -report_name impl_1_route_report_clock_utilization_0 -report_type report_clock_utilization:1.0 -steps route_design -runs impl_1
-}
-set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_route_report_clock_utilization_0]
-if { $obj != "" } {
-set_property -name "display_name" -value "impl_1_route_report_clock_utilization_0" -objects $obj
-
-}
-# Create 'impl_1_route_report_bus_skew_0' report (if not found)
-if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_route_report_bus_skew_0] "" ] } {
-  create_report_config -report_name impl_1_route_report_bus_skew_0 -report_type report_bus_skew:1.1 -steps route_design -runs impl_1
-}
-set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_route_report_bus_skew_0]
-if { $obj != "" } {
-set_property -name "display_name" -value "impl_1_route_report_bus_skew_0" -objects $obj
-
-}
-# Create 'impl_1_post_route_phys_opt_report_timing_summary_0' report (if not found)
-if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_post_route_phys_opt_report_timing_summary_0] "" ] } {
-  create_report_config -report_name impl_1_post_route_phys_opt_report_timing_summary_0 -report_type report_timing_summary:1.0 -steps post_route_phys_opt_design -runs impl_1
-}
-set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_post_route_phys_opt_report_timing_summary_0]
-if { $obj != "" } {
-set_property -name "display_name" -value "impl_1_post_route_phys_opt_report_timing_summary_0" -objects $obj
-
-}
-# Create 'impl_1_post_route_phys_opt_report_bus_skew_0' report (if not found)
-if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_post_route_phys_opt_report_bus_skew_0] "" ] } {
-  create_report_config -report_name impl_1_post_route_phys_opt_report_bus_skew_0 -report_type report_bus_skew:1.1 -steps post_route_phys_opt_design -runs impl_1
-}
-set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_post_route_phys_opt_report_bus_skew_0]
-if { $obj != "" } {
-set_property -name "display_name" -value "impl_1_post_route_phys_opt_report_bus_skew_0" -objects $obj
-
-}
-set obj [get_runs impl_1]
-set_property -name "strategy" -value "Vivado Implementation Defaults" -objects $obj
-set_property -name "steps.write_bitstream.args.readback_file" -value "0" -objects $obj
-set_property -name "steps.write_bitstream.args.verbose" -value "0" -objects $obj
-
-# set the current impl run
-current_run -implementation [get_runs impl_1]
-
-puts "INFO: Project created:${_xil_proj_name_}"
-set obj [get_dashboards default_dashboard]
-
-# Create 'drc_1' gadget (if not found)
-if {[string equal [get_dashboard_gadgets -of_objects [get_dashboards default_dashboard] [ list "drc_1" ] ] ""]} {
-create_dashboard_gadget -name {drc_1} -type drc
-}
-set obj [get_dashboard_gadgets -of_objects [get_dashboards default_dashboard] [ list "drc_1" ] ]
-set_property -name "reports" -value "impl_1#impl_1_route_report_drc_0" -objects $obj
-
-# Create 'methodology_1' gadget (if not found)
-if {[string equal [get_dashboard_gadgets -of_objects [get_dashboards default_dashboard] [ list "methodology_1" ] ] ""]} {
-create_dashboard_gadget -name {methodology_1} -type methodology
-}
-set obj [get_dashboard_gadgets -of_objects [get_dashboards default_dashboard] [ list "methodology_1" ] ]
-set_property -name "reports" -value "impl_1#impl_1_route_report_methodology_0" -objects $obj
-
-# Create 'power_1' gadget (if not found)
-if {[string equal [get_dashboard_gadgets -of_objects [get_dashboards default_dashboard] [ list "power_1" ] ] ""]} {
-create_dashboard_gadget -name {power_1} -type power
-}
-set obj [get_dashboard_gadgets -of_objects [get_dashboards default_dashboard] [ list "power_1" ] ]
-set_property -name "reports" -value "impl_1#impl_1_route_report_power_0" -objects $obj
-
-# Create 'timing_1' gadget (if not found)
-if {[string equal [get_dashboard_gadgets -of_objects [get_dashboards default_dashboard] [ list "timing_1" ] ] ""]} {
-create_dashboard_gadget -name {timing_1} -type timing
-}
-set obj [get_dashboard_gadgets -of_objects [get_dashboards default_dashboard] [ list "timing_1" ] ]
-set_property -name "reports" -value "impl_1#impl_1_route_report_timing_summary_0" -objects $obj
-
-# Create 'utilization_1' gadget (if not found)
-if {[string equal [get_dashboard_gadgets -of_objects [get_dashboards default_dashboard] [ list "utilization_1" ] ] ""]} {
-create_dashboard_gadget -name {utilization_1} -type utilization
-}
-set obj [get_dashboard_gadgets -of_objects [get_dashboards default_dashboard] [ list "utilization_1" ] ]
-set_property -name "reports" -value "synth_1#synth_1_synth_report_utilization_0" -objects $obj
-set_property -name "run.step" -value "synth_design" -objects $obj
-set_property -name "run.type" -value "synthesis" -objects $obj
-
-# Create 'utilization_2' gadget (if not found)
-if {[string equal [get_dashboard_gadgets -of_objects [get_dashboards default_dashboard] [ list "utilization_2" ] ] ""]} {
-create_dashboard_gadget -name {utilization_2} -type utilization
-}
-set obj [get_dashboard_gadgets -of_objects [get_dashboards default_dashboard] [ list "utilization_2" ] ]
-set_property -name "reports" -value "impl_1#impl_1_place_report_utilization_0" -objects $obj
-
-move_dashboard_gadget -name {utilization_1} -row 0 -col 0
-move_dashboard_gadget -name {power_1} -row 1 -col 0
-move_dashboard_gadget -name {drc_1} -row 2 -col 0
-move_dashboard_gadget -name {timing_1} -row 0 -col 1
-move_dashboard_gadget -name {utilization_2} -row 1 -col 1
-move_dashboard_gadget -name {methodology_1} -row 2 -col 1
-# Set current dashboard to 'default_dashboard' 
-current_dashboard default_dashboard 
 
 puts "INFO: Project created:${_xil_proj_name_}"
 exit
