@@ -11,7 +11,7 @@ all:
 	$(VIVADO_HLS) -f run_hls_$(TARGET_BOARD).tcl
 
 g:
-	$(VIVADO_HLS) -p $(project_path)
+	$(VIVADO_HLS) -p $(project_path) &
 
 clean:
 	rm -rf $(project_path)

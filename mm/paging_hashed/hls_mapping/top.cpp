@@ -10,8 +10,6 @@
 #include "dm.hpp"
 #include "resv_table.hpp"
 
-extern ap_uint<PA_WIDTH> mapping_table_addr_base;
-
 void buffer_req_read(stream<struct mapping_request> *in,
 		     stream<struct mapping_request> *out)
 {

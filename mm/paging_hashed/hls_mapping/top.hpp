@@ -14,6 +14,8 @@
 
 using namespace hls;
 
+extern ap_uint<PA_WIDTH> mapping_table_addr_base;
+
 #define MEM_BUS_WIDTH		512
 #define MEM_BUS_SHIFT		9
 #define NR_BYTES_MEM_BUS	(MEM_BUS_WIDTH/8)

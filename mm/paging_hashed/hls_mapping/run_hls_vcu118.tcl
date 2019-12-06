@@ -27,7 +27,7 @@ open_solution -reset solution1
 # ArtyA7:	xc7a100tcsg324-1
 #
 set_part {xcvu9p-flga2104-1-i}
-create_clock -period 3.33 -name default
+create_clock -period 5 -name default
 set_clock_uncertainty 0.25
 
 # UG902: Resets all registers and memories in the design.
