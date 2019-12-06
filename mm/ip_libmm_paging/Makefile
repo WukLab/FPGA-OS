@@ -9,20 +9,19 @@ ifeq ($(TARGET_BOARD), )
 endif
 
 IP_NAME_PREFIX	:= mm
-HLS_IP_CORES	:= segfix,coordinator
+HLS_IP_CORES	:= coordinator,virtual_address_allocator,buddy_alloc_mux
 
 all:
-	# segfix, coordinator
-	$(Q)cd .. && ./generate_hls.sh $(TARGET_BOARD) $(HLS_IP_CORES) $(IP_NAME_PREFIX)
-	# heap allocator, buddy mux
-	$(Q)./generate_hls.sh $(TARGET_BOARD)
-	# mapping table, bram table
-	$(Q)cd ../paging_hashed && ./generate_hls.sh $(TARGET_BOARD)
-	# buddy allocator
-	$(Q)make -C ../../alloc
+	$(Q)./generate_hls.sh $(TARGET_BOARD) $(HLS_IP_CORES) $(IP_NAME_PREFIX)
 	$(VIVADO) -mode tcl -source run_vivado_$(TARGET_BOARD).tcl
+
+	# mapping table, bram table
+	#$(Q)cd ../paging_hashed && ./generate_hls.sh $(TARGET_BOARD)
+	# buddy allocator
+	#$(Q)make -C ../../alloc
 g:
 	$(VIVADO) generated_vivado_project/generated_vivado_project.xpr
+
 clean:
 	find ./ -name "generated_hls_project" | xargs rm -rf
 	find ./ -name "generated_vivado_project" | xargs rm -rf

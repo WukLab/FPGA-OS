@@ -13,7 +13,11 @@
 #include <fpga/kernel.h>
 
 #include "mem_cmd.h"
-#include "../paging_hashed/hls_mapping/top.hpp"
+
+/*
+ * XXX what's referenced?
+ */
+#include "../../paging_hashed/hls_mapping/top.hpp"
 
 using namespace hls;
 
