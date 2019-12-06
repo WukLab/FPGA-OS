@@ -13,3 +13,9 @@ This is the single HLS IP for translating an input `X` to output `Y`. The follow
 Key-value pairs are stored in 512bit hash buckets. Each hash bucket has 7 32bit-to-32bit key-value pairs (each pair has a permission bit), a bitmap, a 26bit chaining address and a 1bit chaining flag.
 
 This IP need to connect to an allocator. If a hash bucket in DRAM is full, when new setting request hit that hash bucket, this IP will call the allocator to allocate a new bucket to store more key-value pairs.
+
+TODO:
+
+- Need to implement policy for evicting entry from BRAM
+- Should move dependency checking forward
+- Need to implement delete entries

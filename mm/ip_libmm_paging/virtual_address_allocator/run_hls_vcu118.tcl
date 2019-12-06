@@ -49,7 +49,7 @@ set_clock_uncertainty 0.25
 csynth_design
 
 # Export IP block
-export_design -format ip_catalog -display_name "heap buddy allocator" -description "Buddy Allocator for Heap" -vendor "Wuklab.UCSD" -version "1.0"
+export_design -format ip_catalog -display_name "virtual address allocator" -description "Buddy Allocator for virtual address" -vendor "Wuklab.UCSD" -version "1.0"
 
 # Do not perform any other steps
 # - The basic project will be opened in the GUI 

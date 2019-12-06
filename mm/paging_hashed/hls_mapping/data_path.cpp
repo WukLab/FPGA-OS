@@ -16,6 +16,8 @@
 
 using namespace hls;
 
+extern ap_uint<PA_WIDTH> mapping_table_addr_base;
+
 /*
  * Forge incoming requets into internal pipeline
  * words. Should at the top level.
@@ -357,7 +359,7 @@ void fill_S2(stream<struct pipeline_info> *pi_in,
 					PR("Need to allocate new bucket.\n");
 					struct buddy_alloc_if alloc_req = { 0 };
 					alloc_req.opcode = BUDDY_ALLOC;
-					alloc_req.order = PA_WIDTH - NR_BITS_CHAIN_ADDR;  // allocate 64 bytes
+					alloc_req.order = 0;  // allocate 64 bytes
 					alloc->write(alloc_req);
 					state = ALLOC_RECV_RET;
 					break;
@@ -418,10 +420,10 @@ void fill_S2(stream<struct pipeline_info> *pi_in,
 		if (alloc_ret->empty())
 			break;
 		alloc_resp = alloc_ret->read();
-		if (alloc_resp.stat == 1) {  // which stat is success? 1 or 0?
+		if (alloc_resp.stat == BUDDY_SUCCESS) {
 			state = ALLOC_WRITE_DATA;
 			ap_uint<PA_WIDTH> alloc_addr_trans =
-				(alloc_resp.addr - MAPPING_TABLE_ADDRESS_BASE) >>
+				(alloc_resp.addr - mapping_table_addr_base) >>
 				(PA_WIDTH - NR_BITS_CHAIN_ADDR);  // transform physical addr
 			pi.hb_dram[NR_BITS_CHAIN_FLAG_OFF] = 1;
 			pi.hb_dram(NR_BITS_CHAIN_ADDR_OFF + NR_BITS_CHAIN_ADDR - 1,

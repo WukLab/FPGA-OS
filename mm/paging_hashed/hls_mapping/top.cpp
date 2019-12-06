@@ -10,6 +10,8 @@
 #include "dm.hpp"
 #include "resv_table.hpp"
 
+extern ap_uint<PA_WIDTH> mapping_table_addr_base;
+
 void buffer_req_read(stream<struct mapping_request> *in,
 		     stream<struct mapping_request> *out)
 {
@@ -40,6 +42,15 @@ void buffer_req_write(stream<struct mapping_request> *in,
 	}
 }
 
+void set_base_addr(stream<ap_uint<32> > *base_addr)
+{
+#pragma HLS PIPELINE
+#pragma HLS INLINE
+	if (!base_addr->empty())
+		mapping_table_addr_base = base_addr->read();
+	return;
+}
+
 void paging_top(hls::stream<struct mapping_request>	*in_read,
 	        hls::stream<struct mapping_request>	*in_write,
 	        hls::stream<struct mapping_reply>	*out_read,
@@ -58,7 +69,9 @@ void paging_top(hls::stream<struct mapping_request>	*in_read,
 		hls::stream<struct axis_mem>		*BRAM_wr_data,
 		
 		hls::stream<struct buddy_alloc_if>	*alloc,
-		hls::stream<struct buddy_alloc_ret_if>	*alloc_ret)
+		hls::stream<struct buddy_alloc_ret_if>	*alloc_ret,
+		
+		hls::stream<ap_uint<PA_WIDTH> >		*base_addr)
 {
 #pragma HLS INTERFACE ap_ctrl_none port=return
 #pragma HLS DATAFLOW
@@ -82,6 +95,8 @@ void paging_top(hls::stream<struct mapping_request>	*in_read,
 
 #pragma HLS INTERFACE axis both port=alloc
 #pragma HLS INTERFACE axis both port=alloc_ret
+
+#pragma HLS INTERFACE axis both port=base_addr
 
 #pragma HLS DATA_PACK variable=in_read
 #pragma HLS DATA_PACK variable=in_write
@@ -125,6 +140,7 @@ void paging_top(hls::stream<struct mapping_request>	*in_read,
 #pragma HLS STREAM variable=fifo_BRAM_rd_data	depth=16
 #pragma HLS STREAM variable=fifo_BRAM_wr_data	depth=16
 
+
 	/*
 	 * Front-end buffers were here to consume incoming
 	 * data at every single cycle. Read and write requests
@@ -132,6 +148,7 @@ void paging_top(hls::stream<struct mapping_request>	*in_read,
 	 */
 	buffer_req_read(in_read, &fifo_read_req);
 	buffer_req_write(in_write, &fifo_write_req);
+	set_base_addr(base_addr);
 
 	/*
 	 * Data path serves the AXI wrapper

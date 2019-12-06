@@ -9,6 +9,8 @@
 #include "top.hpp"
 #include "dm.hpp"
 
+ap_uint<PA_WIDTH> mapping_table_addr_base;
+
 /*
  * For both DRAM and BRAM, the @address filed of mem_cmd
  * is the index to the corresponding hashtable. And the
@@ -55,7 +57,7 @@ void DRAM_rd_pipe(stream<struct mem_cmd> *mem_read_cmd,
 		out_cmd.drr = 0;
 		out_cmd.rsvd = 0;
 		out_cmd.start_address = (in_cmd.address * NR_BYTES_MEM_BUS) +
-					MAPPING_TABLE_ADDRESS_BASE;
+					mapping_table_addr_base;
 		dm_read_cmd->write(out_cmd);
 	}
 
@@ -102,7 +104,7 @@ void DRAM_wr_pipe(stream<struct mem_cmd> *mem_write_cmd,
 		out_cmd.drr = 0;
 		out_cmd.rsvd = 0;
 		out_cmd.start_address = (in_cmd.address * NR_BYTES_MEM_BUS) +
-					MAPPING_TABLE_ADDRESS_BASE;
+					mapping_table_addr_base;
 		dm_write_cmd->write(out_cmd);
 	}
 

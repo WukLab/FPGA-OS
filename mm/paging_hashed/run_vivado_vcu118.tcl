@@ -18,7 +18,7 @@ variable script_file
 set script_file "run_vivado_vcu118.tcl"
 
 # Help information for this script
-proc help {} {
+proc print_help {} {
   variable script_file
   puts "\nDescription:"
   puts "Recreate a Vivado project from this script. The created project will be"
@@ -51,7 +51,7 @@ if { $::argc > 0 } {
     switch -regexp -- $option {
       "--origin_dir"   { incr i; set origin_dir [lindex $::argv $i] }
       "--project_name" { incr i; set _xil_proj_name_ [lindex $::argv $i] }
-      "--help"         { help }
+      "--help"         { print_help }
       default {
         if { [regexp {^-} $option] } {
           puts "ERROR: Unknown option '$option' specified, please type '$script_file -tclargs --help' for usage info.\n"
@@ -98,6 +98,7 @@ set_property -name "mem.enable_memory_map_generation" -value "1" -objects $obj
 set_property -name "sim.central_dir" -value "$proj_dir/${_xil_proj_name_}.ip_user_files" -objects $obj
 set_property -name "sim.ip.auto_export_scripts" -value "1" -objects $obj
 set_property -name "simulator_language" -value "Mixed" -objects $obj
+set_property -name "xpm_libraries" -value "XPM_FIFO XPM_MEMORY" -objects $obj
 
 # Create 'sources_1' fileset (if not found)
 if {[string equal [get_filesets -quiet sources_1] ""]} {
@@ -521,14 +522,12 @@ proc create_hier_cell_Buffer_ToBeRemoved { parentCell nameHier } {
   set axis_data_fifo_0 [ create_bd_cell -type ip -vlnv $axis_data_fifo axis_data_fifo_0 ]
   set_property -dict [ list \
    CONFIG.FIFO_DEPTH {16} \
-   CONFIG.TDATA_NUM_BYTES {9} \
  ] $axis_data_fifo_0
 
   # Create instance: axis_data_fifo_1, and set properties
   set axis_data_fifo_1 [ create_bd_cell -type ip -vlnv $axis_data_fifo axis_data_fifo_1 ]
   set_property -dict [ list \
    CONFIG.FIFO_DEPTH {16} \
-   CONFIG.TDATA_NUM_BYTES {9} \
  ] $axis_data_fifo_1
 
   # Create interface connections
@@ -572,6 +571,20 @@ proc create_hier_cell_Buffer_ToBeRemoved { parentCell nameHier } {
 
 
   # Create interface ports
+  set base_addr_0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 base_addr_0 ]
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {300000000} \
+   CONFIG.HAS_TKEEP {0} \
+   CONFIG.HAS_TLAST {0} \
+   CONFIG.HAS_TREADY {1} \
+   CONFIG.HAS_TSTRB {0} \
+   CONFIG.LAYERED_METADATA {xilinx.com:interface:datatypes:1.0 {CLK {datatype {name {attribs {resolve_type immediate dependency {} format string minimum {} maximum {}} value {}} bitwidth {attribs {resolve_type immediate dependency {} format long minimum {} maximum {}} value 1} bitoffset {attribs {resolve_type immediate dependency {} format long minimum {} maximum {}} value 0}}}}} \
+   CONFIG.PHASE {0.00} \
+   CONFIG.TDATA_NUM_BYTES {4} \
+   CONFIG.TDEST_WIDTH {0} \
+   CONFIG.TID_WIDTH {0} \
+   CONFIG.TUSER_WIDTH {0} \
+   ] $base_addr_0
   set ddr4_sdram_c1 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 ddr4_sdram_c1 ]
   set in_read_0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 in_read_0 ]
   set_property -dict [ list \
@@ -685,6 +698,7 @@ proc create_hier_cell_Buffer_ToBeRemoved { parentCell nameHier } {
   connect_bd_intf_net -intf_net axis_data_fifo_1_M_AXIS1 [get_bd_intf_pins fifos/M_AXIS3] [get_bd_intf_pins mapping_hls_top/BRAM_rd_data]
   connect_bd_intf_net -intf_net axis_data_fifo_2_M_AXIS [get_bd_intf_pins bram_hashtable_0/BRAM_wr_cmd_V] [get_bd_intf_pins fifos/M_AXIS1]
   connect_bd_intf_net -intf_net axis_data_fifo_3_M_AXIS [get_bd_intf_pins bram_hashtable_0/BRAM_wr_data] [get_bd_intf_pins fifos/M_AXIS2]
+  connect_bd_intf_net -intf_net base_addr_V_V_0_1 [get_bd_intf_ports base_addr_0] [get_bd_intf_pins mapping_hls_top/base_addr_V_V]
   connect_bd_intf_net -intf_net bram_hashtable_0_BRAM_rd_data [get_bd_intf_pins bram_hashtable_0/BRAM_rd_data] [get_bd_intf_pins fifos/S_AXIS3]
   connect_bd_intf_net -intf_net ddr4_0_C0_DDR4 [get_bd_intf_ports ddr4_sdram_c1] [get_bd_intf_pins mc/ddr4_sdram_c1]
   connect_bd_intf_net -intf_net dummy_allocator_0_alloc_ret_V [get_bd_intf_pins dummy_allocator_0/alloc_ret_V] [get_bd_intf_pins mapping_hls_top/alloc_ret_V]
@@ -1037,7 +1051,7 @@ proc create_hier_cell_Buffer_ToBeRemoved { parentCell nameHier } {
   # Create instance: axi_datamover, and set properties
   set axi_datamover [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_datamover:5.1 axi_datamover ]
   set_property -dict [ list \
-   CONFIG.c_dummy {0} \
+   CONFIG.c_dummy {1} \
    CONFIG.c_m_axi_mm2s_data_width {512} \
    CONFIG.c_m_axi_mm2s_id_width {8} \
    CONFIG.c_m_axi_s2mm_data_width {512} \
@@ -1123,6 +1137,7 @@ if { [ string equal [get_report_configs -of_objects [get_runs synth_1] synth_1_s
 }
 set obj [get_report_configs -of_objects [get_runs synth_1] synth_1_synth_report_utilization_0]
 if { $obj != "" } {
+set_property -name "display_name" -value "synth_1_synth_report_utilization_0" -objects $obj
 
 }
 set obj [get_runs synth_1]
@@ -1149,6 +1164,7 @@ if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_ini
 set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_init_report_timing_summary_0]
 if { $obj != "" } {
 set_property -name "is_enabled" -value "0" -objects $obj
+set_property -name "display_name" -value "impl_1_init_report_timing_summary_0" -objects $obj
 
 }
 # Create 'impl_1_opt_report_drc_0' report (if not found)
@@ -1157,6 +1173,7 @@ if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_opt
 }
 set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_opt_report_drc_0]
 if { $obj != "" } {
+set_property -name "display_name" -value "impl_1_opt_report_drc_0" -objects $obj
 
 }
 # Create 'impl_1_opt_report_timing_summary_0' report (if not found)
@@ -1166,6 +1183,7 @@ if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_opt
 set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_opt_report_timing_summary_0]
 if { $obj != "" } {
 set_property -name "is_enabled" -value "0" -objects $obj
+set_property -name "display_name" -value "impl_1_opt_report_timing_summary_0" -objects $obj
 
 }
 # Create 'impl_1_power_opt_report_timing_summary_0' report (if not found)
@@ -1175,6 +1193,7 @@ if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_pow
 set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_power_opt_report_timing_summary_0]
 if { $obj != "" } {
 set_property -name "is_enabled" -value "0" -objects $obj
+set_property -name "display_name" -value "impl_1_power_opt_report_timing_summary_0" -objects $obj
 
 }
 # Create 'impl_1_place_report_io_0' report (if not found)
@@ -1183,6 +1202,7 @@ if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_pla
 }
 set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_place_report_io_0]
 if { $obj != "" } {
+set_property -name "display_name" -value "impl_1_place_report_io_0" -objects $obj
 
 }
 # Create 'impl_1_place_report_utilization_0' report (if not found)
@@ -1191,6 +1211,7 @@ if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_pla
 }
 set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_place_report_utilization_0]
 if { $obj != "" } {
+set_property -name "display_name" -value "impl_1_place_report_utilization_0" -objects $obj
 
 }
 # Create 'impl_1_place_report_control_sets_0' report (if not found)
@@ -1199,6 +1220,7 @@ if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_pla
 }
 set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_place_report_control_sets_0]
 if { $obj != "" } {
+set_property -name "display_name" -value "impl_1_place_report_control_sets_0" -objects $obj
 
 }
 # Create 'impl_1_place_report_incremental_reuse_0' report (if not found)
@@ -1208,6 +1230,7 @@ if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_pla
 set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_place_report_incremental_reuse_0]
 if { $obj != "" } {
 set_property -name "is_enabled" -value "0" -objects $obj
+set_property -name "display_name" -value "impl_1_place_report_incremental_reuse_0" -objects $obj
 
 }
 # Create 'impl_1_place_report_incremental_reuse_1' report (if not found)
@@ -1217,6 +1240,7 @@ if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_pla
 set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_place_report_incremental_reuse_1]
 if { $obj != "" } {
 set_property -name "is_enabled" -value "0" -objects $obj
+set_property -name "display_name" -value "impl_1_place_report_incremental_reuse_1" -objects $obj
 
 }
 # Create 'impl_1_place_report_timing_summary_0' report (if not found)
@@ -1226,6 +1250,7 @@ if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_pla
 set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_place_report_timing_summary_0]
 if { $obj != "" } {
 set_property -name "is_enabled" -value "0" -objects $obj
+set_property -name "display_name" -value "impl_1_place_report_timing_summary_0" -objects $obj
 
 }
 # Create 'impl_1_post_place_power_opt_report_timing_summary_0' report (if not found)
@@ -1235,6 +1260,7 @@ if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_pos
 set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_post_place_power_opt_report_timing_summary_0]
 if { $obj != "" } {
 set_property -name "is_enabled" -value "0" -objects $obj
+set_property -name "display_name" -value "impl_1_post_place_power_opt_report_timing_summary_0" -objects $obj
 
 }
 # Create 'impl_1_phys_opt_report_timing_summary_0' report (if not found)
@@ -1244,6 +1270,7 @@ if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_phy
 set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_phys_opt_report_timing_summary_0]
 if { $obj != "" } {
 set_property -name "is_enabled" -value "0" -objects $obj
+set_property -name "display_name" -value "impl_1_phys_opt_report_timing_summary_0" -objects $obj
 
 }
 # Create 'impl_1_route_report_drc_0' report (if not found)
@@ -1252,6 +1279,7 @@ if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_rou
 }
 set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_route_report_drc_0]
 if { $obj != "" } {
+set_property -name "display_name" -value "impl_1_route_report_drc_0" -objects $obj
 
 }
 # Create 'impl_1_route_report_methodology_0' report (if not found)
@@ -1260,6 +1288,7 @@ if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_rou
 }
 set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_route_report_methodology_0]
 if { $obj != "" } {
+set_property -name "display_name" -value "impl_1_route_report_methodology_0" -objects $obj
 
 }
 # Create 'impl_1_route_report_power_0' report (if not found)
@@ -1268,6 +1297,7 @@ if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_rou
 }
 set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_route_report_power_0]
 if { $obj != "" } {
+set_property -name "display_name" -value "impl_1_route_report_power_0" -objects $obj
 
 }
 # Create 'impl_1_route_report_route_status_0' report (if not found)
@@ -1276,6 +1306,7 @@ if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_rou
 }
 set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_route_report_route_status_0]
 if { $obj != "" } {
+set_property -name "display_name" -value "impl_1_route_report_route_status_0" -objects $obj
 
 }
 # Create 'impl_1_route_report_timing_summary_0' report (if not found)
@@ -1284,6 +1315,7 @@ if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_rou
 }
 set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_route_report_timing_summary_0]
 if { $obj != "" } {
+set_property -name "display_name" -value "impl_1_route_report_timing_summary_0" -objects $obj
 
 }
 # Create 'impl_1_route_report_incremental_reuse_0' report (if not found)
@@ -1292,6 +1324,7 @@ if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_rou
 }
 set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_route_report_incremental_reuse_0]
 if { $obj != "" } {
+set_property -name "display_name" -value "impl_1_route_report_incremental_reuse_0" -objects $obj
 
 }
 # Create 'impl_1_route_report_clock_utilization_0' report (if not found)
@@ -1300,6 +1333,7 @@ if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_rou
 }
 set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_route_report_clock_utilization_0]
 if { $obj != "" } {
+set_property -name "display_name" -value "impl_1_route_report_clock_utilization_0" -objects $obj
 
 }
 # Create 'impl_1_route_report_bus_skew_0' report (if not found)
@@ -1308,6 +1342,7 @@ if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_rou
 }
 set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_route_report_bus_skew_0]
 if { $obj != "" } {
+set_property -name "display_name" -value "impl_1_route_report_bus_skew_0" -objects $obj
 
 }
 # Create 'impl_1_post_route_phys_opt_report_timing_summary_0' report (if not found)
@@ -1316,6 +1351,7 @@ if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_pos
 }
 set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_post_route_phys_opt_report_timing_summary_0]
 if { $obj != "" } {
+set_property -name "display_name" -value "impl_1_post_route_phys_opt_report_timing_summary_0" -objects $obj
 
 }
 # Create 'impl_1_post_route_phys_opt_report_bus_skew_0' report (if not found)
@@ -1324,6 +1360,7 @@ if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_pos
 }
 set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_post_route_phys_opt_report_bus_skew_0]
 if { $obj != "" } {
+set_property -name "display_name" -value "impl_1_post_route_phys_opt_report_bus_skew_0" -objects $obj
 
 }
 set obj [get_runs impl_1]
