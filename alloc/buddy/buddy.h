@@ -11,6 +11,13 @@
 
 #include <fpga/axis_buddy.h>
 
+/*
+ * Initialized during startup time
+ */
+extern unsigned long buddy_managed_base;
+extern unsigned long buddy_managed_size;
+extern bool buddy_initialized;
+
 struct BuddyCacheLine {
 
 	ap_uint<1>			valid;
@@ -45,12 +52,13 @@ class Buddy
 public:
 	Buddy();
 	~Buddy() {}
-	void init(hls::stream<unsigned long> &buddy_init);
+
+	void init(hls::stream<unsigned long> *buddy_init);
+
 	void handler(hls::stream<buddy_alloc_if>& alloc,
 		     hls::stream<buddy_alloc_ret_if>& alloc_ret, char* dram);
 
 private:
-	unsigned long dram_addr;
 	struct BuddyCacheSet buddy_set[LEVEL_MAX];
 	struct BuddyCacheFreeSet buddy_free_set[LEVEL_MAX];
 

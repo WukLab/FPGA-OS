@@ -37,10 +37,11 @@ open_solution -reset solution1
 # ArtyA7:	xc7a100tcsg324-1
 #
 set_part {xcvu9p-flga2104-1-i}
-create_clock -period 3.33 -name default
 
-config_rtl -encoding onehot -reset all -reset_level high -reset_async -vivado_impl_strategy default -vivado_phys_opt place -vivado_synth_design_args {-directive sdx_optimization_effort_high} -vivado_synth_strategy default
+create_clock -period 3.33 -name default
 set_clock_uncertainty 0.25
+
+#config_rtl -encoding onehot -reset all -reset_level high -reset_async -vivado_impl_strategy default -vivado_phys_opt place -vivado_synth_design_args {-directive sdx_optimization_effort_high} -vivado_synth_strategy default
 
 # Simulate the C code 
 csim_design

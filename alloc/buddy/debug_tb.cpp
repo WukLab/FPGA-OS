@@ -8,7 +8,13 @@
 using namespace hls;
 using namespace std;
 
-int main() {
+void buddy_allocator(hls::stream<struct buddy_alloc_if>& alloc,
+		     hls::stream<struct buddy_alloc_ret_if>& alloc_ret,
+		     hls::stream<unsigned long> *init_buddy_managed_base,
+		     char *dram);
+
+int main(void)
+{
 	stream<struct buddy_alloc_if> buddy_req("req");
 	stream<struct buddy_alloc_ret_if> buddy_ret("ret");
 	stream<unsigned long> init;
@@ -27,7 +33,7 @@ int main() {
 	cout << "alloc request order: " << table_req.order.to_uint() << endl;
 	buddy_req.write(table_req);
 
-	buddy_allocator(buddy_req, buddy_ret, init, dram);
+	buddy_allocator(buddy_req, buddy_ret, &init, dram);
 
 	table_ret = buddy_ret.read();
 	cout << "[stat: " << table_ret.stat.to_uint()
@@ -38,7 +44,7 @@ int main() {
 	cout << "alloc request order: " << metadata_req.order.to_uint() << endl;
 	buddy_req.write(metadata_req);
 
-	buddy_allocator(buddy_req, buddy_ret, init, dram);
+	buddy_allocator(buddy_req, buddy_ret, &init, dram);
 
 	metadata_ret = buddy_ret.read();
 	cout << "[stat: " << metadata_ret.stat.to_uint()
@@ -48,7 +54,7 @@ int main() {
 	table_req.addr = table_ret.addr;
 	buddy_req.write(table_req);
 
-	buddy_allocator(buddy_req, buddy_ret, init, dram);
+	buddy_allocator(buddy_req, buddy_ret, &init, dram);
 
 	table_ret = buddy_ret.read();
 	cout << "[stat: " << table_ret.stat.to_uint() << "]\n";
@@ -57,7 +63,7 @@ int main() {
 	metadata_req.addr = metadata_ret.addr;
 	buddy_req.write(metadata_req);
 
-	buddy_allocator(buddy_req, buddy_ret, init, dram);
+	buddy_allocator(buddy_req, buddy_ret, &init, dram);
 
 	metadata_ret = buddy_ret.read();
 	cout << "[stat: " << metadata_ret.stat.to_uint() << "]\n";
