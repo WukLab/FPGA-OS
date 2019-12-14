@@ -26,6 +26,7 @@ const int UNROLL_FACTOR = BUDDY_SET_SIZE >> 2;
  */
 Buddy::Buddy()
 {	
+	buddy_initialized = false;
 	const ap_uint<32> metadata_size = BUDDY_META_SIZE;
 	const ap_uint<32> metadata_order = order_base_2<32>(LENGTH_TO_ORDER(metadata_size));
 	const ap_uint<LEVEL_MAX> metadata_level = order_to_level(metadata_order);
@@ -59,6 +60,13 @@ INIT_LOOP:
 		<< std::endl;
 #endif
 	dump_buddy_table();
+}
+
+void Buddy::init(hls::stream<unsigned long> *buddy_init)
+{
+#pragma HLS INLINE
+	buddy_managed_base = buddy_init->read();
+	buddy_initialized = true;
 }
 
 BuddyCacheSet::BuddyCacheSet()

@@ -9,7 +9,7 @@ ifeq ($(TARGET_BOARD), )
 endif
 
 IP_NAME_PREFIX	:= mm
-HLS_IP_CORES	:= coordinator,tmp_va_buddy,tmp_va_buddy
+HLS_IP_CORES	:= coordinator,tmp_va_buddy,buddy_alloc_mux
 
 all:
 	$(Q)./generate_hls.sh $(TARGET_BOARD) $(HLS_IP_CORES) $(IP_NAME_PREFIX)

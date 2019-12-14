@@ -878,7 +878,7 @@ proc create_hier_cell_Buffer_ToBeRemoved { parentCell nameHier } {
   connect_bd_intf_net -intf_net coord_top_0_seg_alloc_req_V [get_bd_intf_pins coordinator/seg_alloc_req_V] [get_bd_intf_pins mm_segfix_hls_0/ctl_in_V]
   connect_bd_intf_net -intf_net coordinator_buddy_alloc_req_V [get_bd_intf_pins buddy_alloc_mux/buddy_alloc_req_1_V] [get_bd_intf_pins coordinator/buddy_alloc_req_V]
   connect_bd_intf_net -intf_net coordinator_ctrl_out_V [get_bd_intf_ports ctrl_out_0] [get_bd_intf_pins coordinator/ctrl_out_V]
-  connect_bd_intf_net -intf_net coordinator_init_buddy_addr_V [get_bd_intf_pins coordinator/init_buddy_addr_V] [get_bd_intf_pins phy_mem_allocator/init_buddy_managed_base_V]
+  connect_bd_intf_net -intf_net coordinator_init_buddy_addr_V [get_bd_intf_pins coordinator/init_buddy_addr_V] [get_bd_intf_pins phy_mem_allocator/buddy_init_V]
   connect_bd_intf_net -intf_net coordinator_init_heap_addr_V [get_bd_intf_pins coordinator/init_heap_addr_V] [get_bd_intf_pins virt_addr_allocator/buddy_init_V]
   connect_bd_intf_net -intf_net coordinator_init_tbl_addr_V_V [get_bd_intf_pins coordinator/init_tbl_addr_V_V] [get_bd_intf_pins mapping_hls_top/base_addr_V_V]
   connect_bd_intf_net -intf_net ctrl_in_V_0_1 [get_bd_intf_ports ctrl_in_0] [get_bd_intf_pins coordinator/ctrl_in_V]

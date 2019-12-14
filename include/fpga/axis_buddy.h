@@ -55,7 +55,7 @@ struct buddy_alloc_ret_if {
 
 void buddy_allocator(hls::stream<struct buddy_alloc_if>& alloc,
 		     hls::stream<struct buddy_alloc_ret_if>& alloc_ret,
-		     hls::stream<unsigned long>& buddy_init, char *dram);
+		     hls::stream<unsigned long>* buddy_init, char *dram);
 
 void virt_addr_allocator(hls::stream<struct buddy_alloc_if> &alloc,
 		    hls::stream<struct buddy_alloc_ret_if> &alloc_ret,

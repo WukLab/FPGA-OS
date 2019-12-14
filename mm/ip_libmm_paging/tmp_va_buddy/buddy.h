@@ -52,7 +52,10 @@ public:
 		     hls::stream<buddy_alloc_ret_if>& alloc_ret, char* dram);
 
 private:
-	unsigned long dram_addr;
+	unsigned long buddy_managed_base;
+	unsigned long buddy_managed_size;
+	bool buddy_initialized;
+
 	struct BuddyCacheSet buddy_set[LEVEL_MAX];
 	struct BuddyCacheFreeSet buddy_free_set[LEVEL_MAX];
 
@@ -110,7 +113,7 @@ public:
 	static ap_uint<ORDER_MAX> parenttag_idx_to_tag(ap_uint<ORDER_MAX> parent_tag,
 						       ap_uint<LEVEL_MAX> parent_level,
 						       ap_uint<3> idx);
-	static unsigned long tag_level_to_drambuddy(unsigned long dram_addr,
+	static unsigned long tag_level_to_drambuddy(unsigned long buddy_managed_base,
 						    ap_uint<ORDER_MAX> tag,
 						    ap_uint<LEVEL_MAX> level);
 	static void dram_read(ap_uint<8>* dest, unsigned long src, char* dram);

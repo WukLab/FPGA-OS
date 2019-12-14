@@ -25,6 +25,7 @@ const int UNROLL_FACTOR = BUDDY_SET_SIZE >> 2;
  */
 Buddy::Buddy()
 {
+	buddy_initialized = false;
 	const ap_uint<32> metadata_size = BUDDY_META_SIZE;
 	const ap_uint<32> metadata_order = order_base_2<32>(LENGTH_TO_ORDER(metadata_size));
 	const ap_uint<LEVEL_MAX> metadata_level = order_to_level(metadata_order);
@@ -67,7 +68,8 @@ Buddy::Buddy()
 void Buddy::init(hls::stream<unsigned long>& buddy_init)
 {
 #pragma HLS INLINE
-	dram_addr = buddy_init.read() + BUDDY_META_SIZE;
+	buddy_managed_base = buddy_init.read();
+	buddy_initialized = true;
 }
 
 BuddyCacheSet::BuddyCacheSet()
@@ -98,12 +100,12 @@ void Buddy::handler(hls::stream<buddy_alloc_if>& alloc,
 	switch (req.opcode) {
 	case BUDDY_ALLOC:
 		ret.stat = Buddy::alloc(req.order, &ret.addr, dram);
-		ret.addr += dram_addr;
+		ret.addr += buddy_managed_base;
 		if (ret.stat == 1)
 			ret.addr = 0;
 		break;
 	case BUDDY_FREE:
-		req.addr -= dram_addr;
+		req.addr -= buddy_managed_base;
 		ret.stat = Buddy::free(req.order, req.addr, dram);
 		break;
 	default:
@@ -182,7 +184,7 @@ ap_uint<1> Buddy::alloc(ap_uint<ORDER_MAX> order, ap_uint<PA_WIDTH>* addr, char*
 
 		/* load from memory */
 		dram_read(&(buddy_set[i].lines[nr_asso].children),
-			  tag_level_to_drambuddy(dram_addr, tag, i), dram);
+			  tag_level_to_drambuddy(buddy_managed_base, tag, i), dram);
 
 		/* fill meta data */
 		buddy_set[i].lines[nr_asso].tag = tag;
@@ -247,7 +249,7 @@ ap_uint<1> Buddy::free(ap_uint<ORDER_MAX> order, ap_uint<PA_WIDTH> addr, char* d
 		} else {
 			// everything not in cache, load it in free_set
 			dram_read(&(buddy_free_set[i].line.children),
-				  tag_level_to_drambuddy(dram_addr, tag, i), dram);
+				  tag_level_to_drambuddy(buddy_managed_base, tag, i), dram);
 			buddy_free_set[i].line.tag = tag;
 			buddy_free_set[i].line.valid = 1;
 			valid_req = test_valid_bits(buddy_free_set[i].line,
@@ -275,7 +277,7 @@ ap_uint<1> Buddy::free(ap_uint<ORDER_MAX> order, ap_uint<PA_WIDTH> addr, char* d
 			/* when children are all zero, flush it */
 			if (!buddy_set[i].lines[nr_asso[i]].children
 					&& buddy_set[i].level > 0) {
-				dram_write(tag_level_to_drambuddy(dram_addr,
+				dram_write(tag_level_to_drambuddy(buddy_managed_base,
 					buddy_set[i].lines[nr_asso[i]].tag, buddy_set[i].level),
 					&(buddy_set[i].lines[nr_asso[i]].children), dram);
 				buddy_set[i].lines[nr_asso[i]].valid = 0;
@@ -285,7 +287,7 @@ ap_uint<1> Buddy::free(ap_uint<ORDER_MAX> order, ap_uint<PA_WIDTH> addr, char* d
 		} else {
 			set_clear_bits(buddy_free_set[i].line, width_i, idx_i, false);
 			cont = (buddy_free_set[i].line.children) == 0;
-			dram_write(tag_level_to_drambuddy(dram_addr,
+			dram_write(tag_level_to_drambuddy(buddy_managed_base,
 					buddy_free_set[i].line.tag, buddy_free_set[i].level),
 				   &(buddy_free_set[i].line.children), dram);
 			buddy_free_set[i].line.valid = 0;
@@ -298,7 +300,7 @@ void Buddy::flush_line(struct BuddyCacheSet& set, ap_uint<LEVEL_MAX> level,
 		       ap_uint<BUDDY_SET_TYPE> nr_asso, char* dram)
 {
 #pragma HLS INLINE
-	dram_write(tag_level_to_drambuddy(dram_addr,
+	dram_write(tag_level_to_drambuddy(buddy_managed_base,
 			set.lines[nr_asso].tag, set.level),
 		   &(set.lines[nr_asso].children), dram);
 	set.lines[nr_asso].valid = 0;
@@ -338,7 +340,7 @@ void Buddy::flush_children(struct BuddyCacheSet& set,
 	ap_uint<3> flush_tag = tag_to_parent_idx(flush_line.tag, set.level);
 
 	/* flush a line */
-	dram_write(tag_level_to_drambuddy(dram_addr, flush_line.tag, set.level),
+	dram_write(tag_level_to_drambuddy(buddy_managed_base, flush_line.tag, set.level),
 				&(flush_line.children), dram);
 
 	flush_line.valid = 0;
@@ -619,7 +621,7 @@ ap_uint<ORDER_MAX> Buddy::parenttag_idx_to_tag(ap_uint<ORDER_MAX> parent_tag,
  * 8^0 + 8^1 + ... + 8^(i-1) = (8^i)) / 7
  */
 unsigned long
-Buddy::tag_level_to_drambuddy(unsigned long dram_addr,
+Buddy::tag_level_to_drambuddy(unsigned long buddy_managed_base,
 			      ap_uint<ORDER_MAX> tag, ap_uint<LEVEL_MAX> level)
 {
 #pragma HLS INLINE
@@ -630,7 +632,7 @@ Buddy::tag_level_to_drambuddy(unsigned long dram_addr,
 #else
 	ap_uint<ORDER_MAX_PAD> tag_pad = tag;
 #endif
-	return dram_addr + (unsigned long)(tag_pad >> (3 * (LEVEL_MAX - level)))
+	return buddy_managed_base + (unsigned long)(tag_pad >> (3 * (LEVEL_MAX - level)))
 			+ (unsigned long)((1 << (3*(unsigned long)(level))) / 7);
 }
 

@@ -14,9 +14,6 @@
 /*
  * Initialized during startup time
  */
-extern unsigned long buddy_managed_base;
-extern unsigned long buddy_managed_size;
-extern bool buddy_initialized;
 
 struct BuddyCacheLine {
 
@@ -59,6 +56,10 @@ public:
 		     hls::stream<buddy_alloc_ret_if>& alloc_ret, char* dram);
 
 private:
+	unsigned long buddy_managed_base;
+	unsigned long buddy_managed_size;
+	bool buddy_initialized;
+
 	struct BuddyCacheSet buddy_set[LEVEL_MAX];
 	struct BuddyCacheFreeSet buddy_free_set[LEVEL_MAX];
 
