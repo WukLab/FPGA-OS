@@ -347,6 +347,8 @@ void fill_S2(stream<struct pipeline_info> *pi_in,
 				 * slot_d >= 0 means hit or have empty slot
 				 */
 				if (slot_d == -1) {
+					struct buddy_alloc_if alloc_req = { 0 };
+
 					/* generate content for new bucket */
 					new_hb_dram = 0;
 					new_hb_dram[NR_BITS_BITMAP_OFF] = 1;
@@ -355,9 +357,11 @@ void fill_S2(stream<struct pipeline_info> *pi_in,
 						    NR_BITS_VAL_OFF) = pi.length;
 					new_hb_dram[NR_BITS_PERM_OFF] = pi.opcode[7];
 					PR("Need to allocate new bucket.\n");
-					struct buddy_alloc_if alloc_req = { 0 };
+
 					alloc_req.opcode = BUDDY_ALLOC;
-					alloc_req.order = PA_WIDTH - NR_BITS_CHAIN_ADDR;  // allocate 64 bytes
+
+					/* allocate 64 bytes */
+					alloc_req.order = 0;
 					alloc->write(alloc_req);
 					state = ALLOC_RECV_RET;
 					break;
@@ -417,18 +421,28 @@ void fill_S2(stream<struct pipeline_info> *pi_in,
 	case ALLOC_RECV_RET:
 		if (alloc_ret->empty())
 			break;
+
 		alloc_resp = alloc_ret->read();
-		if (alloc_resp.stat == 1) {  // which stat is success? 1 or 0?
+		if (alloc_resp.stat == BUDDY_SUCCESS) {
+			ap_uint<PA_WIDTH> alloc_addr_trans;
+
 			state = ALLOC_WRITE_DATA;
-			ap_uint<PA_WIDTH> alloc_addr_trans =
-				(alloc_resp.addr - MAPPING_TABLE_ADDRESS_BASE) >>
-				(PA_WIDTH - NR_BITS_CHAIN_ADDR);  // transform physical addr
+
+			/*
+			 * XXX: This is a potential BUG.
+			 *
+			 * If the allocated PA is less than the ht table base,
+			 * this will be negative thus BUG.
+			 * The root cause is that the dm.cpp is adding this base
+			 */
+			alloc_addr_trans = (alloc_resp.addr - mapping_table_addr_base) >> (PA_WIDTH - NR_BITS_CHAIN_ADDR);
+
 			pi.hb_dram[NR_BITS_CHAIN_FLAG_OFF] = 1;
-			pi.hb_dram(NR_BITS_CHAIN_ADDR_OFF + NR_BITS_CHAIN_ADDR - 1,
-				   NR_BITS_CHAIN_ADDR_OFF) =
-				alloc_addr_trans(
-					NR_BITS_CHAIN_ADDR - 1,
-					0); // set chaining addr and flag on previous bucket
+
+			/* set chaining addr and flag on previous bucket */
+			pi.hb_dram(NR_BITS_CHAIN_ADDR_OFF + NR_BITS_CHAIN_ADDR - 1, NR_BITS_CHAIN_ADDR_OFF) =
+				alloc_addr_trans( NR_BITS_CHAIN_ADDR - 1, 0);
+
 			cmd_d.address = alloc_addr_trans;
 			cmd_d.length = 1;
 			DRAM_wr_cmd->write(cmd_d);
@@ -446,6 +460,7 @@ void fill_S2(stream<struct pipeline_info> *pi_in,
 		DRAM_wr_data->write(pi.hb_dram);
 		pi.output_status = PI_OUTPUT_SUCCEED;
 		pi_out->write(pi);
+
 		state = ALLOC_IDLE;
 		break;
 	}

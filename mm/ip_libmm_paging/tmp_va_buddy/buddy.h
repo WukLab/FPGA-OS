@@ -9,26 +9,24 @@
 #ifndef _BUDDY_H_
 #define _BUDDY_H_
 
-#include <fpga/axis_buddy.h>
+#define _VIRT_ADDR_
 
-/*
- * Initialized during startup time
- */
+#include <fpga/axis_buddy.h>
 
 struct BuddyCacheLine {
 
-	ap_uint<1>			valid;
+	ap_uint<1>		valid;
 	ap_uint<ORDER_MAX>	tag;
-	ap_uint<8>			children;
+	ap_uint<8>		children;
 
 	BuddyCacheLine();
 } ;
 
 struct BuddyCacheSet
 {
-	ap_uint<LEVEL_MAX> level;
+	ap_uint<LEVEL_MAX>	level;
 	ap_uint<BUDDY_SET_TYPE> size;
-	struct BuddyCacheLine lines[BUDDY_SET_SIZE];
+	struct BuddyCacheLine	lines[BUDDY_SET_SIZE];
 	ap_uint<BUDDY_SET_TYPE> rand_counter;
 
 	BuddyCacheSet();
@@ -49,9 +47,7 @@ class Buddy
 public:
 	Buddy();
 	~Buddy() {}
-
-	void init(hls::stream<unsigned long> *buddy_init);
-
+	void init(hls::stream<unsigned long> &buddy_init);
 	void handler(hls::stream<buddy_alloc_if>& alloc,
 		     hls::stream<buddy_alloc_ret_if>& alloc_ret, char* dram);
 
@@ -99,7 +95,6 @@ public:
 	/*
 	 * some helper functions
 	 */
-	static ap_uint<PA_WIDTH> order_base_2_hls(ap_uint<PA_WIDTH> n);
 	static ap_uint<LEVEL_MAX> order_to_level(ap_uint<ORDER_MAX> order);
 	static ap_uint<3> order_to_width(ap_uint<ORDER_MAX> order);
 
@@ -118,7 +113,7 @@ public:
 	static ap_uint<ORDER_MAX> parenttag_idx_to_tag(ap_uint<ORDER_MAX> parent_tag,
 						       ap_uint<LEVEL_MAX> parent_level,
 						       ap_uint<3> idx);
-	static unsigned long tag_level_to_drambuddy(unsigned long dram_addr,
+	static unsigned long tag_level_to_drambuddy(unsigned long buddy_managed_base,
 						    ap_uint<ORDER_MAX> tag,
 						    ap_uint<LEVEL_MAX> level);
 	static void dram_read(ap_uint<8>* dest, unsigned long src, char* dram);

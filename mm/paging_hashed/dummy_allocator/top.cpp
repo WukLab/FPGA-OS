@@ -26,11 +26,11 @@ void dummy_allocator(stream<struct buddy_alloc_if>      &alloc,
                 if (l < NR_MAX_BUCKET_ALLOC) {
 			resp.addr = (NR_HT_BUCKET_DRAM + l) * NR_BYTES_MEM_BUS +
 				    MAPPING_TABLE_ADDRESS_BASE;
-			resp.stat = 1;
+			resp.stat = BUDDY_SUCCESS;
 			l++;
 		} else {
                         resp.addr = 0;
-			resp.stat = 0;
+			resp.stat = BUDDY_FAILED;
 		}
 		alloc_ret.write(resp);
 	}

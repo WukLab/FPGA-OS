@@ -31,6 +31,7 @@ int main(void)
 	stream<ap_uint<8> > DRAM_rd_status("DRAM_rd_status"), DRAM_wr_status("DRAM_wr_status");
 	stream<struct buddy_alloc_if> alloc("alloc_request");
 	stream<struct buddy_alloc_ret_if> alloc_ret("alloc_response");
+	stream<ap_uint<PA_WIDTH> > base_addr("init address");
 	int _cycle, k, j, l;
 
 	struct mapping_request _in_read, _in_write;
@@ -48,9 +49,12 @@ int main(void)
 #define NR_CYCLES_RUN	400
 
 	for (_cycle = 0, k = 0, j = 0, l = 0; _cycle < NR_CYCLES_RUN; _cycle++) {
+		if (_cycle == 0) {
+			base_addr.write(MAPPING_TABLE_ADDRESS_BASE);
+		}
 #if 1
 #define NR_SET	12
-		if (_cycle % 10 == 0 && k < NR_SET) {
+		if (_cycle % 1 == 0 && k < NR_SET && _cycle > 2) {
 			_in_read.address =  0x400 * (k+1);
 			_in_read.length = 0x66666660 + k;
 			_in_read.opcode = MAPPING_SET | MAPPING_PERMISSION_R;
@@ -63,7 +67,7 @@ int main(void)
 #endif
 
 #if 1
-		if (_cycle > 200) {
+		if (_cycle > 15) {
 #define NR_GET	12
 			if (j < NR_GET) {
 				_in_read.address =  0x400 * (j+1);
@@ -85,7 +89,7 @@ int main(void)
 			   &DRAM_rd_status, &DRAM_wr_status,
 			   &BRAM_rd_cmd, &BRAM_wr_cmd,
 			   &BRAM_rd_data, &BRAM_wr_data,
-			   &alloc, &alloc_ret);
+			   &alloc, &alloc_ret, &base_addr);
 
 		if (!out_read.empty()) {
 			struct mapping_reply out = { 0 };
@@ -222,11 +226,11 @@ int main(void)
 			if (l < NR_MAX_BUCKET_ALLOC) {
 				resp.addr = (NR_HT_BUCKET_DRAM + l) * NR_BYTES_MEM_BUS +
 					MAPPING_TABLE_ADDRESS_BASE;
-				resp.stat = 1;
+				resp.stat = BUDDY_SUCCESS;
 				l++;
 			} else {
 				resp.addr = 0;
-				resp.stat = 0;
+				resp.stat = BUDDY_FAILED;
 			}
 			alloc_ret.write(resp);
 		}

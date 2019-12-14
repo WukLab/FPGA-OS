@@ -49,8 +49,17 @@
 #define BUDDY_SET_ORDER		1
 #define BUDDY_MIN_SHIFT		8
 
+/*
+ * physical memory allocator manage 1GB
+ * heap allocator manage whole address space (32bit)
+ */
+#ifndef _VIRT_ADDR_
 #define BUDDY_MAX_SHIFT		30
-#define BUDDY_START             0x10000000
+#else
+#define BUDDY_MAX_SHIFT		32
+#endif
+
+#define BUDDY_START             0x0
 #define BUDDY_MANAGED_SIZE	(1<<BUDDY_MAX_SHIFT)
 #define BUDDY_END               (BUDDY_START + BUDDY_MANAGED_SIZE)
 

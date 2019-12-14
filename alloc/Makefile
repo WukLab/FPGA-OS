@@ -9,7 +9,7 @@ endif
 IP_NAME_PREFIX := alloc
 
 #HLS_IP_CORES := buddy,chunk,segfix,segvar
-HLS_IP_CORES := chunkfix,chunkvar
+HLS_IP_CORES := buddy
 
 all:
 	$(Q)./generate_hls.sh $(TARGET_BOARD) $(HLS_IP_CORES) $(IP_NAME_PREFIX)

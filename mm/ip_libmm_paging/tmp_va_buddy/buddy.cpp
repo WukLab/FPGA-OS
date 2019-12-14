@@ -9,7 +9,7 @@
 #include <fpga/log2.h>
 #include "buddy.h"
 
-#define BUDDY_DEBUG_DUMP 0
+#define BUDDY_DEBUG_DUMP 1
 
 /*
  * some terminology used in this code
@@ -21,18 +21,21 @@ const int LOOP_LEVEL_MAX = LEVEL_MAX;
 const int UNROLL_FACTOR = BUDDY_SET_SIZE >> 2;
 
 /*
- * This constructor is supposed to only run once
- * during startup time. This is automatic init.
+ * put constructor on the top for modify hls pragma
  */
 Buddy::Buddy()
-{	
+{
 	buddy_initialized = false;
 	const ap_uint<32> metadata_size = BUDDY_META_SIZE;
 	const ap_uint<32> metadata_order = order_base_2<32>(LENGTH_TO_ORDER(metadata_size));
 	const ap_uint<LEVEL_MAX> metadata_level = order_to_level(metadata_order);
 	const ap_uint<3> metadata_width = order_to_width(metadata_order);
 
-INIT_LOOP:
+	/*
+	 * move this to buddy.init()
+	 * dram_addr = BUDDY_META_OFF;
+	 */
+	INIT_LOOP:
 	for (int i = 0; i < LEVEL_MAX; i++) {
 		buddy_set[i].level = i;
 		buddy_set[i].size = (1<<3*i) < BUDDY_SET_SIZE ? (1<<3*i) : BUDDY_SET_SIZE;
@@ -62,10 +65,10 @@ INIT_LOOP:
 	dump_buddy_table();
 }
 
-void Buddy::init(hls::stream<unsigned long> *buddy_init)
+void Buddy::init(hls::stream<unsigned long>& buddy_init)
 {
 #pragma HLS INLINE
-	buddy_managed_base = buddy_init->read();
+	buddy_managed_base = buddy_init.read();
 	buddy_initialized = true;
 }
 
@@ -86,45 +89,35 @@ BuddyCacheLine::BuddyCacheLine()
 void Buddy::handler(hls::stream<buddy_alloc_if>& alloc,
 		    hls::stream<buddy_alloc_ret_if>& alloc_ret, char* dram)
 {
-	struct buddy_alloc_if req = { 0 };
-	struct buddy_alloc_ret_if ret = { 0 };
-	ap_uint<8> test;
-
 	/*
 	 * Don't do axi stream empty check, non-blocking will cause co-sim to hang
 	 * just make sure you have data and then call this function during simulation
-	 *
-	 * XXX: why? (ys)
 	 */
-	req = alloc.read();
-
-REQ_DISPATCH:
+	struct buddy_alloc_if req = alloc.read();
+	struct buddy_alloc_ret_if ret;
+	ap_uint<8> test;
+	REQ_DISPATCH:
 	switch (req.opcode) {
 	case BUDDY_ALLOC:
 		ret.stat = Buddy::alloc(req.order, &ret.addr, dram);
-
-		/* Add base offset to return address */
 		ret.addr += buddy_managed_base;
-
 		if (ret.stat == 1)
 			ret.addr = 0;
 		break;
 	case BUDDY_FREE:
-		/* Sub offset from the user address */
 		req.addr -= buddy_managed_base;
 		ret.stat = Buddy::free(req.order, req.addr, dram);
 		break;
 	default:
 		ret.stat = 1;
 	}
-
 	alloc_ret.write(ret);
-
 	/*
 	 * only active during simulation
 	 */
 	dump_buddy_table();
 }
+
 
 ap_uint<1> Buddy::alloc(ap_uint<ORDER_MAX> order, ap_uint<PA_WIDTH>* addr, char* dram)
 {
@@ -148,8 +141,8 @@ ap_uint<1> Buddy::alloc(ap_uint<ORDER_MAX> order, ap_uint<PA_WIDTH>* addr, char*
 	std::cout << "LEVEL: " << req_level << " WIDTH: " << width << std::endl;
 #endif
 
-	/* Find a valid cache line with lowest level */
-ALLOC_VALID_LINE_LOOK_UP:
+	/* find a valid cache line with lowest level */
+	ALLOC_VALID_LINE_LOOK_UP:
 	for (start_level = req_level; start_level >= 0; start_level--) {
 #pragma HLS loop_tripcount min=1 max=LOOP_LEVEL_MAX
 		if (start_level == req_level) {
@@ -163,12 +156,11 @@ ALLOC_VALID_LINE_LOOK_UP:
 			break;
 		}
 	}
-
-	/* Not available, memory full */
+	/* not available, memory full */
 	if (!available)
 		return 1;
 
-	/* Set the valid lines */
+	/* set the valid lines */
 	if (start_level == req_level) {
 		set_clear_bits(buddy_set[start_level].lines[nr_asso],
 			       width, idx, true);
@@ -176,16 +168,14 @@ ALLOC_VALID_LINE_LOOK_UP:
 		set_clear_bits(buddy_set[start_level].lines[nr_asso],
 			       1, idx, true);
 	}
-
 	tag = parenttag_idx_to_tag(buddy_set[start_level].lines[nr_asso].tag,
 				   start_level, idx);
-
-	/* Flush back to DRAM if it's full after prepare tag */
+	/* flush back to DRAM if it's full after prepare tag */
 	if (buddy_set[start_level].lines[nr_asso].children == 0xFF)
 		flush_line(buddy_set[start_level], start_level, nr_asso, dram);
 
-	/* Load from memory and do some operations */
-ALLOC_CACHE_LOAD:
+	/* load from memory and do some operations */
+	ALLOC_CACHE_LOAD:
 	for (i = start_level + 1; i <= req_level; i++) {
 #pragma HLS loop_tripcount min=0 max=LOOP_LEVEL_MAX-1
 		no_flush = Buddy::choose_line(buddy_set[i], &nr_asso);
@@ -536,29 +526,6 @@ ap_uint<3> Buddy::get_free_1bit(struct BuddyCacheLine& line)
 		return 6;
 	else
 		return 7;
-}
-
-ap_uint<PA_WIDTH> Buddy::order_base_2_hls(ap_uint<PA_WIDTH> n)
-{
-#pragma HLS INLINE
-#pragma HLS PIPELINE
-#define WIDTH 32
-	if (n > 1) {
-		ap_uint<PA_WIDTH> num = WIDTH - 1;
-		ap_uint<PA_WIDTH> shift = WIDTH >> 1;
-		ap_uint<PA_WIDTH> word = n - 1;
-
-		while (shift) {
-			if (!(word & (ap_uint<WIDTH>(-1) << (WIDTH - shift)))) {
-				num -= shift;
-				word <<= shift;
-			}
-			shift >>= 1;
-		}
-		return num + 1;
-	} else
-		return 0;
-#undef WIDTH
 }
 
 ap_uint<LEVEL_MAX> Buddy::order_to_level(ap_uint<ORDER_MAX> order)

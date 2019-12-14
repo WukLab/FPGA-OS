@@ -109,7 +109,7 @@ static void parser(stream<struct pipeline_info> *input,
 	switch (pi.type) {
 	case SYSMM_REQUEST_CONTROL:
 		pi.cp_ret = 0; 
-		pi.cp_ret_addr_len = 0x10000;
+		pi.cp_ret_addr_len = (1u << 30);  // TEST: 1GB for buddy allocator
 		break;
 	case SYSMM_REQUEST_DATA_RD:
 	case SYSMM_REQUEST_DATA_WR:

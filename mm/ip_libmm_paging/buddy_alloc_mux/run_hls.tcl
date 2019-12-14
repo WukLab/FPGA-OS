@@ -17,12 +17,11 @@
 open_project	-reset generated_hls_project 
 
 # The source file and test bench
-add_files	core.cpp	-cflags "-I../../include"
-add_files	buddy.cpp	-cflags "-I../../include"
-add_files -tb	debug_tb.cpp	-cflags "-I../../include"
+add_files	top.cpp		-cflags "-I../../../include"
+add_files -tb	tb.cpp		-cflags "-I../../../include"
 
 # Specify the top-level function for synthesis
-set_top		buddy_allocator
+set_top		buddy_alloc_mux
 
 ###########################
 # Solution settings
@@ -37,7 +36,6 @@ open_solution -reset solution1
 # ArtyA7:	xc7a100tcsg324-1
 #
 set_part {xcvu9p-flga2104-1-i}
-
 create_clock -period 3.33 -name default
 set_clock_uncertainty 0.25
 
@@ -50,7 +48,7 @@ csim_design
 csynth_design
 
 # Export IP block
-export_design -format ip_catalog -display_name "buddy allocator" -description "Buddy Allocator IP" -vendor "Wuklab.UCSD" -version "1.0"
+export_design -format ip_catalog -display_name "buddy allocation muxer" -description "Mux buddy allocation req and res" -vendor "Wuklab.UCSD" -version "1.0"
 
 # Do not perform any other steps
 # - The basic project will be opened in the GUI 

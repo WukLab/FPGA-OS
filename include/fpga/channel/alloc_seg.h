@@ -20,6 +20,11 @@ enum alloc_seg_opcode {
 	SEG_FREE,
 };
 
+enum alloc_seg_retcode {
+	SEG_SUCCESS,
+	SEG_FAILED
+};
+
 struct alloc_seg_in {
 	ap_uint<8>					opcode;
 	ap_uint<CONFIG_DRAM_PHYSICAL_ADDR_WIDTH>	addr_len;

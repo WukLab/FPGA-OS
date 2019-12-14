@@ -331,7 +331,7 @@ static int core_test(ap_uint<1> opcode, ap_uint<PA_WIDTH> addr, ap_uint<ORDER_MA
 	std::cout << "Address:" << std::hex << std::setw(10) << addr
 			<< " Order:" << std::setw(ORDER_MAX) << order << std::endl;
 
-	buddy_allocator(alloc, alloc_ret, &init_buddy_addr, dram);
+	virt_addr_allocator(alloc, alloc_ret, init_buddy_addr, dram);
 
 	if (req.opcode == BUDDY_ALLOC) {
 		ret = alloc_ret.read();

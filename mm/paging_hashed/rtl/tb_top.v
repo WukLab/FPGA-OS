@@ -2,8 +2,9 @@
 
 module mapping_tb_top;
 
-parameter IN_FILEPATH="/root/ys/FPGA/mm/mapping/rtl/input.txt";
+parameter IN_FILEPATH="/home/xuhaoluo/FPGA/mm/paging_hashed/rtl/input.txt";
 parameter CLK_PERIOD = 3333333;
+parameter MAPPING_TABLE_ADDRESS_BASE = 32'h100000;
 
 	wire        ddr4_act_n;
 	wire [16:0] ddr4_adr;
@@ -26,7 +27,7 @@ parameter CLK_PERIOD = 3333333;
 	wire mc_init_calib_complete;
 	wire mc_ddr4_ui_clk_rst_n;
 	reg mc_enable_model;
-	reg enable_send;
+	reg enable_send, enable_init;
 
 	reg [71:0] in_read_tdata;
 	reg in_read_tvalid;
@@ -43,6 +44,10 @@ parameter CLK_PERIOD = 3333333;
 	wire [47:0] out_read_tdata, out_write_tdata;
 	wire out_read_tvalid, out_write_tvalid;
 	reg out_read_tready, out_write_tready;
+
+	reg [31:0] base_addr_tdata;
+	reg base_addr_tvalid;
+	wire base_addr_tready;
 
 	wire [71:0] out_ctl_tdata;
 	wire out_ctl_tvalid;
@@ -67,6 +72,10 @@ parameter CLK_PERIOD = 3333333;
 		.out_write_0_tdata		(out_write_tdata),
 		.out_write_0_tvalid		(out_write_tvalid),
 		.out_write_0_tready		(out_write_tready),
+
+		.base_addr_0_tdata		(base_addr_tdata),
+		.base_addr_0_tvalid		(base_addr_tvalid),
+		.base_addr_0_tready		(base_addr_tready),
 
 		/* DRAM interface */
 		.ddr4_sdram_c1_act_n          (ddr4_act_n),
@@ -110,14 +119,14 @@ parameter CLK_PERIOD = 3333333;
 
 		// Reset MC
 		sys_reset = 1'b0;
-	        #200000;
+		#200000;
 
-	        sys_reset = 1'b1;
+		sys_reset = 1'b1;
 		mc_enable_model = 1'b0;
 		#5000 mc_enable_model = 1'b1;
 
-	        #200000
-	        sys_reset = 1'b0;
+		#200000
+		sys_reset = 1'b0;
 		#100000;
 
 		// Wait until MC is ready
@@ -125,7 +134,7 @@ parameter CLK_PERIOD = 3333333;
 		wait(mc_ddr4_ui_clk_rst_n == 1'b1);
 
 		#50000000
-		enable_send = 1'b1;
+		enable_init = 1'b1;
 	end
 
 	always
@@ -133,6 +142,22 @@ parameter CLK_PERIOD = 3333333;
 
 	integer infd, finished_send, req_type;
 	integer nr_tx, nr_rx;
+
+	// Initiate base address
+	initial begin
+		wait(enable_init == 1'b1);
+		@(posedge sysclk_300_clk_ref);
+
+		base_addr_tdata = MAPPING_TABLE_ADDRESS_BASE;
+		base_addr_tvalid = 1'b1;
+
+		#CLK_PERIOD;
+		base_addr_tvalid = 1'b0;
+		$display("finish setting base address\n");
+
+		#10000000
+		enable_send = 1'b1;
+	end
 
 	// Send datapath requests
 	initial begin

@@ -17,41 +17,13 @@ if { [info exists ::user_project_name] } {
 variable script_file
 set script_file "run_vivado_vcu118.tcl"
 
-# Help information for this script
-proc help {} {
-  variable script_file
-  puts "\nDescription:"
-  puts "Recreate a Vivado project from this script. The created project will be"
-  puts "functionally equivalent to the original project for which this script was"
-  puts "generated. The script contains commands for creating a project, filesets,"
-  puts "runs, adding/importing sources and setting properties on various objects.\n"
-  puts "Syntax:"
-  puts "$script_file"
-  puts "$script_file -tclargs \[--origin_dir <path>\]"
-  puts "$script_file -tclargs \[--project_name <name>\]"
-  puts "$script_file -tclargs \[--help\]\n"
-  puts "Usage:"
-  puts "Name                   Description"
-  puts "-------------------------------------------------------------------------"
-  puts "\[--origin_dir <path>\]  Determine source file paths wrt this path. Default"
-  puts "                       origin_dir path value is \".\", otherwise, the value"
-  puts "                       that was set with the \"-paths_relative_to\" switch"
-  puts "                       when this script was generated.\n"
-  puts "\[--project_name <name>\] Create project with the specified name. Default"
-  puts "                       name is the name of the project from where this"
-  puts "                       script was generated.\n"
-  puts "\[--help\]               Print help information for this script"
-  puts "-------------------------------------------------------------------------\n"
-  exit 0
-}
-
 if { $::argc > 0 } {
   for {set i 0} {$i < $::argc} {incr i} {
     set option [string trim [lindex $::argv $i]]
     switch -regexp -- $option {
       "--origin_dir"   { incr i; set origin_dir [lindex $::argv $i] }
       "--project_name" { incr i; set _xil_proj_name_ [lindex $::argv $i] }
-      "--help"         { help }
+      "--help"         { print_help }
       default {
         if { [regexp {^-} $option] } {
           puts "ERROR: Unknown option '$option' specified, please type '$script_file -tclargs --help' for usage info.\n"
@@ -73,7 +45,26 @@ set proj_dir [get_property directory [current_project]]
 
 # Set project properties
 set obj [current_project]
-set_property -name "board_part" -value "xilinx.com:vcu118:part0:2.0" -objects $obj
+
+#
+# This is not generated.
+# I added this to switch between vcu118 board version.
+#
+set ver [version -short]
+puts $ver
+switch $ver {
+	2019.1 {
+		set_property -name "board_part" -value "xilinx.com:vcu118:part0:2.3" -objects $obj
+	}
+	2019.1.3 {
+		set_property -name "board_part" -value "xilinx.com:vcu118:part0:2.3" -objects $obj
+	}
+
+	default {
+		set_property -name "board_part" -value "xilinx.com:vcu118:part0:2.0" -objects $obj
+	}
+}
+
 set_property -name "default_lib" -value "xil_defaultlib" -objects $obj
 set_property -name "dsa.accelerator_binary_content" -value "bitstream" -objects $obj
 set_property -name "dsa.accelerator_binary_format" -value "xclbin2" -objects $obj
@@ -98,6 +89,7 @@ set_property -name "mem.enable_memory_map_generation" -value "1" -objects $obj
 set_property -name "sim.central_dir" -value "$proj_dir/${_xil_proj_name_}.ip_user_files" -objects $obj
 set_property -name "sim.ip.auto_export_scripts" -value "1" -objects $obj
 set_property -name "simulator_language" -value "Mixed" -objects $obj
+set_property -name "xpm_libraries" -value "XPM_FIFO XPM_MEMORY" -objects $obj
 
 # Create 'sources_1' fileset (if not found)
 if {[string equal [get_filesets -quiet sources_1] ""]} {
@@ -521,14 +513,12 @@ proc create_hier_cell_Buffer_ToBeRemoved { parentCell nameHier } {
   set axis_data_fifo_0 [ create_bd_cell -type ip -vlnv $axis_data_fifo axis_data_fifo_0 ]
   set_property -dict [ list \
    CONFIG.FIFO_DEPTH {16} \
-   CONFIG.TDATA_NUM_BYTES {9} \
  ] $axis_data_fifo_0
 
   # Create instance: axis_data_fifo_1, and set properties
   set axis_data_fifo_1 [ create_bd_cell -type ip -vlnv $axis_data_fifo axis_data_fifo_1 ]
   set_property -dict [ list \
    CONFIG.FIFO_DEPTH {16} \
-   CONFIG.TDATA_NUM_BYTES {9} \
  ] $axis_data_fifo_1
 
   # Create interface connections
@@ -572,6 +562,20 @@ proc create_hier_cell_Buffer_ToBeRemoved { parentCell nameHier } {
 
 
   # Create interface ports
+  set base_addr_0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 base_addr_0 ]
+  set_property -dict [ list \
+   CONFIG.FREQ_HZ {300000000} \
+   CONFIG.HAS_TKEEP {0} \
+   CONFIG.HAS_TLAST {0} \
+   CONFIG.HAS_TREADY {1} \
+   CONFIG.HAS_TSTRB {0} \
+   CONFIG.LAYERED_METADATA {xilinx.com:interface:datatypes:1.0 {CLK {datatype {name {attribs {resolve_type immediate dependency {} format string minimum {} maximum {}} value {}} bitwidth {attribs {resolve_type immediate dependency {} format long minimum {} maximum {}} value 1} bitoffset {attribs {resolve_type immediate dependency {} format long minimum {} maximum {}} value 0}}}}} \
+   CONFIG.PHASE {0.00} \
+   CONFIG.TDATA_NUM_BYTES {4} \
+   CONFIG.TDEST_WIDTH {0} \
+   CONFIG.TID_WIDTH {0} \
+   CONFIG.TUSER_WIDTH {0} \
+   ] $base_addr_0
   set ddr4_sdram_c1 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 ddr4_sdram_c1 ]
   set in_read_0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 in_read_0 ]
   set_property -dict [ list \
@@ -685,6 +689,7 @@ proc create_hier_cell_Buffer_ToBeRemoved { parentCell nameHier } {
   connect_bd_intf_net -intf_net axis_data_fifo_1_M_AXIS1 [get_bd_intf_pins fifos/M_AXIS3] [get_bd_intf_pins mapping_hls_top/BRAM_rd_data]
   connect_bd_intf_net -intf_net axis_data_fifo_2_M_AXIS [get_bd_intf_pins bram_hashtable_0/BRAM_wr_cmd_V] [get_bd_intf_pins fifos/M_AXIS1]
   connect_bd_intf_net -intf_net axis_data_fifo_3_M_AXIS [get_bd_intf_pins bram_hashtable_0/BRAM_wr_data] [get_bd_intf_pins fifos/M_AXIS2]
+  connect_bd_intf_net -intf_net base_addr_V_V_0_1 [get_bd_intf_ports base_addr_0] [get_bd_intf_pins mapping_hls_top/base_addr_V_V]
   connect_bd_intf_net -intf_net bram_hashtable_0_BRAM_rd_data [get_bd_intf_pins bram_hashtable_0/BRAM_rd_data] [get_bd_intf_pins fifos/S_AXIS3]
   connect_bd_intf_net -intf_net ddr4_0_C0_DDR4 [get_bd_intf_ports ddr4_sdram_c1] [get_bd_intf_pins mc/ddr4_sdram_c1]
   connect_bd_intf_net -intf_net dummy_allocator_0_alloc_ret_V [get_bd_intf_pins dummy_allocator_0/alloc_ret_V] [get_bd_intf_pins mapping_hls_top/alloc_ret_V]
@@ -1037,7 +1042,7 @@ proc create_hier_cell_Buffer_ToBeRemoved { parentCell nameHier } {
   # Create instance: axi_datamover, and set properties
   set axi_datamover [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_datamover:5.1 axi_datamover ]
   set_property -dict [ list \
-   CONFIG.c_dummy {0} \
+   CONFIG.c_dummy {1} \
    CONFIG.c_m_axi_mm2s_data_width {512} \
    CONFIG.c_m_axi_mm2s_id_width {8} \
    CONFIG.c_m_axi_s2mm_data_width {512} \
@@ -1324,7 +1329,6 @@ if { [ string equal [get_report_configs -of_objects [get_runs impl_1] impl_1_pos
 }
 set obj [get_report_configs -of_objects [get_runs impl_1] impl_1_post_route_phys_opt_report_bus_skew_0]
 if { $obj != "" } {
-
 }
 set obj [get_runs impl_1]
 set_property -name "strategy" -value "Vivado Implementation Defaults" -objects $obj

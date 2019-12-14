@@ -14,7 +14,10 @@
 
 using namespace hls;
 
+extern ap_uint<PA_WIDTH> mapping_table_addr_base;
+
 #define MEM_BUS_WIDTH		512
+#define MEM_BUS_SHIFT		9
 #define NR_BYTES_MEM_BUS	(MEM_BUS_WIDTH/8)
 #define MEM_BUS_TKEEP		NR_BYTES_MEM_BUS
 
@@ -77,9 +80,9 @@ struct pipeline_info {
 };
 
 void paging_top(hls::stream<struct mapping_request>	*in_read,
-	        hls::stream<struct mapping_request>	*in_write,
-	        hls::stream<struct mapping_reply>	*out_read,
-	        hls::stream<struct mapping_reply>	*out_write,
+		hls::stream<struct mapping_request>	*in_write,
+		hls::stream<struct mapping_reply>	*out_read,
+		hls::stream<struct mapping_reply>	*out_write,
 
 		hls::stream<struct dm_cmd>		*DRAM_rd_cmd,
 		hls::stream<struct dm_cmd>		*DRAM_wr_cmd,
@@ -94,26 +97,28 @@ void paging_top(hls::stream<struct mapping_request>	*in_read,
 		hls::stream<struct axis_mem>		*BRAM_wr_data,
 
 		hls::stream<struct buddy_alloc_if>	*alloc,
-		hls::stream<struct buddy_alloc_ret_if>	*alloc_ret);
+		hls::stream<struct buddy_alloc_ret_if>	*alloc_ret,
 
-void data_path(stream<struct mapping_request>	*rd_request,
-	       stream<struct mapping_request>	*wr_request,
-	       stream<struct mapping_reply>	*rd_reply,
-	       stream<struct mapping_reply>	*wr_reply,
+		hls::stream<ap_uint<PA_WIDTH> >		*base_addr);
 
-	       stream<struct mem_cmd>		*DRAM_rd_cmd,
-	       stream<struct mem_cmd>		*DRAM_wr_cmd,
-	       stream<ap_uint<MEM_BUS_WIDTH> >	*DRAM_rd_data,
-	       stream<ap_uint<MEM_BUS_WIDTH> >	*DRAM_wr_data,
+void data_path(stream<struct mapping_request>		*rd_request,
+	       stream<struct mapping_request>		*wr_request,
+	       stream<struct mapping_reply>		*rd_reply,
+	       stream<struct mapping_reply>		*wr_reply,
 
-	       stream<struct mem_cmd>		*BRAM_rd_cmd,
-	       stream<struct mem_cmd>		*BRAM_wr_cmd,
-	       stream<ap_uint<MEM_BUS_WIDTH> >	*BRAM_rd_data,
-	       stream<ap_uint<MEM_BUS_WIDTH> >	*BRAM_wr_data,
+	       stream<struct mem_cmd>			*DRAM_rd_cmd,
+	       stream<struct mem_cmd>			*DRAM_wr_cmd,
+	       stream<ap_uint<MEM_BUS_WIDTH> >		*DRAM_rd_data,
+	       stream<ap_uint<MEM_BUS_WIDTH> >		*DRAM_wr_data,
 
-	       stream<struct buddy_alloc_if>	*alloc,
-	       stream<struct buddy_alloc_ret_if>*alloc_ret);
-	       
+	       stream<struct mem_cmd>			*BRAM_rd_cmd,
+	       stream<struct mem_cmd>			*BRAM_wr_cmd,
+	       stream<ap_uint<MEM_BUS_WIDTH> >		*BRAM_rd_data,
+	       stream<ap_uint<MEM_BUS_WIDTH> >		*BRAM_wr_data,
+
+	       stream<struct buddy_alloc_if>		*alloc,
+	       stream<struct buddy_alloc_ret_if>	*alloc_ret);
+
 
 void compute_hash(stream<struct pipeline_info> *in,
 		  stream<struct pipeline_info> *out);
