@@ -5,7 +5,7 @@ Copyright (c) 2018-2020, Wuklab, UCSD.
 This is an operating system (OS) running inside FPGA providing familiar OS abstractions (e.g., mm, sched, net) for FPGA applications.
 This is an inmature early stage research prototype. Most of the code is written in Xilinx HLS. It has been tested on VCU118 and VCU108.
 
-It's made public for educational purpose. Hope you find it useufl.
+It's made public for educational purpose. Hope you find it useful.
 
 ## Codebase Organization Principles
 
@@ -22,7 +22,7 @@ It's made public for educational purpose. Hope you find it useufl.
 ## Codebase Directories
 
 - Host Side:
-	- `host/`: Host side network stack
+	- `host/`: Host side network stack and DMA drivers
 - FPGA Side:
 	- `alloc/`: memory allocator
 	- `mm/`: memory management
