@@ -1,8 +1,9 @@
-# FPGA
+# An Operating System Runtime for FPGA Applications
 
-Copyright (c) 2019, Wuklab, UCSD.
+Copyright (c) 2018-2020, Wuklab, UCSD.
 
-Last Updated: Oct 24, 2019
+This is an operating system (OS) running inside FPGA providing familiar OS abstractions (e.g., mm, sched, net) for FPGA applications.
+This is an inmature early stage research prototype. Most of the code is written in Xilinx HLS. It has been tested on VCU118 and VCU108.
 
 ## Codebase Organization Principles
 
@@ -24,6 +25,7 @@ Last Updated: Oct 24, 2019
 	- `alloc/`: memory allocator
 	- `mm/`: memory management
 	- `net/`: network subsystem
+	- `kernel/`: some PR related code
 	- `system/`: Final big integrated systems
 - Both world:
 	- `app/`: Application can have both FPGA and Host code.
