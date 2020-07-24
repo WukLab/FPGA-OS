@@ -5,6 +5,8 @@ Copyright (c) 2018-2020, Wuklab, UCSD.
 This is an operating system (OS) running inside FPGA providing familiar OS abstractions (e.g., mm, sched, net) for FPGA applications.
 This is an inmature early stage research prototype. Most of the code is written in Xilinx HLS. It has been tested on VCU118 and VCU108.
 
+It's made public for educational purpose. Hope you find it useufl.
+
 ## Codebase Organization Principles
 
 - Make each subfolder be an IP on its own. This means it should have its own
