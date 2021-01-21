@@ -255,6 +255,7 @@ proc synthesize { module } {
 	}
       
 	# Read IPI systems
+	# Read all .tcl files
 	if {[llength $bd] > 0} {
 		set start_time [clock seconds]
 		add_bd $bd
@@ -321,13 +322,11 @@ proc synthesize { module } {
 	#         #command "synth_design -mode out_of_context $options -top $moduleName -part $part" "$resultDir/${moduleName}_synth_design.rds"
 	#         command "synth_design -mode out_of_context $options -top [lindex [find_top] 0] -part $part" "$resultDir/${moduleName}_synth_design.rds"
 	# }
+
 	command "launch_runs synth_1"
 	command "wait_on_run synth_1"
-   
-	set start_time [clock seconds]
+	command "open_run synth_1 -name synth_1"
 	command "write_checkpoint -force $resultDir/${moduleName}_synth.dcp" "$resultDir/write_checkpoint.log"
-	set end_time [clock seconds]
-	log_time write_checkpiont $start_time $end_time 0 "Write out synthesis DCP"
    
 	if {$verbose >= 1} {
 		set start_time [clock seconds]
