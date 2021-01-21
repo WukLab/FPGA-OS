@@ -82,10 +82,7 @@ proc add_bd { files } {
 		if {[string length file] > 0} {
 			if {[file exists $file]} {
 				if {[regexp {.*\.tcl} $file]} {
-				   set argv "$resultDir/bd/"
-				   source $file
-				   puts "$design_name"
-				   generate_target all [get_files $argv/$design_name/$design_name.bd]
+				   command "source $file"
 				}
 			} else {
 				set errMsg "\nERROR: Could not find specified BD file: $file" 
@@ -210,7 +207,8 @@ proc synthesize { module } {
 	}
 
 	# Create in-memory project
-	command "create_project -in_memory -part $part" "$resultDir/create_project.log"
+	#command "create_project -in_memory -part $part" "$resultDir/create_project.log"
+	command "create_project prj $resultDir -part $part" "$resultDir/create_project.log"
 
 	# Turn on source management for mod ref
 	command "set_property source_mgmt_mode All \[current_project\]"
@@ -317,14 +315,14 @@ proc synthesize { module } {
 	# Synthesis
 	puts "Running synth_design for $module"
 	set start_time [clock seconds]
-	if {$topLevel} {
-		command "synth_design -mode default $options -top $moduleName -part $part" "$resultDir/${moduleName}_synth_design.rds"
-	} else {
-		#command "synth_design -mode out_of_context $options -top $moduleName -part $part" "$resultDir/${moduleName}_synth_design.rds"
-		command "synth_design -mode out_of_context $options -top [lindex [find_top] 0] -part $part" "$resultDir/${moduleName}_synth_design.rds"
-	}
-	set end_time [clock seconds]
-	log_time synth_design $start_time $end_time 0 "$moduleName $options"
+	# if {$topLevel} {
+	#         command "synth_design -mode default $options -top $moduleName -part $part" "$resultDir/${moduleName}_synth_design.rds"
+	# } else {
+	#         #command "synth_design -mode out_of_context $options -top $moduleName -part $part" "$resultDir/${moduleName}_synth_design.rds"
+	#         command "synth_design -mode out_of_context $options -top [lindex [find_top] 0] -part $part" "$resultDir/${moduleName}_synth_design.rds"
+	# }
+	command "launch_runs synth_1"
+	command "wait_on_run synth_1"
    
 	set start_time [clock seconds]
 	command "write_checkpoint -force $resultDir/${moduleName}_synth.dcp" "$resultDir/write_checkpoint.log"

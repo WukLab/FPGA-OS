@@ -3,14 +3,13 @@
 # this design_name is like a return variable..
 #
 
-set dst_dir $argv
 set design_name config_mb
 
 # Proc to create BD config_mb
-proc cr_bd_config_mb { parentCell dst_dir design_name} {
+proc cr_bd_config_mb { parentCell design_name} {
   common::send_msg_id "BD_TCL-003" "INFO" "Currently there is no design <$design_name> in project, so creating one..."
 
-  create_bd_design $design_name -dir $dst_dir
+  create_bd_design $design_name
 
   set bCheckIPsPassed 1
   ##################################################################
@@ -364,4 +363,4 @@ proc create_hier_cell_microblaze_0_local_memory { parentCell nameHier } {
 }
 # End of cr_bd_config_mb()
 
-cr_bd_config_mb "" $dst_dir $design_name
+cr_bd_config_mb "" $design_name
